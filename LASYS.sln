@@ -1,11 +1,56 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
-VisualStudioVersion = 17.14.36408.4 d17.14
+VisualStudioVersion = 17.14.36408.4
 MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{02EA681E-C7D8-13C7-8484-4AC65E1B71E8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LASYS.UIControls", "src\LASYS.UIControls\LASYS.UIControls.csproj", "{B58FB453-32F6-44DD-9F22-EE36EE45D4FF}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LASYS.Domain", "src\LASYS.Domain\LASYS.Domain.csproj", "{D60D854A-9CBD-424A-AC65-322D0ED8AF7A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LASYS.Application", "src\LASYS.Application\LASYS.Application.csproj", "{5A1E7604-9FF8-425E-A835-1A3B0FCDD582}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LASYS.Infrastructure", "src\LASYS.Infrastructure\LASYS.Infrastructure.csproj", "{F01AF403-7398-4B6B-BEC6-E89BDD641AF9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LASYS.DesktopApp", "src\LASYS.DesktopApp\LASYS.DesktopApp.csproj", "{5715389E-809F-4F96-A42E-45AC2CF9396F}"
+EndProject
 Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{B58FB453-32F6-44DD-9F22-EE36EE45D4FF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B58FB453-32F6-44DD-9F22-EE36EE45D4FF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B58FB453-32F6-44DD-9F22-EE36EE45D4FF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B58FB453-32F6-44DD-9F22-EE36EE45D4FF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D60D854A-9CBD-424A-AC65-322D0ED8AF7A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D60D854A-9CBD-424A-AC65-322D0ED8AF7A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D60D854A-9CBD-424A-AC65-322D0ED8AF7A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D60D854A-9CBD-424A-AC65-322D0ED8AF7A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5A1E7604-9FF8-425E-A835-1A3B0FCDD582}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5A1E7604-9FF8-425E-A835-1A3B0FCDD582}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5A1E7604-9FF8-425E-A835-1A3B0FCDD582}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5A1E7604-9FF8-425E-A835-1A3B0FCDD582}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F01AF403-7398-4B6B-BEC6-E89BDD641AF9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F01AF403-7398-4B6B-BEC6-E89BDD641AF9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F01AF403-7398-4B6B-BEC6-E89BDD641AF9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F01AF403-7398-4B6B-BEC6-E89BDD641AF9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5715389E-809F-4F96-A42E-45AC2CF9396F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5715389E-809F-4F96-A42E-45AC2CF9396F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5715389E-809F-4F96-A42E-45AC2CF9396F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5715389E-809F-4F96-A42E-45AC2CF9396F}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{B58FB453-32F6-44DD-9F22-EE36EE45D4FF} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+		{D60D854A-9CBD-424A-AC65-322D0ED8AF7A} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+		{5A1E7604-9FF8-425E-A835-1A3B0FCDD582} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+		{F01AF403-7398-4B6B-BEC6-E89BDD641AF9} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+		{5715389E-809F-4F96-A42E-45AC2CF9396F} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {CBEA964B-E581-4157-AC25-888FABC63D15}
