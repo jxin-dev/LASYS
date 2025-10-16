@@ -28,12 +28,44 @@
         /// </summary>
         private void InitializeComponent()
         {
-            this.components = new System.ComponentModel.Container();
-            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(800, 450);
-            this.Text = "SplashForm";
+            progressBar = new ProgressBar();
+            lblStatus = new Label();
+            SuspendLayout();
+            // 
+            // progressBar
+            // 
+            progressBar.Location = new Point(27, 45);
+            progressBar.Name = "progressBar";
+            progressBar.Size = new Size(331, 13);
+            progressBar.TabIndex = 0;
+            // 
+            // lblStatus
+            // 
+            lblStatus.AutoSize = true;
+            lblStatus.Location = new Point(27, 71);
+            lblStatus.Name = "lblStatus";
+            lblStatus.Size = new Size(12, 15);
+            lblStatus.TabIndex = 1;
+            lblStatus.Text = "-";
+            // 
+            // SplashForm
+            // 
+            AutoScaleDimensions = new SizeF(7F, 15F);
+            AutoScaleMode = AutoScaleMode.Font;
+            ClientSize = new Size(393, 109);
+            Controls.Add(lblStatus);
+            Controls.Add(progressBar);
+            FormBorderStyle = FormBorderStyle.None;
+            Name = "SplashForm";
+            StartPosition = FormStartPosition.CenterScreen;
+            Text = "SplashForm";
+            ResumeLayout(false);
+            PerformLayout();
         }
 
         #endregion
+
+        private ProgressBar progressBar;
+        private Label lblStatus;
     }
 }
