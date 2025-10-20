@@ -1,4 +1,5 @@
-﻿using LASYS.DesktopApp.Presenters.Interfaces;
+﻿using LASYS.DesktopApp.Core.Interfaces;
+using LASYS.DesktopApp.Presenters.Interfaces;
 using LASYS.DesktopApp.Views.Interfaces;
 
 namespace LASYS.DesktopApp.Presenters
@@ -6,6 +7,13 @@ namespace LASYS.DesktopApp.Presenters
     public class SplashPresenter : ISplashPresenter
     {
         private ISplashView? _view;
+        private readonly IViewFactory _factory;
+
+        public SplashPresenter(IViewFactory factory)
+        {
+            _factory = factory;
+        }
+
         public void AttachView(ISplashView view)
         {
             _view = view;
@@ -24,7 +32,11 @@ namespace LASYS.DesktopApp.Presenters
             _view?.UpdateProgress(100, "Launching application...");
             await Task.Delay(1000);
 
-            _view?.CloseView();
+            _view?.HideView();
+
+            var loginView = _factory.Create<ILoginView, LoginPresenter>();
+            loginView.ShowView();
+           
         }
     }
 }

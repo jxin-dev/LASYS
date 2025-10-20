@@ -16,6 +16,11 @@ namespace LASYS.DesktopApp.Extensions
             services.AddTransient<ISplashView, SplashForm>();
             services.AddTransient<SplashPresenter>();
 
+            services.AddTransient<ILoginView, LoginForm>();
+            services.AddTransient<LoginPresenter>();
+
+            services.AddTransient<IMainView, MainForm>();
+            services.AddTransient<MainPresenter>();
             // Services
 
 

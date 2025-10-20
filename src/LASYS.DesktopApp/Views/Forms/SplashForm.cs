@@ -38,6 +38,6 @@ namespace LASYS.DesktopApp.Views.Forms
         }
 
         public void ShowView() => Application.Run(this);
-
+        public void HideView() => Hide();
     }
 }

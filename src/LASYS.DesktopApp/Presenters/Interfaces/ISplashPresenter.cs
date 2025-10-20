@@ -8,4 +8,5 @@ namespace LASYS.DesktopApp.Presenters.Interfaces
     {
         Task InitializeAsync();
     }
+    
 }
