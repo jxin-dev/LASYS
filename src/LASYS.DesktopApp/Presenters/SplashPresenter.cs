@@ -6,13 +6,11 @@ namespace LASYS.DesktopApp.Presenters
     public class SplashPresenter : ISplashPresenter
     {
         private ISplashView? _view;
-
-        public void Initialize(ISplashView view)
+        public void AttachView(ISplashView view)
         {
             _view = view;
         }
-
-        public async Task StartLoadingAsync()
+        public async Task InitializeAsync()
         {
             _view?.UpdateProgress(0, "Loading, Please wait...");
             await Task.Delay(500);

@@ -1,5 +1,6 @@
+using LASYS.DesktopApp.Core.Interfaces;
+using LASYS.DesktopApp.Extensions;
 using LASYS.DesktopApp.Presenters;
-using LASYS.DesktopApp.Presenters.Interfaces;
 using LASYS.DesktopApp.Views.Forms;
 using LASYS.DesktopApp.Views.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
@@ -18,24 +19,17 @@ namespace LASYS.DesktopApp
             // To customize application configuration such as set high DPI settings or default font,
             // see https://aka.ms/applicationconfiguration.
             ApplicationConfiguration.Initialize();
+            var host = Host.CreateDefaultBuilder()
+           .ConfigureServices(services =>
+           {
+               services.AddMvp(); // from our extension
+           })
+           .Build();
 
-            var builder = Host.CreateApplicationBuilder();
-            builder.Services.AddTransient<ISplashView, SplashForm>();
-            builder.Services.AddTransient<ISplashPresenter, SplashPresenter>();
+            var factory = host.Services.GetRequiredService<IViewFactory>();
+            var splashView = factory.Create<ISplashView, SplashPresenter>();
+            splashView.ShowView();
 
-            var host = builder.Build();
-
-            using (var scope = host.Services.CreateScope())
-            {
-                var provider = scope.ServiceProvider;
-                var view = provider.GetRequiredService<ISplashView>();
-                var presenter = provider.GetRequiredService<ISplashPresenter>();
-
-                presenter.Initialize(view);
-                (view as SplashForm)?.SetPresenter(presenter);
-
-                Application.Run((Form)view);
-            }
         }
     }
 }

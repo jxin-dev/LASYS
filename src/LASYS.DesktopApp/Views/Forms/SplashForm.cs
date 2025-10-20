@@ -1,37 +1,43 @@
-﻿using LASYS.DesktopApp.Presenters.Interfaces;
+﻿using LASYS.DesktopApp.Presenters;
 using LASYS.DesktopApp.Views.Interfaces;
 
 namespace LASYS.DesktopApp.Views.Forms
 {
     public partial class SplashForm : Form, ISplashView
     {
-        private ISplashPresenter? _presenter;
-        public SplashForm()
+        private readonly SplashPresenter _presenter;
+        public SplashForm(SplashPresenter presenter)
         {
             InitializeComponent();
+            _presenter = presenter;
         }
 
         public void CloseView()
         {
-            Invoke(() => Close());
+            if (InvokeRequired)
+            {
+                Invoke(Close);
+                return;
+            }
+            Close();
         }
 
-        public void SetPresenter(ISplashPresenter presenter)
+        protected override async void OnShown(EventArgs e)
         {
-            _presenter = presenter;
+            base.OnShown(e);
+            _presenter.AttachView(this);
+            await _presenter.InitializeAsync();
         }
-        protected override async void OnLoad(EventArgs e)
-        {
-            base.OnLoad(e);
-            if (_presenter != null)
-                await _presenter.StartLoadingAsync();   
-        }
+
 
         public void UpdateProgress(int percent, string message)
         {
             progressBar.Value = percent;
             lblStatus.Text = message;
+            lblStatus.Refresh();
         }
+
+        public void ShowView() => Application.Run(this);
 
     }
 }

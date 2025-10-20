@@ -1,10 +1,11 @@
-﻿using LASYS.DesktopApp.Views.Interfaces;
+﻿using System.Windows.Forms;
+using LASYS.DesktopApp.Core.Interfaces;
+using LASYS.DesktopApp.Views.Interfaces;
 
 namespace LASYS.DesktopApp.Presenters.Interfaces
 {
-    public interface ISplashPresenter
+    public interface ISplashPresenter : IPresenter<ISplashView>
     {
-        void Initialize(ISplashView view);
-        Task StartLoadingAsync();
+        Task InitializeAsync();
     }
 }

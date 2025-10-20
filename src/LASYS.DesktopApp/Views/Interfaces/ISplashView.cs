@@ -1,11 +1,9 @@
-﻿using LASYS.DesktopApp.Presenters.Interfaces;
+﻿using LASYS.DesktopApp.Core.Interfaces;
 
 namespace LASYS.DesktopApp.Views.Interfaces
 {
-    public interface ISplashView
+    public interface ISplashView : IView
     {
-        void SetPresenter(ISplashPresenter presenter);
         void UpdateProgress(int percent, string message);
-        void CloseView();
     }
 }
