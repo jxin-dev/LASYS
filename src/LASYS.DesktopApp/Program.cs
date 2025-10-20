@@ -1,7 +1,6 @@
 using LASYS.DesktopApp.Core.Interfaces;
 using LASYS.DesktopApp.Extensions;
 using LASYS.DesktopApp.Presenters;
-using LASYS.DesktopApp.Views.Forms;
 using LASYS.DesktopApp.Views.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
