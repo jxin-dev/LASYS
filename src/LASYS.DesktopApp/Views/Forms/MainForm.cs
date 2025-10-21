@@ -18,7 +18,7 @@ namespace LASYS.DesktopApp.Views.Forms
             _contentPanel = new Panel
             {
                 Dock = DockStyle.Fill,
-                BackColor = Color.White
+                BackColor = Color.FromArgb(221, 221, 221)
             };
 
             Controls.Add(_contentPanel);
