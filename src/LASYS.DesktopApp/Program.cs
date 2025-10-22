@@ -22,6 +22,7 @@ namespace LASYS.DesktopApp
            .ConfigureServices(services =>
            {
                services.AddMvp(); // from our extension
+               services.AddDevices(); // from our extension
            })
            .Build();
 

@@ -1,0 +1,82 @@
+﻿using LASYS.Camera.Interfaces;
+using LASYS.Camera.Models;
+using LASYS.Camera.Services;
+using LASYS.UIControls.Controls;
+
+namespace LASYS.DesktopApp.Views.UserControls
+{
+    public partial class WebCameraControl : UserControl
+    {
+        private readonly ICameraService _cameraService;
+        private readonly LoadingLabel _loadingLabel;
+
+        private bool _isPreviewing;
+        public WebCameraControl()
+        {
+            InitializeComponent();
+            _loadingLabel = new LoadingLabel
+            {
+                BaseText = "Please wait",
+                Font = new Font("Segoe UI", 9F, FontStyle.Italic),
+                ForeColor = Color.Gray,
+                Location = new Point(cbxCameras.Left + 5, cbxCameras.Bottom + 8),
+                AutoSize = true,
+                Visible = false // hidden by default
+            };
+
+            pnlContent.Controls.Add(_loadingLabel);
+
+            _cameraService = new CameraService();
+            Load += WebCameraControl_Load;
+            btnPreview.Click += BtnPreview_Click;
+        }
+
+        private async void BtnPreview_Click(object? sender, EventArgs e)
+        {
+            if (!_isPreviewing)
+            {
+                if (cbxCameras.SelectedItem is not CameraDevice selectedCamera)
+                {
+                    MessageBox.Show("Please select a camera.");
+                    return;
+                }
+
+                _isPreviewing = true;
+                btnPreview.Text = "Stop";
+                btnPreview.Enabled = false;
+                _loadingLabel.Start();
+
+                _cameraService.PreviewStarted += OnPreviewStarted;
+
+                await Task.Run(() => _cameraService.StartPreviewAsync(selectedCamera, picCameraPreview));
+            }
+            else
+            {
+                _isPreviewing = false;
+                btnPreview.Text = "Preview";
+                _cameraService.StopPreview(picCameraPreview);
+            }
+        }
+
+        private void OnPreviewStarted()
+        {
+            if (InvokeRequired)
+            {
+                Invoke(OnPreviewStarted);
+                return;
+            }
+            btnPreview.Enabled = true;
+            _loadingLabel.Stop();
+            // Unsubscribe (optional, to avoid double calls)
+            _cameraService.PreviewStarted -= OnPreviewStarted;
+        }
+
+        private void WebCameraControl_Load(object? sender, EventArgs e)
+        {
+            var cameras = _cameraService.GetAvailableCameras();
+            cbxCameras.DataSource = cameras;
+            cbxCameras.DisplayMember = "Name";
+            cbxCameras.ValueMember = "Index";
+        }
+    }
+}

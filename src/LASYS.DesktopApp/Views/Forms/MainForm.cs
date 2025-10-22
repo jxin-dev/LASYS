@@ -46,7 +46,7 @@ namespace LASYS.DesktopApp.Views.Forms
 
             // Wire events
             workOrders.Clicked += (_, _) => LoadView(new WorkOrdersControl());
-            //deviceSetup.SubItems[0].Clicked += (_, _) => LoadView(new WebCameraControl());
+            deviceSetup.SubItems[0].Clicked += (_, _) => LoadView(new WebCameraControl());
             //deviceSetup.SubItems[1].Clicked += (_, _) => LoadView(new OcrCalibrationControl());
             //deviceSetup.SubItems[2].Clicked += (_, _) => LoadView(new SatoPrinterControl());
             //deviceSetup.SubItems[3].Clicked += (_, _) => LoadView(new BarcodeScannerControl());

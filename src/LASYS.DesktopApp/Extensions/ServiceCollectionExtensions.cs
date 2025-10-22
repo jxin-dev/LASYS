@@ -1,4 +1,6 @@
-﻿using LASYS.DesktopApp.Core.Interfaces;
+﻿using LASYS.Camera.Interfaces;
+using LASYS.Camera.Services;
+using LASYS.DesktopApp.Core.Interfaces;
 using LASYS.DesktopApp.Core.Services;
 using LASYS.DesktopApp.Presenters;
 using LASYS.DesktopApp.Views.Forms;
@@ -23,6 +25,13 @@ namespace LASYS.DesktopApp.Extensions
             services.AddTransient<MainPresenter>();
             // Services
 
+
+            return services;
+        }
+
+        public static IServiceCollection AddDevices(this IServiceCollection services)
+        {
+            services.AddScoped<ICameraService, CameraService>();
 
             return services;
         }

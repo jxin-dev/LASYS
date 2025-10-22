@@ -16,5 +16,6 @@ namespace LASYS.DesktopApp.Views.UserControls
         {
             InitializeComponent();
         }
+
     }
 }

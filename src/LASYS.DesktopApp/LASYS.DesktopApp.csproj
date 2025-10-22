@@ -14,7 +14,14 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\LASYS.Camera\LASYS.Camera.csproj" />
     <ProjectReference Include="..\LASYS.UIControls\LASYS.UIControls.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="Views\UserControls\WebCameraControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
   </ItemGroup>
 
 </Project>
