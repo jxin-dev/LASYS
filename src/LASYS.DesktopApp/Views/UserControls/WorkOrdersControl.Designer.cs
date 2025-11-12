@@ -32,6 +32,7 @@
             label1 = new Label();
             panel1 = new Panel();
             textBox1 = new TextBox();
+            pnlContent = new Panel();
             pnlHeader.SuspendLayout();
             panel1.SuspendLayout();
             SuspendLayout();
@@ -61,6 +62,7 @@
             // 
             panel1.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             panel1.BackColor = Color.White;
+            panel1.Controls.Add(pnlContent);
             panel1.Controls.Add(textBox1);
             panel1.Location = new Point(3, 57);
             panel1.Name = "panel1";
@@ -77,6 +79,14 @@
             textBox1.Size = new Size(721, 33);
             textBox1.TabIndex = 0;
             textBox1.TextAlign = HorizontalAlignment.Center;
+            // 
+            // pnlContent
+            // 
+            pnlContent.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            pnlContent.Location = new Point(12, 50);
+            pnlContent.Name = "pnlContent";
+            pnlContent.Size = new Size(721, 272);
+            pnlContent.TabIndex = 1;
             // 
             // WorkOrdersControl
             // 
@@ -99,5 +109,6 @@
         private Label label1;
         private Panel panel1;
         private TextBox textBox1;
+        private Panel pnlContent;
     }
 }
