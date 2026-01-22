@@ -42,13 +42,13 @@ jobs:
       # 5) Publish Desktop App as a self-contained single file
       - name: Publish Desktop App
         run: |
-          dotnet publish src/LASYS.DesktopApp/LASYS.DesktopApp.csproj ^
-            -c Release ^
-            -p:RuntimeIdentifier=win-x64 ^
-            -p:PublishSelfContained=true ^
-            -p:PublishSingleFile=true ^
-            -p:IncludeNativeLibrariesForSelfExtract=true ^
-            -p:EnableCompressionInSingleFile=true ^
+          dotnet publish src/LASYS.DesktopApp/LASYS.DesktopApp.csproj `
+            -c Release `
+            -p:RuntimeIdentifier=win-x64 `
+            -p:PublishSelfContained=true `
+            -p:PublishSingleFile=true `
+            -p:IncludeNativeLibrariesForSelfExtract=true `
+            -p:EnableCompressionInSingleFile=true `
             -o publish
 
       # ───────────────────────────────────────────────
