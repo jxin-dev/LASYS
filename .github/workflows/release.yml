@@ -31,10 +31,7 @@ jobs:
         run: dotnet build --configuration Release
 
       - name: Publish Desktop App
-        run: |
-          dotnet publish src/LASYS.DesktopApp/LASYS.DesktopApp.csproj \
-            --configuration Release \
-            --output ./publish
+        run: dotnet publish src/LASYS.DesktopApp/LASYS.DesktopApp.csproj --configuration Release --output ./publish
 
       - name: Pack with Velopack
         shell: pwsh
