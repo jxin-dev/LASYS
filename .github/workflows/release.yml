@@ -1,0 +1,55 @@
+name: Velopack Build & Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-pack:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+          
+      - name: Install Velopack CLI
+        run: dotnet tool install -g vpk
+
+      - name: Restore all projects
+        run: dotnet restore
+
+      - name: Build all projects
+        run: dotnet build --configuration Release
+
+      - name: Publish Desktop App
+        run: |
+          dotnet publish src/LASYS.DesktopApp/LASYS.DesktopApp.csproj \
+            --configuration Release \
+            --output ./publish
+
+      - name: Pack with Velopack
+        shell: pwsh
+        run: |
+          # Trim "v" off the tag to use as version
+          $version = "${{ github.ref_name }}".TrimStart('v')
+
+          vpk pack `
+            --packId "LASYSDesktopApp" `
+            --packVersion $version `
+            --packDir ./publish `
+            --mainExe "LASYS.DesktopApp.exe"
+            
+      - name: Create GitHub Release & Upload Assets
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.ref_name }}
+          files: ./publish/**/*
