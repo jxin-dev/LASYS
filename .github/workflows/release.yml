@@ -14,24 +14,24 @@ jobs:
 
     steps:
       # ───────────────────────────────────────────────
-      # 1) Checkout the repository
+      # Checkout the repository
       - name: Checkout code
         uses: actions/checkout@v4
 
       # ───────────────────────────────────────────────
-      # 2) Setup .NET SDK
+      # Setup .NET SDK
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '9.0.x'
 
       # ───────────────────────────────────────────────
-      # 3) Install Velopack CLI
+      # Install Velopack CLI
       - name: Install Velopack CLI
         run: dotnet tool install -g vpk
 
       # ───────────────────────────────────────────────
-      # 4) Restore & Build
+      # Restore & Build
       - name: Restore dependencies
         run: dotnet restore
 
@@ -39,7 +39,7 @@ jobs:
         run: dotnet build --configuration Release
 
       # ───────────────────────────────────────────────
-      # 5) Publish Desktop App + include resource subfolders
+      # Publish Desktop App + include resource subfolders
       - name: Publish Desktop App
         run: |
           dotnet publish src/LASYS.DesktopApp/LASYS.DesktopApp.csproj `
@@ -56,12 +56,10 @@ jobs:
           if (Test-Path "src/LASYS.DesktopApp/Data")      { Copy-Item "src/LASYS.DesktopApp/Data"      -Recurse -Destination publish/Data }
 
       # ───────────────────────────────────────────────
-      # 6) Debug: List publish folder (optional)
       - name: List publish folder (debug)
         run: dir publish -Recurse
 
       # ───────────────────────────────────────────────
-      # 7) Pack with Velopack (installer & update packages)
       - name: Pack with Velopack
         shell: pwsh
         run: |
@@ -73,34 +71,9 @@ jobs:
             --packVersion $version `
             --packDir ./publish `
             --mainExe "LASYS.DesktopApp.exe"
-
       # ───────────────────────────────────────────────
-      # 8) Rename the Velopack installer to include version
-      - name: Rename Velopack installer
-        shell: pwsh
-        run: |
-          $version = "${{ github.ref_name }}".TrimStart('v')
-          $installer = Get-ChildItem -Path Releases -Filter "*Setup.exe" | Select-Object -First 1
-
-          if ($installer) {
-            Rename-Item -Path $installer.FullName -NewName "LASYSInstaller_$version.exe"
-          } else {
-            Write-Host "Installer not found!"
-            exit 1
-          }
-
-      - name: Set version output
-        id: set_version
-        shell: pwsh
-        run: |
-          $version = "${{ github.ref_name }}".TrimStart('v')
-          echo "version=$version" >> $GITHUB_OUTPUT
-
       - name: Create GitHub Release & Upload Assets
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ github.ref_name }}
-          files: |
-            ./Releases/*.nupkg
-            ./Releases/*.json
-            ./Releases/LASYSInstaller_${{ steps.set_version.outputs.version }}.exe
+          files: ./releases/*
