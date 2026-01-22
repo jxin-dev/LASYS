@@ -1,7 +1,5 @@
-; Get the Git tag (e.g., "v1.2.3")
+; Get version from GitHub tag (e.g., "v1.2.3" → "1.2.3")
 #define GitTag GetEnv("GITHUB_REF_NAME")
-
-; Strip the leading "v" to get "1.2.3"
 #define MyAppVersion Copy(GitTag, 2, 9999)
 
 [Setup]
@@ -14,7 +12,8 @@ Compression=lzma
 SolidCompression=yes
 
 [Files]
-Source: "publish\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+; Look in parent publish folder
+Source: "..\publish\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
 Name: "{group}\LASYS Desktop App"; Filename: "{app}\LASYS.DesktopApp.exe"
