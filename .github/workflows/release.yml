@@ -24,14 +24,19 @@ jobs:
       - name: Install Velopack CLI
         run: dotnet tool install -g vpk
 
-      - name: Restore all projects
+      - name: Restore dependencies
         run: dotnet restore
 
       - name: Build all projects
         run: dotnet build --configuration Release
 
-      - name: Publish Desktop App
-        run: dotnet publish src/LASYS.DesktopApp/LASYS.DesktopApp.csproj --configuration Release --output ./publish
+      - name: Publish Desktop App (self‑contained)
+        run: |
+          dotnet publish src/LASYS.DesktopApp/LASYS.DesktopApp.csproj \
+            --configuration Release \
+            --output ./publish \
+            --runtime win‑x64 \
+            --self‑contained true
 
       - name: List publish folder (debug)
         run: dir publish
@@ -39,6 +44,7 @@ jobs:
       - name: Pack with Velopack
         shell: pwsh
         run: |
+          # Convert tag name (e.g., v1.0.0 → 1.0.0)
           $version = "${{ github.ref_name }}".TrimStart('v')
 
           vpk pack `
