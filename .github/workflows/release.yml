@@ -68,6 +68,7 @@ jobs:
 
           vpk pack `
             --packId "LASYSDesktopApp" `
+            --packTitle "LASYS Application - Upgraded" `
             --packVersion $version `
             --packDir ./publish `
             --mainExe "LASYS.DesktopApp.exe"
