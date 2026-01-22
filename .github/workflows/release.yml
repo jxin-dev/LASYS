@@ -3,10 +3,10 @@ name: Build, Pack & Release
 on:
   push:
     tags:
-      - 'v*'  # triggers only when a version tag like v1.0.0 is pushed
+      - 'v*' # triggers only on version tags like v1.0.0
 
 permissions:
-  contents: write  # required to create GitHub Releases
+  contents: write  # needed to create GitHub Releases
 
 jobs:
   build-and-pack:
@@ -20,7 +20,7 @@ jobs:
 
       # ───────────────────────────────────────────────
       # 2) Setup .NET SDK
-      - name: Setup .NET 9
+      - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '9.0.x'
@@ -39,7 +39,7 @@ jobs:
         run: dotnet build --configuration Release
 
       # ───────────────────────────────────────────────
-      # 5) Publish Desktop App as a self-contained single file
+      # 5) Publish Desktop App + include resource subfolders
       - name: Publish Desktop App
         run: |
           dotnet publish src/LASYS.DesktopApp/LASYS.DesktopApp.csproj `
@@ -51,38 +51,39 @@ jobs:
             -p:EnableCompressionInSingleFile=true `
             -o publish
 
+          # ─ Copied example resource folders into publish
+          # Adjust these according to your project’s structure
+          if (Test-Path "src/LASYS.DesktopApp/Resources") { Copy-Item "src/LASYS.DesktopApp/Resources" -Recurse -Destination publish/Resources }
+          if (Test-Path "src/LASYS.DesktopApp/Data")      { Copy-Item "src/LASYS.DesktopApp/Data"      -Recurse -Destination publish/Data }
+
       # ───────────────────────────────────────────────
       # 6) Debug: List publish folder (optional)
       - name: List publish folder (debug)
-        run: dir publish
+        run: dir publish -Recurse
 
       # ───────────────────────────────────────────────
-      # 7) Pack with Velopack
+      # 7) Pack with Velopack (with versioned installer filename)
       - name: Pack with Velopack
         shell: pwsh
         run: |
-          # strip "v" from the tag (v1.0.0 → 1.0.0)
+          # strip leading "v" from the tag (v1.2.3 → 1.2.3)
           $version = "${{ github.ref_name }}".TrimStart('v')
+
           vpk pack `
             --packId "LASYSDesktopApp" `
             --packVersion $version `
             --packDir ./publish `
-            --mainExe "LASYS.DesktopApp.exe"
+            --mainExe "LASYS.DesktopApp.exe" `
+            --installerBaseFileName "LASYSInstaller_$version"
 
       # ───────────────────────────────────────────────
-      # 8) Compile Inno Setup Installer
-      - name: Compile Inno Setup Installer
-        uses: Minionguyjpro/Inno-Setup-Action@v1.2.2
-        with:
-          path: installer/setup.iss
-          options: /O+   # overwrite existing output
-
-      # ───────────────────────────────────────────────
-      # 9) Create GitHub Release & Upload Assets
+      # 8) Create GitHub Release & Upload Assets
       - name: Create GitHub Release & Upload Assets
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ github.ref_name }}
           files: |
-            ./publish/*.vpk
-            installer/Output/*.exe
+            # All Velopack release artifacts
+            ./Releases/*.nupkg
+            ./Releases/*.json
+            ./Releases/*.exe
