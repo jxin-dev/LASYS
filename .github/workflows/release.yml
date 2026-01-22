@@ -31,7 +31,7 @@ jobs:
         run: dotnet build --configuration Release
 
       - name: Publish Desktop App (self‑contained)
-        run: dotnet publish src/LASYS.DesktopApp/LASYS.DesktopApp.csproj -c Release -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true -p:PublishTrimmed=true -p:RuntimeIdentifier=win-x64 -p:PublishSelfContained=true -o ./publish
+        run: dotnet publish src/LASYS.DesktopApp/LASYS.DesktopApp.csproj -c Release -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true -p:RuntimeIdentifier=win-x64 -p:PublishSelfContained=true -o ./publish
 
       - name: List publish folder (debug)
         run: dir publish
