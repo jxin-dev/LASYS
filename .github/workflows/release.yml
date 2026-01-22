@@ -31,12 +31,7 @@ jobs:
         run: dotnet build --configuration Release
 
       - name: Publish Desktop App (self‑contained)
-        run: |
-          dotnet publish src/LASYS.DesktopApp/LASYS.DesktopApp.csproj \
-            --configuration Release \
-            --output ./publish \
-            --runtime win‑x64 \
-            --self‑contained true
+        run: dotnet publish src/LASYS.DesktopApp/LASYS.DesktopApp.csproj --configuration Release --output ./publish --runtime win‑x64 --self‑contained true
 
       - name: List publish folder (debug)
         run: dir publish
