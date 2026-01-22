@@ -17,6 +17,13 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LASYS.DesktopApp", "src\LAS
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LASYS.Camera", "src\LASYS.Camera\LASYS.Camera.csproj", "{6DC60008-9F57-462F-BFEF-FA7A061A07C8}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".github", ".github", "{2D1441FB-C94C-426F-A6EC-9A0E04F970B0}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "workflows", "workflows", "{4E69ECC7-707F-4E28-BC7D-D1CC80596735}"
+	ProjectSection(SolutionItems) = preProject
+		release.yml = release.yml
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -58,6 +65,7 @@ Global
 		{F01AF403-7398-4B6B-BEC6-E89BDD641AF9} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 		{5715389E-809F-4F96-A42E-45AC2CF9396F} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 		{6DC60008-9F57-462F-BFEF-FA7A061A07C8} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+		{4E69ECC7-707F-4E28-BC7D-D1CC80596735} = {2D1441FB-C94C-426F-A6EC-9A0E04F970B0}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {CBEA964B-E581-4157-AC25-888FABC63D15}
