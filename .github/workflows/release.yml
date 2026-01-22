@@ -13,24 +13,20 @@ jobs:
     runs-on: windows-latest
 
     steps:
-      # ───────────────────────────────────────────────
       # 1) Checkout the repository
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # ───────────────────────────────────────────────
       # 2) Setup .NET SDK
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '9.0.x'
 
-      # ───────────────────────────────────────────────
       # 3) Install Velopack CLI
       - name: Install Velopack CLI
         run: dotnet tool install -g vpk
 
-      # ───────────────────────────────────────────────
       # 4) Restore & Build
       - name: Restore dependencies
         run: dotnet restore
@@ -38,8 +34,7 @@ jobs:
       - name: Build all projects
         run: dotnet build --configuration Release
 
-      # ───────────────────────────────────────────────
-      # 5) Publish Desktop App + include resource subfolders
+      # 5) Publish Desktop App + include resources
       - name: Publish Desktop App
         run: |
           dotnet publish src/LASYS.DesktopApp/LASYS.DesktopApp.csproj `
@@ -51,33 +46,37 @@ jobs:
             -p:EnableCompressionInSingleFile=true `
             -o publish
 
-          # ─ Copied example resource folders into publish
-          # Adjust these according to your project’s structure
+          # Optional: copy resource folders
           if (Test-Path "src/LASYS.DesktopApp/Resources") { Copy-Item "src/LASYS.DesktopApp/Resources" -Recurse -Destination publish/Resources }
           if (Test-Path "src/LASYS.DesktopApp/Data")      { Copy-Item "src/LASYS.DesktopApp/Data"      -Recurse -Destination publish/Data }
 
-      # ───────────────────────────────────────────────
       # 6) Debug: List publish folder (optional)
       - name: List publish folder (debug)
         run: dir publish -Recurse
 
-      # ───────────────────────────────────────────────
-      # 7) Pack with Velopack (with versioned installer filename)
+      # 7) Pack with Velopack (no filename override)
       - name: Pack with Velopack
         shell: pwsh
         run: |
-          # strip leading "v" from the tag (v1.2.3 → 1.2.3)
           $version = "${{ github.ref_name }}".TrimStart('v')
-
           vpk pack `
             --packId "LASYSDesktopApp" `
             --packVersion $version `
             --packDir ./publish `
-            --mainExe "LASYS.DesktopApp.exe" `
-            --installerBaseFileName "LASYSInstaller_$version"
+            --mainExe "LASYS.DesktopApp.exe"
 
-      # ───────────────────────────────────────────────
-      # 8) Create GitHub Release & Upload Assets
+      # 8) Rename the Velopack installer to include version
+      - name: Rename Velopack installer
+        shell: pwsh
+        run: |
+          $version = "${{ github.ref_name }}".TrimStart('v')
+          $defaultInstaller = "Releases\LASYSDesktopApp-Setup.exe"
+          $newInstaller = "Releases\LASYSInstaller_$version.exe"
+          if (Test-Path $defaultInstaller) {
+            Rename-Item -Path $defaultInstaller -NewName $newInstaller
+          }
+
+      # 9) Create GitHub Release & Upload Assets
       - name: Create GitHub Release & Upload Assets
         uses: softprops/action-gh-release@v1
         with:
@@ -86,4 +85,4 @@ jobs:
             # All Velopack release artifacts
             ./Releases/*.nupkg
             ./Releases/*.json
-            ./Releases/*.exe
+            ./Releases/LASYSInstaller_${{ github.ref_name.TrimStart('v') }}.exe
