@@ -1,3 +1,6 @@
+#define GitTag GetEnv("GITHUB_REF_NAME")
+#define MyAppVersion Copy(GitTag, 2, GetLength(GitTag) - 1)
+
 [Setup]
 AppName=LASYS Desktop App
 AppVersion={#MyAppVersion}
