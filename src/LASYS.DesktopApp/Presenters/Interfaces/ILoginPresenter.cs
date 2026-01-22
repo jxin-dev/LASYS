@@ -5,6 +5,7 @@ namespace LASYS.DesktopApp.Presenters.Interfaces
 {
     public interface ILoginPresenter : IPresenter<ILoginView>
     {
+        Task CheckForUpdatesAsync();
     }
     
 }

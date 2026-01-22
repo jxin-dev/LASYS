@@ -6,6 +6,8 @@ namespace LASYS.DesktopApp.Views.Forms
     public partial class LoginForm : Form, ILoginView
     {
         public event EventHandler? LoginClicked;
+        public event Func<object?, EventArgs, Task>? CheckForUpdatesRequested;
+
         public string Username => txtUsername.Text;
         public string Password => txtPassword.Text;
 
@@ -17,6 +19,8 @@ namespace LASYS.DesktopApp.Views.Forms
             {
                 txtPassword.UseSystemPasswordChar = !chkShowPassword.Checked;
             };
+
+            lnklblCheckUpdates.Click += (s, e) => CheckForUpdatesRequested?.Invoke(this, EventArgs.Empty);
         }
 
         protected override void OnClosed(EventArgs e)
@@ -31,6 +35,12 @@ namespace LASYS.DesktopApp.Views.Forms
         public void ShowMessage(string errorMessage)
         {
             MessageBox.Show(errorMessage, "Login", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+
+        public void ShowStatusMessage(string message, MessageBoxIcon icon)
+        {
+            MessageBox.Show(message, "Check for updates", MessageBoxButtons.OK, icon);
+
         }
     }
 }

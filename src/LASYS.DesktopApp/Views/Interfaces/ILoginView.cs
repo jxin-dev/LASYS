@@ -8,5 +8,9 @@ namespace LASYS.DesktopApp.Views.Interfaces
         string Username { get; }
         string Password { get; }
         void ShowMessage(string errorMessage);
+
+
+        event Func<object?, EventArgs, Task>? CheckForUpdatesRequested;
+        void ShowStatusMessage(string message, MessageBoxIcon icon);
     }
 }

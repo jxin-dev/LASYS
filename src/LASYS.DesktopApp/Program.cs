@@ -4,19 +4,19 @@ using LASYS.DesktopApp.Presenters;
 using LASYS.DesktopApp.Views.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Velopack;
 
 namespace LASYS.DesktopApp
 {
     internal static class Program
     {
-        /// <summary>
-        ///  The main entry point for the application.
-        /// </summary>
+       
         [STAThread]
         static void Main()
         {
-            // To customize application configuration such as set high DPI settings or default font,
-            // see https://aka.ms/applicationconfiguration.
+
+            VelopackApp.Build().Run();
+
             ApplicationConfiguration.Initialize();
             var host = Host.CreateDefaultBuilder()
            .ConfigureServices(services =>
