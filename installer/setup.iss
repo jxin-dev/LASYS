@@ -1,12 +1,15 @@
+; Get the Git tag (e.g., "v1.2.3")
 #define GitTag GetEnv("GITHUB_REF_NAME")
-#define MyAppVersion Copy(GitTag, 2, GetLength(GitTag) - 1)
+
+; Strip the leading "v" to get "1.2.3"
+#define MyAppVersion Copy(GitTag, 2, 9999)
 
 [Setup]
 AppName=LASYS Desktop App
 AppVersion={#MyAppVersion}
 DefaultDirName={pf}\LASYS Desktop App
 DefaultGroupName=LASYS Desktop App
-OutputBaseFilename=LASYSInstaller_{#StringChange(GetEnv("GITHUB_REF_NAME"), "refs/tags/", "")}
+OutputBaseFilename=LASYSInstaller_{#MyAppVersion}
 Compression=lzma
 SolidCompression=yes
 
