@@ -80,14 +80,15 @@ jobs:
         shell: pwsh
         run: |
           $version = "${{ github.ref_name }}".TrimStart('v')
-          $defaultInstaller = "Releases\LASYSDesktopApp-Setup.exe"
-          $newInstaller = "Releases\LASYSInstaller_$version.exe"
-          if (Test-Path $defaultInstaller) {
-            Rename-Item -Path $defaultInstaller -NewName $newInstaller
+          $installer = Get-ChildItem -Path Releases -Filter "*Setup.exe" | Select-Object -First 1
+
+          if ($installer) {
+            Rename-Item -Path $installer.FullName -NewName "LASYSInstaller_$version.exe"
+          } else {
+            Write-Host "Installer not found!"
+            exit 1
           }
 
-      # ───────────────────────────────────────────────
-      # 9) Set the trimmed version as an output
       - name: Set version output
         id: set_version
         shell: pwsh
@@ -95,15 +96,11 @@ jobs:
           $version = "${{ github.ref_name }}".TrimStart('v')
           echo "version=$version" >> $GITHUB_OUTPUT
 
-      # ───────────────────────────────────────────────
-      # 10) Create GitHub Release & Upload Assets
       - name: Create GitHub Release & Upload Assets
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ github.ref_name }}
           files: |
-            # Velopack update artifacts
             ./Releases/*.nupkg
             ./Releases/*.json
-            # Renamed installer with version
             ./Releases/LASYSInstaller_${{ steps.set_version.outputs.version }}.exe
