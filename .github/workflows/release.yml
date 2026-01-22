@@ -1,12 +1,12 @@
-name: Velopack Build & Release
+name: Build, Pack & Release
 
 on:
   push:
     tags:
-      - 'v*'
+      - 'v*'   # run only on tag pushes, e.g. v1.0.0
 
 permissions:
-  contents: write
+  contents: write   # required to create and upload releases
 
 jobs:
   build-and-pack:
@@ -20,7 +20,7 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '9.0.x'
-          
+
       - name: Install Velopack CLI
         run: dotnet tool install -g vpk
 
@@ -33,10 +33,12 @@ jobs:
       - name: Publish Desktop App
         run: dotnet publish src/LASYS.DesktopApp/LASYS.DesktopApp.csproj --configuration Release --output ./publish
 
+      - name: List publish folder (debug)
+        run: dir publish
+
       - name: Pack with Velopack
         shell: pwsh
         run: |
-          # Trim "v" off the tag to use as version
           $version = "${{ github.ref_name }}".TrimStart('v')
 
           vpk pack `
@@ -44,9 +46,11 @@ jobs:
             --packVersion $version `
             --packDir ./publish `
             --mainExe "LASYS.DesktopApp.exe"
-            
+
       - name: Create GitHub Release & Upload Assets
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ github.ref_name }}
-          files: ./publish/**/*
+          files: |
+            ./publish/LASYS.DesktopApp.exe
+            ./publish/*.vpk
