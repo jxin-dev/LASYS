@@ -1,0 +1,76 @@
+Modification of existing LASYS Application
+- Add an option in the Master Label Registry UI to tag whether a registered label supports OCR.
+- Modify the database table to include a new column for tagging OCR support.
+
+Login
+- Repository for User Login and Information
+- Implementation of User Repository in Login UI
+- Add an option to log in to either the production database or the test database.
+
+Barcode Label Work Order
+- Repository for Label Work Order
+- Displays implemented data in the label work order list view with OCR support
+
+Camera Setup
+- The selected camera configuration shall be saved to the configuration file. (device_config.json)
+
+Barcode Scanner Setup (Controlled Scanning)
+- Barcode configuration saved to the configuration file (device_config.json).
+
+{
+  "barcode_scanner": {
+    "enabled": true,
+    "port": "COM3",
+    "baud_rate": 9600,
+    "auto_scan": true,
+  },
+  "camera": {
+    "enabled": true,
+    "camera_id": 0,
+    "frame_width": 3840,
+    "frame_height": 2160
+    "frame_rate": 30
+  }
+}
+
+OCR Calibration
+- OCR calibration configuration per machine, enabling registration of multiple products and applying validation when a product is not yet registered. (ocr_config.json)
+
+{
+  "products": [
+    {
+      "item_code": "SR+OX2051C1",
+      "coordinates": {
+        "X": 640,
+        "Y": 376,
+        "Width": 48,
+        "Height": 18,
+        "ImageWidth": 1097,
+        "ImageHeight": 611
+      }
+    },
+    {
+      "item_code": "SR+OX2051C2",
+      "coordinates": {
+        "X": 640,
+        "Y": 376,
+        "Width": 48,
+        "Height": 18,
+        "ImageWidth": 1097,
+        "ImageHeight": 611
+      }
+    }
+  ]
+}
+
+
+Printing Label
+- Design of the user interface
+- Navigates to the Label Work Order list view upon work order selection or scanning barcode to showing the printing label interface
+
+
+Validation Failed Popup
+- Shown on the label printing screen when an error occurs
+- Appears when OCR or barcode scanning fails, allows retry, and marks the sequence as failed if retry is canceled
+
+
