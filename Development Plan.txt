@@ -22,13 +22,13 @@ Barcode Scanner Setup (Controlled Scanning)
     "enabled": true,
     "port": "COM3",
     "baud_rate": 9600,
-    "auto_scan": true,
+    "auto_scan": true
   },
   "camera": {
     "enabled": true,
     "camera_id": 0,
     "frame_width": 3840,
-    "frame_height": 2160
+    "frame_height": 2160,
     "frame_rate": 30
   }
 }
