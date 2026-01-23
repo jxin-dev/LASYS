@@ -37,11 +37,12 @@ namespace LASYS.DesktopApp.Views.UserControls
             {
                 if (cbxCameras.SelectedItem is not CameraDevice selectedCamera)
                 {
-                    MessageBox.Show("Please select a camera.");
+                    MessageBox.Show("Please select a camera.","Camera Selection", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
                     return;
                 }
 
                 _isPreviewing = true;
+                cbxCameras.Enabled = false;
                 btnPreview.Text = "Stop";
                 btnPreview.Enabled = false;
                 _loadingLabel.Start();
@@ -53,6 +54,7 @@ namespace LASYS.DesktopApp.Views.UserControls
             else
             {
                 _isPreviewing = false;
+                cbxCameras.Enabled = true;
                 btnPreview.Text = "Preview";
                 _cameraService.StopPreview(picCameraPreview);
             }
