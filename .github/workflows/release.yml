@@ -3,10 +3,10 @@ name: Build, Pack & Release
 on:
   push:
     tags:
-      - 'v*'  # triggers only when a version tag like v1.0.0 is pushed
+      - 'v*' # triggers only on version tags like v1.0.0
 
 permissions:
-  contents: write  # required to create GitHub Releases
+  contents: write  # needed to create GitHub Releases
 
 jobs:
   build-and-pack:
@@ -14,24 +14,24 @@ jobs:
 
     steps:
       # ───────────────────────────────────────────────
-      # 1) Checkout the repository
+      # Checkout the repository
       - name: Checkout code
         uses: actions/checkout@v4
 
       # ───────────────────────────────────────────────
-      # 2) Setup .NET SDK
-      - name: Setup .NET 9
+      # Setup .NET SDK
+      - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '9.0.x'
 
       # ───────────────────────────────────────────────
-      # 3) Install Velopack CLI
+      # Install Velopack CLI
       - name: Install Velopack CLI
         run: dotnet tool install -g vpk
 
       # ───────────────────────────────────────────────
-      # 4) Restore & Build
+      # Restore & Build
       - name: Restore dependencies
         run: dotnet restore
 
@@ -39,51 +39,42 @@ jobs:
         run: dotnet build --configuration Release
 
       # ───────────────────────────────────────────────
-      # 5) Publish Desktop App as a self-contained single file
+      # Publish Desktop App + include resource subfolders
       - name: Publish Desktop App
         run: |
-          dotnet publish src/LASYS.DesktopApp/LASYS.DesktopApp.csproj ^
-            -c Release ^
-            -p:RuntimeIdentifier=win-x64 ^
-            -p:PublishSelfContained=true ^
-            -p:PublishSingleFile=true ^
-            -p:IncludeNativeLibrariesForSelfExtract=true ^
-            -p:EnableCompressionInSingleFile=true ^
+          dotnet publish src/LASYS.DesktopApp/LASYS.DesktopApp.csproj `
+            -c Release `
+            -p:RuntimeIdentifier=win-x64 `
+            -p:PublishSelfContained=true `
+            -p:PublishSingleFile=true `
+            -p:IncludeNativeLibrariesForSelfExtract=true `
+            -p:EnableCompressionInSingleFile=true `
             -o publish
 
-      # ───────────────────────────────────────────────
-      # 6) Debug: List publish folder (optional)
-      - name: List publish folder (debug)
-        run: dir publish
+          # Copy additional resource folders if they exist
+          if (Test-Path "src/LASYS.DesktopApp/Resources") { Copy-Item "src/LASYS.DesktopApp/Resources" -Recurse -Destination publish/Resources }
+          if (Test-Path "src/LASYS.DesktopApp/Data")      { Copy-Item "src/LASYS.DesktopApp/Data"      -Recurse -Destination publish/Data }
 
       # ───────────────────────────────────────────────
-      # 7) Pack with Velopack
+      - name: List publish folder (debug)
+        run: dir publish -Recurse
+
+      # ───────────────────────────────────────────────
       - name: Pack with Velopack
         shell: pwsh
         run: |
-          # strip "v" from the tag (v1.0.0 → 1.0.0)
+          # strip leading "v" from the tag (v1.0.0 → 1.0.0)
           $version = "${{ github.ref_name }}".TrimStart('v')
+
           vpk pack `
             --packId "LASYSDesktopApp" `
+            --packTitle "LASYS Application - Upgraded" `
             --packVersion $version `
             --packDir ./publish `
             --mainExe "LASYS.DesktopApp.exe"
-
       # ───────────────────────────────────────────────
-      # 8) Compile Inno Setup Installer
-      - name: Compile Inno Setup Installer
-        uses: Minionguyjpro/Inno-Setup-Action@v1.2.2
-        with:
-          path: installer/setup.iss
-          options: /O+   # overwrite existing output
-
-      # ───────────────────────────────────────────────
-      # 9) Create GitHub Release & Upload Assets
       - name: Create GitHub Release & Upload Assets
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ github.ref_name }}
-          files: |
-            ./publish/LASYS.DesktopApp.exe
-            ./publish/*.vpk
-            "*.exe"   # includes the Inno Setup installer (e.g., setup.exe)
+          files: ./releases/*
