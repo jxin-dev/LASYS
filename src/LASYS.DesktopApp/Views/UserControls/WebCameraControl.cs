@@ -28,7 +28,15 @@ namespace LASYS.DesktopApp.Views.UserControls
 
             _cameraService = new CameraService();
             Load += WebCameraControl_Load;
+
             btnPreview.Click += BtnPreview_Click;
+            btnSave.Click += BtnSave_Click;
+            btnSave.Visible = false;
+        }
+
+        private void BtnSave_Click(object? sender, EventArgs e)
+        {
+
         }
 
         private async void BtnPreview_Click(object? sender, EventArgs e)
@@ -37,7 +45,11 @@ namespace LASYS.DesktopApp.Views.UserControls
             {
                 if (cbxCameras.SelectedItem is not CameraDevice selectedCamera)
                 {
-                    MessageBox.Show("Please select a camera.","Camera Selection", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+                    MessageBox.Show(
+                        "Please select a camera.",
+                        "Camera Selection",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Exclamation);
                     return;
                 }
 
@@ -45,32 +57,28 @@ namespace LASYS.DesktopApp.Views.UserControls
                 cbxCameras.Enabled = false;
                 btnPreview.Text = "Stop";
                 btnPreview.Enabled = false;
+                btnSave.Visible = false;
+
                 _loadingLabel.Start();
 
-                _cameraService.PreviewStarted += OnPreviewStarted;
+                _ = _cameraService.StartPreviewAsync(selectedCamera, picCameraPreview);
 
-                await Task.Run(() => _cameraService.StartPreviewAsync(selectedCamera, picCameraPreview));
+                // wait ONLY for first frame
+                await _cameraService.PreviewStartedAsync;
+
+                btnPreview.Enabled = true;
+                btnSave.Visible = true;
+                _loadingLabel.Stop();
             }
             else
             {
                 _isPreviewing = false;
                 cbxCameras.Enabled = true;
                 btnPreview.Text = "Preview";
-                _cameraService.StopPreview(picCameraPreview);
-            }
-        }
+                btnSave.Visible = false;
 
-        private void OnPreviewStarted()
-        {
-            if (InvokeRequired)
-            {
-                Invoke(OnPreviewStarted);
-                return;
-            }
-            btnPreview.Enabled = true;
-            _loadingLabel.Stop();
-            // Unsubscribe (optional, to avoid double calls)
-            _cameraService.PreviewStarted -= OnPreviewStarted;
+                _cameraService.StopPreview(picCameraPreview);
+            } 
         }
 
         private void WebCameraControl_Load(object? sender, EventArgs e)

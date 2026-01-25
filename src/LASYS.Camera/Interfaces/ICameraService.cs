@@ -9,6 +9,7 @@ namespace LASYS.Camera.Interfaces
         VideoCapture GetCamera(int index);
         Task StartPreviewAsync(CameraDevice camera, PictureBox previewBox);
         void StopPreview(PictureBox previewBox);
-        event Action? PreviewStarted;
+
+        Task PreviewStartedAsync { get; }
     }
 }

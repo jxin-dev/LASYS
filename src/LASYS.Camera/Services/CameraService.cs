@@ -12,8 +12,10 @@ namespace LASYS.Camera.Services
         private CancellationTokenSource? _cts;
         private bool _firstFrameShown = false;
 
-        public event Action? PreviewStarted;
+        //public event Action? PreviewStarted;
 
+        private TaskCompletionSource<bool>? _previewStartedTcs;
+        public Task PreviewStartedAsync =>_previewStartedTcs?.Task ?? Task.CompletedTask;
         public List<CameraDevice> GetAvailableCameras()
         {
             var devices = DsDevice.GetDevicesOfCat(FilterCategory.VideoInputDevice);
@@ -38,33 +40,36 @@ namespace LASYS.Camera.Services
 
             return capture;
         }
-
-        public async Task StartPreviewAsync(CameraDevice camera, PictureBox previewBox)
+        private void PreviewLoop(PictureBox previewBox, CancellationToken token)
         {
-            _firstFrameShown = false;
-            StopPreview(previewBox);
+            int failedReads = 0;
 
-            _capture = new VideoCapture(camera.Index);
-            if (!_capture.IsOpened())
-                throw new InvalidOperationException($"Cannot open camera: {camera.Name}");
-
-            _cts = new CancellationTokenSource();
-            var token = _cts.Token;
-
-            await Task.Run(() =>
+            try
             {
                 using var frame = new Mat();
+
                 while (!token.IsCancellationRequested)
                 {
-                    if (!_capture.Read(frame) || frame.Empty())
+                    if (!_capture!.Read(frame) || frame.Empty())
+                    {
+                        failedReads++;
+                        if (failedReads > 10) // ~300ms = disconnect
+                            break;
+
+                        Thread.Sleep(30);
                         continue;
+                    }
+
+                    failedReads = 0;
 
                     using var bitmap = BitmapConverter.ToBitmap(frame);
+
                     if (!_firstFrameShown)
                     {
                         _firstFrameShown = true;
-                        PreviewStarted?.Invoke(); // fire event once
+                        _previewStartedTcs?.TrySetResult(true);
                     }
+
                     if (previewBox.InvokeRequired)
                     {
                         previewBox.Invoke(() =>
@@ -79,15 +84,64 @@ namespace LASYS.Camera.Services
                         previewBox.Image = (Bitmap)bitmap.Clone();
                     }
 
-                    Thread.Sleep(30); // ~30 FPS
+                    Thread.Sleep(30);
                 }
+            }
+            catch (Exception ex)
+            {
+                _previewStartedTcs?.TrySetException(ex);
+            }
+            finally
+            {
+                CleanupPreview(previewBox);
+            }
+        }
+        private void CleanupPreview(PictureBox previewBox)
+        {
+            try
+            {
+                _capture?.Release();
+                _capture?.Dispose();
+            }
+            catch { }
+
+            _capture = null;
+
+            _cts?.Dispose();
+            _cts = null;
+
+            if (previewBox.IsHandleCreated)
+            {
                 previewBox.Invoke(() =>
                 {
                     previewBox.Image?.Dispose();
-                    previewBox.Image = null; // clear when stopped
+                    previewBox.Image = null;
                 });
-            }, token);
-           
+            }
+        }
+
+        public Task StartPreviewAsync(CameraDevice camera, PictureBox previewBox)
+        {
+            if (_cts != null)
+                throw new InvalidOperationException("Preview already running.");
+
+            _previewStartedTcs = new TaskCompletionSource<bool>(
+                TaskCreationOptions.RunContinuationsAsynchronously);
+
+            _firstFrameShown = false;
+
+            _capture = new VideoCapture(camera.Index);
+            if (!_capture.IsOpened())
+                throw new InvalidOperationException($"Cannot open camera: {camera.Name}");
+
+            _cts = new CancellationTokenSource();
+            var token = _cts.Token;
+
+            // fire-and-forget background loop
+            _ = Task.Run(() => PreviewLoop(previewBox, token), token);
+
+            return Task.CompletedTask;
+            
         }
 
         public void StopPreview(PictureBox previewBox)
@@ -96,43 +150,7 @@ namespace LASYS.Camera.Services
                 return;
 
             _cts.Cancel();
-
-            // Give background loop a short time to exit gracefully
-            Task.Delay(100).Wait();
-
-            try
-            {
-                _capture?.Release();
-                _capture?.Dispose();
-                _capture = null;
-            }
-            catch { /* ignore any release errors */ }
-
-            _cts.Dispose();
-            _cts = null;
-
-            // ✅ Clear the PictureBox safely (on UI thread)
-            if (previewBox.InvokeRequired)
-            {
-                previewBox.Invoke(() =>
-                {
-                    previewBox.Image?.Dispose();
-                    previewBox.Image = null;  // makes it blank
-                });
-            }
-            else
-            {
-                previewBox.Image?.Dispose();
-                previewBox.Image = null; // makes it blank
-            }
         }
-
-        //public void StopPreview()
-        //{
-        //    _cts?.Cancel();
-        //    _capture?.Release();
-        //    _capture = null;
-        //}
 
     }
 }

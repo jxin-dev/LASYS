@@ -31,6 +31,7 @@
             pnlHeader = new Panel();
             label1 = new Label();
             pnlContent = new Panel();
+            btnSave = new Button();
             picCameraPreview = new PictureBox();
             btnPreview = new Button();
             label2 = new Label();
@@ -65,14 +66,30 @@
             // 
             pnlContent.Anchor = AnchorStyles.None;
             pnlContent.BackColor = Color.White;
+            pnlContent.Controls.Add(btnSave);
             pnlContent.Controls.Add(picCameraPreview);
             pnlContent.Controls.Add(btnPreview);
             pnlContent.Controls.Add(label2);
             pnlContent.Controls.Add(cbxCameras);
-            pnlContent.Location = new Point(160, 78);
+            pnlContent.Location = new Point(160, 89);
             pnlContent.Name = "pnlContent";
-            pnlContent.Size = new Size(571, 416);
+            pnlContent.Size = new Size(571, 438);
             pnlContent.TabIndex = 1;
+            // 
+            // btnSave
+            // 
+            btnSave.Anchor = AnchorStyles.Top;
+            btnSave.BackColor = SystemColors.HotTrack;
+            btnSave.FlatAppearance.BorderColor = SystemColors.HotTrack;
+            btnSave.FlatStyle = FlatStyle.Flat;
+            btnSave.Font = new Font("Segoe UI Semibold", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            btnSave.ForeColor = Color.White;
+            btnSave.Location = new Point(433, 392);
+            btnSave.Name = "btnSave";
+            btnSave.Size = new Size(110, 29);
+            btnSave.TabIndex = 4;
+            btnSave.Text = "Save";
+            btnSave.UseVisualStyleBackColor = false;
             // 
             // picCameraPreview
             // 
@@ -80,7 +97,7 @@
             picCameraPreview.BackColor = Color.FromArgb(64, 64, 64);
             picCameraPreview.Location = new Point(27, 115);
             picCameraPreview.Name = "picCameraPreview";
-            picCameraPreview.Size = new Size(516, 278);
+            picCameraPreview.Size = new Size(516, 271);
             picCameraPreview.TabIndex = 3;
             picCameraPreview.TabStop = false;
             // 
@@ -130,7 +147,7 @@
             Controls.Add(pnlContent);
             Controls.Add(pnlHeader);
             Name = "WebCameraControl";
-            Size = new Size(833, 519);
+            Size = new Size(833, 541);
             pnlHeader.ResumeLayout(false);
             pnlHeader.PerformLayout();
             pnlContent.ResumeLayout(false);
@@ -148,5 +165,6 @@
         private Button btnPreview;
         private Label label2;
         private ComboBox cbxCameras;
+        private Button btnSave;
     }
 }
