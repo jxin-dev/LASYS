@@ -4,7 +4,7 @@ namespace LASYS.Application.Interfaces
 {
     public interface IDeviceConfigJsonRepository
     {
-        DeviceConfiguration Load();
-        void Save(DeviceConfiguration config);
+        Task<DeviceConfiguration> LoadAsync();
+        Task SaveAsync(DeviceConfiguration config);
     }
 }

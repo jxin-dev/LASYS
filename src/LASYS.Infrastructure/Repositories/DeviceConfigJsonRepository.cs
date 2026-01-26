@@ -6,21 +6,37 @@ namespace LASYS.Infrastructure.Repositories
 {
     public class DeviceConfigJsonRepository : IDeviceConfigJsonRepository
     {
-        private readonly string _filePath = "device_config.json";
-        public DeviceConfiguration Load()
+        private readonly string _filePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "device_config.json");
+        public async Task<DeviceConfiguration> LoadAsync()
         {
-            if (!File.Exists(_filePath))
+            try
             {
+                if (!File.Exists(_filePath))
+                    return new DeviceConfiguration();
+
+                var json = await File.ReadAllTextAsync(_filePath);
+                return JsonConvert.DeserializeObject<DeviceConfiguration>(json)
+                       ?? new DeviceConfiguration();
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Failed to load config: {ex.Message}");
                 return new DeviceConfiguration();
             }
-            var json = File.ReadAllText(_filePath);
-            return JsonConvert.DeserializeObject<DeviceConfiguration>(json) ?? new DeviceConfiguration();
         }
 
-        public void Save(DeviceConfiguration config)
+        public async Task SaveAsync(DeviceConfiguration config)
         {
-            var json = JsonConvert.SerializeObject(config, Formatting.Indented);
-            File.WriteAllText(_filePath, json);
+            try
+            {
+                var json = JsonConvert.SerializeObject(config, Formatting.Indented);
+                await File.WriteAllTextAsync(_filePath, json);
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Failed to save config: {ex.Message}");
+                throw;
+            }
         }
     }
 }

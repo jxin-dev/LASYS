@@ -1,4 +1,5 @@
-﻿using LASYS.Application.Interfaces;
+﻿using System.Threading.Tasks;
+using LASYS.Application.Interfaces;
 using LASYS.Domain.DeviceSettings;
 
 namespace LASYS.Application.Services
@@ -12,23 +13,23 @@ namespace LASYS.Application.Services
             _deviceConfigJsonRepository = deviceConfigJsonRepository;
         }
 
-        public DeviceConfiguration Load()
+        public async Task<DeviceConfiguration> LoadAsync()
         {
-            return _deviceConfigJsonRepository.Load();
+            return await _deviceConfigJsonRepository.LoadAsync();
         }
 
-        public void UpdateCamera(Camera camera)
+        public async Task UpdateCameraAsync(CameraConfig camera)
         {
-            var config = _deviceConfigJsonRepository.Load();
+            var config = await _deviceConfigJsonRepository.LoadAsync();
             config.Camera = camera;
-            _deviceConfigJsonRepository.Save(config);
+            await _deviceConfigJsonRepository.SaveAsync(config);
         }
 
-        public void UpdateBarcodeScanner(BarcodeScanner barcodeScanner)
+        public async Task UpdateBarcodeScannerAsync(BarcodeScannerConfig barcodeScanner)
         {
-            var config = _deviceConfigJsonRepository.Load();
+            var config = await _deviceConfigJsonRepository.LoadAsync();
             config.BarcodeScanner = barcodeScanner;
-            _deviceConfigJsonRepository.Save(config);
+            await _deviceConfigJsonRepository.SaveAsync(config);
         }
     }
 }
