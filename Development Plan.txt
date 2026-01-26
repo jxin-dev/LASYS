@@ -46,8 +46,9 @@ OCR Calibration
         "Width": 48,
         "Height": 18,
         "ImageWidth": 1097,
-        "ImageHeight": 611
-      }
+        "ImageHeight": 611,
+      },
+     "RegisteredAt: "2025-05-29T10:30:00"
     },
     {
       "item_code": "SR+OX2051C2",
@@ -58,7 +59,8 @@ OCR Calibration
         "Height": 18,
         "ImageWidth": 1097,
         "ImageHeight": 611
-      }
+      },
+     "RegisteredAt: "2025-05-29T10:30:00"
     }
   ]
 }
