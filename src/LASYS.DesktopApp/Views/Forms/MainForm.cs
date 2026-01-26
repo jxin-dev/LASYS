@@ -79,7 +79,7 @@ namespace LASYS.DesktopApp.Views.Forms
             };
 
 
-            //deviceSetup.SubItems[1].Clicked += (_, _) => LoadView(new OcrCalibrationControl());
+            deviceSetup.SubItems[1].Clicked += (_, _) => LoadView(new OCRCalibrationControl());
             //deviceSetup.SubItems[2].Clicked += (_, _) => LoadView(new SatoPrinterControl());
             //deviceSetup.SubItems[3].Clicked += (_, _) => LoadView(new BarcodeScannerControl());
         }
@@ -95,6 +95,14 @@ namespace LASYS.DesktopApp.Views.Forms
             MessageBox.Show(message, "Navigation", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
+        protected override void OnShown(EventArgs e)
+        {
+            base.OnShown(e);
+
+            // Show WorkOrders by default when main form is ready
+            var workOrdersControl = _services.GetRequiredService<WorkOrdersControl>();
+            LoadView(workOrdersControl);
+        }
         protected override void OnClosed(EventArgs e)
         {
             base.OnClosed(e);
