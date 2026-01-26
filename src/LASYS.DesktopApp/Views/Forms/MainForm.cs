@@ -79,7 +79,16 @@ namespace LASYS.DesktopApp.Views.Forms
             };
 
 
-            deviceSetup.SubItems[1].Clicked += (_, _) => LoadView(new OCRCalibrationControl());
+            //deviceSetup.SubItems[1].Clicked += (_, _) => LoadView(new OCRCalibrationControl());
+
+            deviceSetup.SubItems[1].Clicked += (_, _) =>
+            {
+                // Resolve via DI to ensure dependencies are injected
+                var ocrService = _services.GetRequiredService<OCRConfigService>();
+                var ocrControl = new OCRCalibrationControl(ocrService);
+
+                LoadView(ocrControl);
+            };
             //deviceSetup.SubItems[2].Clicked += (_, _) => LoadView(new SatoPrinterControl());
             //deviceSetup.SubItems[3].Clicked += (_, _) => LoadView(new BarcodeScannerControl());
         }

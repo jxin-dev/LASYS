@@ -45,6 +45,9 @@ namespace LASYS.DesktopApp.Extensions
             services.AddSingleton<IDeviceConfigJsonRepository, DeviceConfigJsonRepository>();
             services.AddSingleton<DeviceConfigService>();
 
+            services.AddSingleton<IOCRConfigJsonRepository, OCRConfigJsonRepository>();
+            services.AddSingleton<OCRConfigService>();
+
 
             return services;
         }

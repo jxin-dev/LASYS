@@ -1,12 +1,18 @@
-﻿using LASYS.UIControls.Controls;
+﻿using LASYS.Application.Services;
+using LASYS.Domain.OCR;
+using LASYS.UIControls.Controls;
 
 namespace LASYS.DesktopApp.Views.UserControls
 {
     public partial class OCRCalibrationControl : UserControl
     {
         private readonly DraggableResizerPanel _resizablePanel;
-        public OCRCalibrationControl()
+
+        private readonly OCRConfigService _ocrService;
+
+        public OCRCalibrationControl(OCRConfigService ocrService)
         {
+            _ocrService = ocrService;
             InitializeComponent();
             DoubleBuffered = true;
             SetStyle(ControlStyles.OptimizedDoubleBuffer |
@@ -28,7 +34,7 @@ namespace LASYS.DesktopApp.Views.UserControls
 
         }
 
-        private void LoadRegisteredItem()
+        private async void LoadRegisteredItem()
         {
             var container = new Panel
             {
@@ -37,9 +43,6 @@ namespace LASYS.DesktopApp.Views.UserControls
             };
 
             _resizablePanel.AddTab("Registered Item", container);
-
-
-
 
             var gridWithPagination = new GridViewWithPagination
             {
@@ -51,79 +54,56 @@ namespace LASYS.DesktopApp.Views.UserControls
             gridWithPagination.SetMergedHeaders(
                 [
                     new HeaderColumn { Text = "Item Code", ColSpan = 1 },
-                    new HeaderColumn { Text = "Lot No", ColSpan = 1 },
-                    new HeaderColumn { Text = "Exp. Date", ColSpan = 1 },
-                    new HeaderColumn { Text = "Print Type", ColSpan = 1 },
-                    new HeaderColumn { Text = "Verdict", ColSpan = 1 },
-                    new HeaderColumn { Text = "Date Approved", ColSpan = 1 },
-                    new HeaderColumn { Text = "Prod Qty", ColSpan = 1 },
-                    new HeaderColumn { Text = "Master Label Revision No.", ColSpan = 1 },
-                    new HeaderColumn { Text = "Label Ins. Revision No.", ColSpan = 1 },
-                    new HeaderColumn { Text = "UNIT BOX", ColSpan = 2 },
-                    new HeaderColumn { Text = "ADDTNL UNIT BOX", ColSpan = 2 },
-                    new HeaderColumn { Text = "OUTR UNIT BOX", ColSpan = 2 },
-
+                    new HeaderColumn { Text = "Coordinates", ColSpan = 6 },
+                    new HeaderColumn { Text = "Date Registered", ColSpan = 1 }
                 ],
-                ["Item Code", "Lot No", "Exp. Date", "Print Type", "Verdict", "Date Approved", "Prod Qty", "Master Label Revision No.", "Label Ins. Revision No.",
-                "Qty", "Status",
-                "Qty", "Status",
-                "Qty", "Status"]
+                ["Item Code", "X", "Y", "Width", "Height", "Image Width", "Image Height", "Date Registered"]
             );
 
             gridWithPagination.SetColumnWidths(
-                100, 100, 100, 100, 100, 100, 100, 100, 100, 50, 100, 50, 100, 50, 100
+                150, 80, 80, 80, 80, 100, 100, 150
             );
-
-            // Suppose this is from your DB
-            List<SampleData> results = LoadFromDatabase();
-
-            gridWithPagination.SetRows(results, item =>
+           
+            // Load and show in grid
+            var config = await _ocrService.LoadAsync();
+            gridWithPagination.SetRows(config.Products, p =>
             [
-                item.ItemCode,
-                item.LotNo,
-                item.ExpDate,
-                item.PrintType,
-                item.Verdict,
-                item.DateApproved,
-                item.ProductQty.ToString(),
-                item.MasterLabelRevNo.ToString(),
-                item.LabelInsRevNo.ToString(),
-                item.UnitBoxQty.ToString(), item.UnitBoxStatus,
-                item.AddtnlUnitBoxQty.ToString(), item.AddtnlUnitBoxStatus,
-                item.OuterUnitBoxQty.ToString(), item.OuterUnitBoxStatus
+                p.ItemCode,
+                p.Coordinates.X.ToString(),
+                p.Coordinates.Y.ToString(),
+                p.Coordinates.Width.ToString(),
+                p.Coordinates.Height.ToString(),
+                p.Coordinates.ImageWidth.ToString(),
+                p.Coordinates.ImageHeight.ToString(),
+                p.RegisteredAt.ToString("yyyy-MM-dd HH:mm:ss")
             ]);
 
+
+            var newProduct = new Product
+            {
+                ItemCode = "SR+OX2051C1",
+                Coordinates = new Coordinates { X = 640, Y = 376, Width = 48, Height = 18, ImageWidth = 1097, ImageHeight = 611 },
+                RegisteredAt = DateTime.Now
+            };
+
+            //await _ocrService.AddOrUpdateProductAsync(newProduct);
+
+            // Remove example
+            //await _ocrService.RemoveProductAsync("SR+OX2051C1");
 
 
             gridWithPagination.RowDoubleClicked += (sender, e) =>
             {
                 // Handle row double-click event
-                if (e is SampleData data)
+                if (e is Product data)
                 {
-                    MessageBox.Show($"Data Id: {data.Id.ToString()}");
+                    MessageBox.Show($"Item Code: {data.ItemCode}");
                 }
             };
 
             container.Controls.Add(gridWithPagination);
 
-
-            List<SampleData> LoadFromDatabase()
-            {
-                // Simulate loading data from a database
-                return new List<SampleData>
-                {
-                    new SampleData(1, "SR+OX2051C1", "250529SG", "2030-04-30", "Original", "Approved", "05/29/2025",180000,6,1,"3600","For Printing","","","",""),
-                    new SampleData(2, "SR+OX2051C2", "250529SG", "2030-04-30", "Original", "Approved", "05/29/2025",180000,6,1,"3600","For Printing","","","",""),
-                    new SampleData(3, "SR+OX2051C3", "250529SG", "2030-04-30", "Original", "Approved", "05/29/2025",180000,6,1,"3600","For Printing","","","",""),
-                    new SampleData(4, "SR+OX2051C4", "250529SG", "2030-04-30", "Original", "Approved", "05/29/2025",180000,6,1,"3600","For Printing","","","",""),
-                    new SampleData(5, "SR+OX2051C5", "250529SG", "2030-04-30", "Original", "Approved", "05/29/2025",180000,6,1,"3600","For Printing","","","",""),
-                    new SampleData(6, "SR+OX2051C6", "250529SG", "2030-04-30", "Original", "Approved", "05/29/2025",180000,6,1,"3600","For Printing","","","",""),
-                    new SampleData(7, "SR+OX2051C7", "250529SG", "2030-04-30", "Original", "Approved", "05/29/2025",180000,6,1,"3600","For Printing","","","",""),
-                    new SampleData(8, "SR+OX2051C8", "250529SG", "2030-04-30", "Original", "Approved", "05/29/2025",180000,6,1,"3600","For Printing","","","","")
-                };
-            }
-
-
         }
     }
+
 }
