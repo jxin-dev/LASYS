@@ -56,7 +56,7 @@ namespace LASYS.DesktopApp.Views.Forms
             _progressBar.UpdateStatus(message);
         }
 
-        public void ShowView() => Application.Run(this);
+        public void ShowView() => System.Windows.Forms.Application.Run(this);
         public void HideView() => Hide();
     }
 }

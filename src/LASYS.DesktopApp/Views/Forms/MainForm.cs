@@ -1,7 +1,9 @@
-﻿using LASYS.DesktopApp.Views.Interfaces;
+﻿using LASYS.Application.Services;
+using LASYS.DesktopApp.Views.Interfaces;
 using LASYS.DesktopApp.Views.UserControls;
 using LASYS.UIControls.Controls;
 using LASYS.UIControls.Models;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace LASYS.DesktopApp.Views.Forms
 {
@@ -9,8 +11,11 @@ namespace LASYS.DesktopApp.Views.Forms
     {
         private readonly SideNavigation _sideNav;
         private readonly Panel _contentPanel;
-        public MainForm()
+
+        private readonly IServiceProvider _services;
+        public MainForm(IServiceProvider services)
         {
+            _services = services;
             InitializeComponent();
             // Initialize layout
             _sideNav = new SideNavigation();
@@ -45,8 +50,35 @@ namespace LASYS.DesktopApp.Views.Forms
 
 
             // Wire events
-            workOrders.Clicked += (_, _) => LoadView(new WorkOrdersControl());
-            deviceSetup.SubItems[0].Clicked += (_, _) => LoadView(new WebCameraControl());
+            //workOrders.Clicked += (_, _) => LoadView(new WorkOrdersControl());
+
+            workOrders.Clicked += (_, _) =>
+            {
+                // Resolve via DI to ensure dependencies are injected
+                var workOrdersControl = _services.GetRequiredService<WorkOrdersControl>();
+                LoadView(workOrdersControl);
+            };
+
+            // Wire Device Setup -> Camera button
+            var deviceConfigService = _services.GetRequiredService<DeviceConfigService>();
+            deviceSetup.SubItems[0].Clicked += (_, _) =>
+            {
+                // Resolve WebCameraControl via DI
+                var cameraControl = _services.GetRequiredService<WebCameraControl>();
+
+                // Subscribe to event so parent form handles navigation after save
+                cameraControl.ConfigurationSaved += () =>
+                {
+                    // Go back to WorkOrdersControl after saving
+                    var workOrdersControl = _services.GetRequiredService<WorkOrdersControl>();
+                    LoadView(workOrdersControl);
+                };
+
+                // Load the camera control into the panel
+                LoadView(cameraControl);
+            };
+
+
             //deviceSetup.SubItems[1].Clicked += (_, _) => LoadView(new OcrCalibrationControl());
             //deviceSetup.SubItems[2].Clicked += (_, _) => LoadView(new SatoPrinterControl());
             //deviceSetup.SubItems[3].Clicked += (_, _) => LoadView(new BarcodeScannerControl());
@@ -68,7 +100,7 @@ namespace LASYS.DesktopApp.Views.Forms
             base.OnClosed(e);
             CloseView();
         }
-        public void CloseView() => Application.Exit();
+        public void CloseView() => System.Windows.Forms.Application.Exit();
 
         public void HideView() => Hide();
 

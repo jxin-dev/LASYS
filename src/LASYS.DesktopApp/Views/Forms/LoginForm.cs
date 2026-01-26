@@ -28,7 +28,7 @@ namespace LASYS.DesktopApp.Views.Forms
             base.OnClosed(e);
             CloseView();
         }
-        public void CloseView() => Application.Exit();
+        public void CloseView() => System.Windows.Forms.Application.Exit();
         public void ShowView() => Show();
         public void HideView() => Hide();
 

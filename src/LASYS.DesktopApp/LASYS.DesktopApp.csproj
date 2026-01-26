@@ -40,7 +40,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\LASYS.Application\LASYS.Application.csproj" />
     <ProjectReference Include="..\LASYS.Camera\LASYS.Camera.csproj" />
+    <ProjectReference Include="..\LASYS.Infrastructure\LASYS.Infrastructure.csproj" />
     <ProjectReference Include="..\LASYS.UIControls\LASYS.UIControls.csproj" />
   </ItemGroup>
 

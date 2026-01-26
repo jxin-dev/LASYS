@@ -1,7 +1,10 @@
-﻿using LASYS.Camera.Interfaces;
+﻿using LASYS.Application.Services;
+using LASYS.Camera.Interfaces;
 using LASYS.Camera.Models;
 using LASYS.Camera.Services;
+using LASYS.Domain.DeviceSettings;
 using LASYS.UIControls.Controls;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace LASYS.DesktopApp.Views.UserControls
 {
@@ -10,9 +13,16 @@ namespace LASYS.DesktopApp.Views.UserControls
         private readonly ICameraService _cameraService;
         private readonly LoadingLabel _loadingLabel;
 
+        private readonly DeviceConfigService _deviceConfigService;
+
+        public event Action? ConfigurationSaved;
+
+
         private bool _isPreviewing;
-        public WebCameraControl()
+        public WebCameraControl(DeviceConfigService deviceConfigService)
         {
+            _deviceConfigService = deviceConfigService;
+
             InitializeComponent();
             _loadingLabel = new LoadingLabel
             {
@@ -32,11 +42,51 @@ namespace LASYS.DesktopApp.Views.UserControls
             btnPreview.Click += BtnPreview_Click;
             btnSave.Click += BtnSave_Click;
             btnSave.Visible = false;
+
         }
 
-        private void BtnSave_Click(object? sender, EventArgs e)
+        private async void BtnSave_Click(object? sender, EventArgs e)
         {
+            if (cbxCameras.SelectedItem is not CameraDevice selectedCamera)
+            {
+                MessageBox.Show(
+                    "Please select a camera before saving.",
+                    "Save Configuration",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
+                return;
+            }
+            var newCamera = new CameraConfig
+            {
+                CameraId = selectedCamera.Index,
+                Enabled = true,
+                FrameWidth = 3840,
+                FrameHeight = 2160,
+                FrameRate = 30
+            };
 
+
+            try
+            {
+                await _deviceConfigService.UpdateCameraAsync(newCamera);
+
+                MessageBox.Show(
+                         "Camera configuration saved successfully.",
+                         "Saved",
+                         MessageBoxButtons.OK,
+                         MessageBoxIcon.Information);
+
+                ConfigurationSaved?.Invoke(); // parent form will handle LoadView
+
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    $"Failed to save configuration.\n{ex.Message}",
+                    "Error",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
+            }
         }
 
         private async void BtnPreview_Click(object? sender, EventArgs e)
@@ -78,15 +128,18 @@ namespace LASYS.DesktopApp.Views.UserControls
                 btnSave.Visible = false;
 
                 _cameraService.StopPreview(picCameraPreview);
-            } 
+            }
         }
 
-        private void WebCameraControl_Load(object? sender, EventArgs e)
+        private async void WebCameraControl_Load(object? sender, EventArgs e)
         {
             var cameras = _cameraService.GetAvailableCameras();
             cbxCameras.DataSource = cameras;
             cbxCameras.DisplayMember = "Name";
             cbxCameras.ValueMember = "Index";
+
+
+            await _deviceConfigService.LoadAsync();
         }
     }
 }
