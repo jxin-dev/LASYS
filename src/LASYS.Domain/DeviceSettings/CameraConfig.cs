@@ -1,6 +1,6 @@
 ﻿namespace LASYS.Domain.DeviceSettings
 {
-    public class Camera
+    public class CameraConfig
     {
         public bool Enabled { get; set; } = true;
         public int CameraId { get; set; } = 0;

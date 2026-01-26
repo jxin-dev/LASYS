@@ -2,7 +2,7 @@
 {
     public class DeviceConfiguration
     {
-        public BarcodeScanner BarcodeScanner { get; set; } = new();
-        public Camera Camera { get; set; } = new();
+        public BarcodeScannerConfig BarcodeScanner { get; set; } = new();
+        public CameraConfig Camera { get; set; } = new();
     }
 }

@@ -1,6 +1,6 @@
 ﻿namespace LASYS.Domain.DeviceSettings
 {
-    public class BarcodeScanner
+    public class BarcodeScannerConfig
     {
         public bool Enabled { get; set; } = true;
         public string Port { get; set; } = "COM3";
