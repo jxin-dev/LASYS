@@ -76,6 +76,8 @@ namespace LASYS.DesktopApp.Views.UserControls
                          MessageBoxButtons.OK,
                          MessageBoxIcon.Information);
 
+                _cameraService.StopPreview(picCameraPreview);
+
                 ConfigurationSaved?.Invoke(); // parent form will handle LoadView
 
             }
