@@ -98,6 +98,7 @@
             picCameraPreview.Location = new Point(27, 115);
             picCameraPreview.Name = "picCameraPreview";
             picCameraPreview.Size = new Size(516, 271);
+            picCameraPreview.SizeMode = PictureBoxSizeMode.StretchImage;
             picCameraPreview.TabIndex = 3;
             picCameraPreview.TabStop = false;
             // 

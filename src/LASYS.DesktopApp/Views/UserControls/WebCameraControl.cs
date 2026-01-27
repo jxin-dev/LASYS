@@ -58,7 +58,8 @@ namespace LASYS.DesktopApp.Views.UserControls
             }
             var newCamera = new CameraConfig
             {
-                CameraId = selectedCamera.Index,
+                CameraIndex = selectedCamera.Index,
+                CameraName = selectedCamera.Name,
                 Enabled = true,
                 FrameWidth = 3840,
                 FrameHeight = 2160,
@@ -133,15 +134,18 @@ namespace LASYS.DesktopApp.Views.UserControls
             }
         }
 
-        private async void WebCameraControl_Load(object? sender, EventArgs e)
+        private void WebCameraControl_Load(object? sender, EventArgs e)
         {
-            var cameras = _cameraService.GetAvailableCameras();
-            cbxCameras.DataSource = cameras;
-            cbxCameras.DisplayMember = "Name";
-            cbxCameras.ValueMember = "Index";
+            this.BeginInvoke(async () =>
+            {
+                var cameras = _cameraService.GetAvailableCameras();
+                cbxCameras.DataSource = cameras;
+                cbxCameras.DisplayMember = "Name";
+                cbxCameras.ValueMember = "Index";
 
 
-            await _deviceConfigService.LoadAsync();
+                await _deviceConfigService.LoadAsync();
+            });
         }
     }
 }
