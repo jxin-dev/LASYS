@@ -85,7 +85,23 @@ namespace LASYS.DesktopApp.Views.Forms
             {
                 // Resolve via DI to ensure dependencies are injected
                 var ocrService = _services.GetRequiredService<OCRConfigService>();
-                var ocrControl = new OCRCalibrationControl(ocrService);
+                var deviceService = _services.GetRequiredService<DeviceConfigService>();
+
+                var ocrControl = new OCRCalibrationControl(ocrService, deviceService);
+
+                ocrControl.CameraNotAvailable += () =>
+                {
+                    // Go back to WorkOrdersControl after saving
+                    var cameraControl = _services.GetRequiredService<WebCameraControl>();
+                    cameraControl.ConfigurationSaved += () =>
+                    {
+                        // Go back to WorkOrdersControl after saving
+                        var workOrdersControl = _services.GetRequiredService<WorkOrdersControl>();
+                        LoadView(workOrdersControl);
+                    };
+
+                    LoadView(cameraControl);
+                };
 
                 LoadView(ocrControl);
             };
