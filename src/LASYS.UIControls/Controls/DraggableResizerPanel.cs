@@ -288,16 +288,18 @@
             // Optionally, update tab appearance if needed (highlight active tab)
             foreach (Label tab in navigatorPanel.Controls.OfType<Label>())
             {
-                if (tab.Text == title)
-                {
-                    tab.BackColor = Color.MediumSeaGreen;
-                    tab.ForeColor = Color.WhiteSmoke;
-                }
-                else
-                {
-                    tab.BackColor = Color.Silver;
-                    tab.ForeColor = Color.Black;
-                }
+                tab.BackColor = Color.MediumSeaGreen;
+                tab.ForeColor = Color.WhiteSmoke;
+                //if (tab.Text == title)
+                //{
+                //    tab.BackColor = Color.MediumSeaGreen;
+                //    tab.ForeColor = Color.WhiteSmoke;
+                //}
+                //else
+                //{
+                //    tab.BackColor = Color.Silver;
+                //    tab.ForeColor = Color.Black;
+                //}
             }
         }
 
