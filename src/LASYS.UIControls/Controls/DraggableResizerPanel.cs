@@ -211,7 +211,7 @@
             this.BringToFront(); // optional: ensure it's top-most in z-order
         }
 
-        private void HidePanel()
+        public void HidePanel()
         {
             // Collapse everything except navigatorPanel
             contentPanel.Visible = false;
