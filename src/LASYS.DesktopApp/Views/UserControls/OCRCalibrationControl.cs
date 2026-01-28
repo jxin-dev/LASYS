@@ -70,7 +70,7 @@ namespace LASYS.DesktopApp.Views.UserControls
 
             picCameraPreview.MouseDown += (sender, e) =>
             {
-                if (!_canDraw) return;
+                if (!_canDraw || picCameraPreview.Image == null) return;
 
                 _drawing = true;
                 _startPoint = e.Location;
