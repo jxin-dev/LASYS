@@ -2,6 +2,7 @@
 using LASYS.Camera.Interfaces;
 using LASYS.Camera.Services;
 using LASYS.Domain.OCR;
+using LASYS.OCR.Interfaces;
 using LASYS.UIControls.Controls;
 
 namespace LASYS.DesktopApp.Views.UserControls
@@ -10,7 +11,7 @@ namespace LASYS.DesktopApp.Views.UserControls
     {
         private readonly DraggableResizerPanel _resizablePanel;
 
-        private readonly OCRConfigService _ocrService;
+        private readonly OCRConfigService _ocrConfigService;
         private readonly ICameraService _cameraService;
 
         private readonly DeviceConfigService _deviceConfigService;
@@ -37,9 +38,9 @@ namespace LASYS.DesktopApp.Views.UserControls
         private TextBox? _txtImgWidth;
         private TextBox? _txtImgHeight;
 
-        public OCRCalibrationControl(OCRConfigService ocrService, DeviceConfigService deviceConfigService)
+        public OCRCalibrationControl(OCRConfigService ocrConfigService, DeviceConfigService deviceConfigService)
         {
-            _ocrService = ocrService;
+            _ocrConfigService = ocrConfigService;
             _deviceConfigService = deviceConfigService;
 
             InitializeComponent();
@@ -117,7 +118,7 @@ namespace LASYS.DesktopApp.Views.UserControls
                     {
 
                         // Convert viewer (PictureBox) region to image region
-                        var result = _ocrService.ComputeImageRegion(_roi, picCameraPreview.Size, picCameraPreview.Image.Size);
+                        var result = _ocrConfigService.ComputeImageRegion(_roi, picCameraPreview.Size, picCameraPreview.Image.Size);
                         if (result != null)
                         {
                             UpdateCoordinateFields(result.ImageRegion,picCameraPreview.Image.Size);
@@ -259,7 +260,7 @@ namespace LASYS.DesktopApp.Views.UserControls
         }
         private async Task ReloadRegisteredItemsAsync()
         {
-            var config = await _ocrService.LoadAsync();
+            var config = await _ocrConfigService.LoadAsync();
 
             _gridWithPagination.SetRows(config.Products, p =>
             [
@@ -465,7 +466,7 @@ namespace LASYS.DesktopApp.Views.UserControls
                     RegisteredAt = DateTime.Now
                 };
 
-                await _ocrService.AddOrUpdateProductAsync(product);
+                await _ocrConfigService.AddOrUpdateProductAsync(product);
                 await ReloadRegisteredItemsAsync();
 
                 MessageBox.Show("Saved successfully", "OCR Registration", MessageBoxButtons.OK, MessageBoxIcon.Information);
