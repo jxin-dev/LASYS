@@ -1,4 +1,6 @@
-﻿using LASYS.DesktopApp.Core.Interfaces;
+﻿using LASYS.Camera.EventArgs;
+using LASYS.Camera.Interfaces;
+using LASYS.DesktopApp.Core.Interfaces;
 using LASYS.DesktopApp.Presenters.Interfaces;
 using LASYS.DesktopApp.Views.Interfaces;
 
@@ -8,10 +10,23 @@ namespace LASYS.DesktopApp.Presenters
     {
         private ISplashView? _view;
         private readonly IViewFactory _factory;
+        private readonly ICameraConfig _cameraConfig;
+        private readonly ICameraService _cameraService;
 
-        public SplashPresenter(IViewFactory factory)
+        public SplashPresenter(IViewFactory factory, ICameraConfig cameraConfig, ICameraService cameraService)
         {
             _factory = factory;
+            _cameraConfig = cameraConfig;
+            _cameraService = cameraService;
+
+            _cameraConfig.CameraConfigIssue += OnCameraConfigIssue;
+        }
+
+        private void OnCameraConfigIssue(object? sender, CameraConfigEventArgs e)
+        {
+            if (_view == null) return;
+            // Ensure UI thread update if needed
+            _view.UpdateProgress(15, e.Message);
         }
 
         public void AttachView(ISplashView view)
@@ -25,10 +40,28 @@ namespace LASYS.DesktopApp.Presenters
 
             _view?.UpdateProgress(10, "Checking for updates...");
             await Task.Delay(500);
+            // Load camera configuration
+            try
+            {
+                var config = await _cameraConfig.LoadAsync();
+                var camera = _cameraService.ResolveCamera(config);
+                if (camera != null)
+                    _view?.UpdateProgress(15, $"Camera \"{camera.Name}\" connected successfully.");
+                await Task.Delay(2000);
+            }
+            catch (Exception ex)
+            {
+                _view?.UpdateProgress(15, $"Failed to load the saved camera configuration: {ex.Message}");
+            }
+            finally
+            {
+                // Always unsubscribe
+                _cameraConfig.CameraConfigIssue -= OnCameraConfigIssue;
+            }
 
-            _view?.UpdateProgress(15, "Connecting to camera...");
-            await Task.Delay(500);
 
+            _view?.UpdateProgress(80, "Finalizing setup...");
+            await Task.Delay(2000);
             _view?.UpdateProgress(100, "Launching application...");
             await Task.Delay(1000);
 
@@ -36,7 +69,7 @@ namespace LASYS.DesktopApp.Presenters
 
             var loginView = _factory.Create<ILoginView, LoginPresenter>();
             loginView.ShowView();
-           
+
         }
     }
 }
