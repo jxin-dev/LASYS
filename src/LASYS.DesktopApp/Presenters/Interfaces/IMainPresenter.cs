@@ -5,5 +5,6 @@ namespace LASYS.DesktopApp.Presenters.Interfaces
 {
     public interface IMainPresenter : IPresenter<IMainView>
     {
+
     }
 }

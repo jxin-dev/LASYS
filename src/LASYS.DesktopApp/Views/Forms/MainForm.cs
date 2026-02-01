@@ -1,9 +1,6 @@
-﻿using LASYS.Application.Services;
-using LASYS.DesktopApp.Views.Interfaces;
-using LASYS.DesktopApp.Views.UserControls;
+﻿using LASYS.DesktopApp.Views.Interfaces;
 using LASYS.UIControls.Controls;
 using LASYS.UIControls.Models;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace LASYS.DesktopApp.Views.Forms
 {
@@ -12,10 +9,12 @@ namespace LASYS.DesktopApp.Views.Forms
         private readonly SideNavigation _sideNav;
         private readonly Panel _contentPanel;
 
-        private readonly IServiceProvider _services;
-        public MainForm(IServiceProvider services)
+        public event EventHandler? WorkOrderRequested;
+        public event EventHandler? WebCameraConfigurationRequested;
+        public event EventHandler? OCRCalibrationRequested;      
+
+        public MainForm()
         {
-            _services = services;
             InitializeComponent();
             // Initialize layout
             _sideNav = new SideNavigation();
@@ -31,6 +30,8 @@ namespace LASYS.DesktopApp.Views.Forms
 
             // Setup navigation items
             SetupNavigation();
+
+
         }
         private void SetupNavigation()
         {
@@ -48,85 +49,27 @@ namespace LASYS.DesktopApp.Views.Forms
             _sideNav.AddItem(deviceSetup);
             _sideNav.AddItem(logOut);
 
+   
+            workOrders.Clicked += (_, _) => WorkOrderRequested?.Invoke(this, EventArgs.Empty);
 
-            // Wire events
-            //workOrders.Clicked += (_, _) => LoadView(new WorkOrdersControl());
+            deviceSetup.SubItems[0].Clicked += (_, _) => WebCameraConfigurationRequested?.Invoke(this, EventArgs.Empty);
 
-            workOrders.Clicked += (_, _) =>
-            {
-                // Resolve via DI to ensure dependencies are injected
-                var workOrdersControl = _services.GetRequiredService<WorkOrdersControl>();
-                LoadView(workOrdersControl);
-            };
-
-            // Wire Device Setup -> Camera button
-            var deviceConfigService = _services.GetRequiredService<DeviceConfigService>();
-            deviceSetup.SubItems[0].Clicked += (_, _) =>
-            {
-                // Resolve WebCameraControl via DI
-                var cameraControl = _services.GetRequiredService<WebCameraControl>();
-
-                // Subscribe to event so parent form handles navigation after save
-                cameraControl.ConfigurationSaved += () =>
-                {
-                    // Go back to WorkOrdersControl after saving
-                    var workOrdersControl = _services.GetRequiredService<WorkOrdersControl>();
-                    LoadView(workOrdersControl);
-                };
-
-                // Load the camera control into the panel
-                LoadView(cameraControl);
-            };
-
-
-            //deviceSetup.SubItems[1].Clicked += (_, _) => LoadView(new OCRCalibrationControl());
-
-            deviceSetup.SubItems[1].Clicked += (_, _) =>
-            {
-                // Resolve via DI to ensure dependencies are injected
-                var ocrService = _services.GetRequiredService<OCRConfigService>();
-                var deviceService = _services.GetRequiredService<DeviceConfigService>();
-
-                var ocrControl = new OCRCalibrationControl(ocrService, deviceService);
-
-                ocrControl.CameraNotAvailable += () =>
-                {
-                    // Go back to WorkOrdersControl after saving
-                    var cameraControl = _services.GetRequiredService<WebCameraControl>();
-                    cameraControl.ConfigurationSaved += () =>
-                    {
-                        // Go back to WorkOrdersControl after saving
-                        var workOrdersControl = _services.GetRequiredService<WorkOrdersControl>();
-                        LoadView(workOrdersControl);
-                    };
-
-                    LoadView(cameraControl);
-                };
-
-                LoadView(ocrControl);
-            };
-            //deviceSetup.SubItems[2].Clicked += (_, _) => LoadView(new SatoPrinterControl());
-            //deviceSetup.SubItems[3].Clicked += (_, _) => LoadView(new BarcodeScannerControl());
+            deviceSetup.SubItems[1].Clicked += (_, _) => OCRCalibrationRequested?.Invoke(this, EventArgs.Empty);
         }
-        private void LoadView(UserControl control)
-        {
-            _contentPanel.Controls.Clear();
-            control.Dock = DockStyle.Fill;
-            _contentPanel.Controls.Add(control);
-        }
+      
 
         private void ShowMessage(string message)
         {
             MessageBox.Show(message, "Navigation", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
-        protected override void OnShown(EventArgs e)
-        {
-            base.OnShown(e);
 
-            // Show WorkOrders by default when main form is ready
-            var workOrdersControl = _services.GetRequiredService<WorkOrdersControl>();
-            LoadView(workOrdersControl);
+
+        protected override void OnLoad(EventArgs e)
+        {
+            base.OnLoad(e);
+            WorkOrderRequested?.Invoke(this, EventArgs.Empty);
+
         }
         protected override void OnClosed(EventArgs e)
         {
@@ -138,5 +81,12 @@ namespace LASYS.DesktopApp.Views.Forms
         public void HideView() => Hide();
 
         public void ShowView() => Show();
+
+        public void LoadView(UserControl control)
+        {
+            _contentPanel.Controls.Clear();
+            control.Dock = DockStyle.Fill;
+            _contentPanel.Controls.Add(control);
+        }
     }
 }
