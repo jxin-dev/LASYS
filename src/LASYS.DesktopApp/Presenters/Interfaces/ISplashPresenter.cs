@@ -1,5 +1,4 @@
-﻿using System.Windows.Forms;
-using LASYS.DesktopApp.Core.Interfaces;
+﻿using LASYS.DesktopApp.Core.Interfaces;
 using LASYS.DesktopApp.Views.Interfaces;
 
 namespace LASYS.DesktopApp.Presenters.Interfaces
