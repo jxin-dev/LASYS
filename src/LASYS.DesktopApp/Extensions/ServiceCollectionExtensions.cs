@@ -33,7 +33,7 @@ namespace LASYS.DesktopApp.Extensions
             services.AddTransient<WorkOrdersControl>();
 
             // Services
-
+            services.AddTransient<IUserRepository, UserRepository>();
 
             return services;
         }
