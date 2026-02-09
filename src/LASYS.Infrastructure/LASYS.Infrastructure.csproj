@@ -28,4 +28,10 @@
     <ProjectReference Include="..\LASYS.Application\LASYS.Application.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Reference Include="SATOPrinterAPI">
+      <HintPath>dlls\SATOPrinterAPI.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
 </Project>
