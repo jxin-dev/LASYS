@@ -1,15 +1,22 @@
-﻿using LASYS.Camera.Models;
+﻿using LASYS.Camera.Events;
+using LASYS.Camera.Models;
 using OpenCvSharp;
-
+using DrawingSize = System.Drawing.Size;
 namespace LASYS.Camera.Interfaces
 {
     public interface ICameraService
     {
-        List<CameraDevice> GetAvailableCameras();
-        VideoCapture GetCamera(int index);
-        Task StartPreviewAsync(CameraDevice camera, PictureBox previewBox);
-        void StopPreview(PictureBox previewBox);
+        Mat LastCapturedFrame { get; set; }
+        event EventHandler<CameraStatusEventArgs> CameraStatusChanged;
+        event EventHandler CameraDisconnected;
+        event EventHandler CameraConnected;
 
-        Task PreviewStartedAsync { get; }
+        CameraInfo? ResolveCamera(CameraConfig config);
+        Task InitializeAsync();
+        Task StopAsync();
+        Task StartStreamingAsync(Action<Mat, Bitmap> onFrameCaptured, Func<DrawingSize> getTargetResolution);
+        void ReleaseCamera();
+        bool IsCameraReady();
+
     }
 }

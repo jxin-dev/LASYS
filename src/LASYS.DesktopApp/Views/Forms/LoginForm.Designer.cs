@@ -34,7 +34,6 @@
             chkShowPassword = new CheckBox();
             comboBox1 = new ComboBox();
             label1 = new Label();
-            btnCancel = new Button();
             pictureBox1 = new PictureBox();
             label2 = new Label();
             panel1 = new Panel();
@@ -42,42 +41,51 @@
             lnklblCheckUpdates = new LinkLabel();
             panel3 = new Panel();
             label3 = new Label();
+            btnCancel = new Button();
             ((System.ComponentModel.ISupportInitialize)pictureBox1).BeginInit();
             panel2.SuspendLayout();
             SuspendLayout();
             // 
             // txtUsername
             // 
-            txtUsername.Location = new Point(272, 108);
+            txtUsername.Font = new Font("Segoe UI", 9.75F);
+            txtUsername.Location = new Point(272, 97);
             txtUsername.Name = "txtUsername";
             txtUsername.PlaceholderText = "Username";
-            txtUsername.Size = new Size(223, 23);
+            txtUsername.Size = new Size(230, 25);
             txtUsername.TabIndex = 0;
             // 
             // txtPassword
             // 
-            txtPassword.Location = new Point(272, 137);
+            txtPassword.Font = new Font("Segoe UI", 9.75F);
+            txtPassword.Location = new Point(272, 126);
             txtPassword.Name = "txtPassword";
             txtPassword.PlaceholderText = "Password";
-            txtPassword.Size = new Size(223, 23);
+            txtPassword.Size = new Size(230, 25);
             txtPassword.TabIndex = 1;
             txtPassword.UseSystemPasswordChar = true;
             // 
             // btnLogin
             // 
-            btnLogin.Location = new Point(339, 196);
+            btnLogin.BackColor = Color.SeaGreen;
+            btnLogin.FlatAppearance.BorderSize = 0;
+            btnLogin.FlatStyle = FlatStyle.Flat;
+            btnLogin.Font = new Font("Segoe UI", 12F);
+            btnLogin.ForeColor = Color.White;
+            btnLogin.Location = new Point(314, 194);
             btnLogin.Name = "btnLogin";
-            btnLogin.Size = new Size(75, 23);
+            btnLogin.Size = new Size(91, 37);
             btnLogin.TabIndex = 2;
             btnLogin.Text = "OK";
-            btnLogin.UseVisualStyleBackColor = true;
+            btnLogin.UseVisualStyleBackColor = false;
             // 
             // chkShowPassword
             // 
             chkShowPassword.AutoSize = true;
-            chkShowPassword.Location = new Point(272, 166);
+            chkShowPassword.Font = new Font("Segoe UI", 9.75F);
+            chkShowPassword.Location = new Point(272, 155);
             chkShowPassword.Name = "chkShowPassword";
-            chkShowPassword.Size = new Size(108, 19);
+            chkShowPassword.Size = new Size(118, 21);
             chkShowPassword.TabIndex = 3;
             chkShowPassword.Text = "Show Password";
             chkShowPassword.UseVisualStyleBackColor = true;
@@ -85,30 +93,23 @@
             // comboBox1
             // 
             comboBox1.DropDownStyle = ComboBoxStyle.DropDownList;
+            comboBox1.Font = new Font("Segoe UI", 9.75F);
             comboBox1.FormattingEnabled = true;
             comboBox1.Items.AddRange(new object[] { "Production Database", "Test Database" });
-            comboBox1.Location = new Point(339, 79);
+            comboBox1.Location = new Point(346, 68);
             comboBox1.Name = "comboBox1";
-            comboBox1.Size = new Size(156, 23);
+            comboBox1.Size = new Size(156, 25);
             comboBox1.TabIndex = 4;
             // 
             // label1
             // 
             label1.AutoSize = true;
-            label1.Location = new Point(272, 82);
+            label1.Font = new Font("Segoe UI", 9.75F);
+            label1.Location = new Point(272, 71);
             label1.Name = "label1";
-            label1.Size = new Size(61, 15);
+            label1.Size = new Size(68, 17);
             label1.TabIndex = 5;
             label1.Text = "Log on to:";
-            // 
-            // btnCancel
-            // 
-            btnCancel.Location = new Point(420, 196);
-            btnCancel.Name = "btnCancel";
-            btnCancel.Size = new Size(75, 23);
-            btnCancel.TabIndex = 6;
-            btnCancel.Text = "Cancel";
-            btnCancel.UseVisualStyleBackColor = true;
             // 
             // pictureBox1
             // 
@@ -185,20 +186,33 @@
             label3.Text = "(New Label Design)";
             label3.TextAlign = ContentAlignment.TopCenter;
             // 
+            // btnCancel
+            // 
+            btnCancel.BackColor = Color.DarkSeaGreen;
+            btnCancel.FlatAppearance.BorderSize = 0;
+            btnCancel.FlatStyle = FlatStyle.Flat;
+            btnCancel.Font = new Font("Segoe UI", 12F);
+            btnCancel.ForeColor = Color.Black;
+            btnCancel.Location = new Point(411, 194);
+            btnCancel.Name = "btnCancel";
+            btnCancel.Size = new Size(91, 37);
+            btnCancel.TabIndex = 13;
+            btnCancel.Text = "Cancel";
+            btnCancel.UseVisualStyleBackColor = false;
+            // 
             // LoginForm
             // 
             AcceptButton = btnLogin;
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             BackColor = Color.GhostWhite;
-            CancelButton = btnCancel;
             ClientSize = new Size(570, 292);
+            Controls.Add(btnCancel);
             Controls.Add(label3);
             Controls.Add(panel3);
             Controls.Add(panel2);
             Controls.Add(panel1);
             Controls.Add(label2);
-            Controls.Add(btnCancel);
             Controls.Add(label1);
             Controls.Add(comboBox1);
             Controls.Add(chkShowPassword);
@@ -227,7 +241,6 @@
         private CheckBox chkShowPassword;
         private ComboBox comboBox1;
         private Label label1;
-        private Button btnCancel;
         private PictureBox pictureBox1;
         private Label label2;
         private Panel panel1;
@@ -235,5 +248,6 @@
         private Panel panel3;
         private Label label3;
         private LinkLabel lnklblCheckUpdates;
+        private Button btnCancel;
     }
 }

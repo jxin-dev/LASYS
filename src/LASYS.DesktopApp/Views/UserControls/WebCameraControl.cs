@@ -1,27 +1,32 @@
-﻿using LASYS.Application.Services;
-using LASYS.Camera.Interfaces;
+﻿using LASYS.Camera.Interfaces;
 using LASYS.Camera.Models;
-using LASYS.Camera.Services;
-using LASYS.Domain.DeviceSettings;
+using LASYS.DesktopApp.Views.Interfaces;
 using LASYS.UIControls.Controls;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace LASYS.DesktopApp.Views.UserControls
 {
-    public partial class WebCameraControl : UserControl
+    public partial class WebCameraControl : UserControl, IWebCameraView
     {
-        private readonly ICameraService _cameraService;
+        //private readonly ICameraConfig _cameraConfig;
+        //private readonly ICameraService _cameraService;
+        //private readonly ICameraEnumerator _cameraEnumerator;
+        //private CancellationTokenSource? _previewCts;
+
+        //public event Action? ConfigurationSaved;
+
         private readonly LoadingLabel _loadingLabel;
-
-        private readonly DeviceConfigService _deviceConfigService;
-
-        public event Action? ConfigurationSaved;
-
-
         private bool _isPreviewing;
-        public WebCameraControl(DeviceConfigService deviceConfigService)
+
+
+        public event EventHandler? CameraPreviewStateChanged;
+        public event EventHandler? CameraConfigurationSaved;
+
+        public CameraInfo? SelectedCamera => cbxCameras.SelectedItem as CameraInfo;
+        public WebCameraControl()
         {
-            _deviceConfigService = deviceConfigService;
+            //_cameraConfig = cameraConfig;
+            //_cameraEnumerator = cameraEnumerator;
+            //_cameraService = cameraService;
 
             InitializeComponent();
             _loadingLabel = new LoadingLabel
@@ -36,116 +41,120 @@ namespace LASYS.DesktopApp.Views.UserControls
 
             pnlContent.Controls.Add(_loadingLabel);
 
-            _cameraService = new CameraService();
-            Load += WebCameraControl_Load;
+            //Load += WebCameraControl_Load;
 
-            btnPreview.Click += BtnPreview_Click;
-            btnSave.Click += BtnSave_Click;
+            btnPreview.Click += (sender, e) => CameraPreviewStateChanged?.Invoke(this, EventArgs.Empty);
+            btnSave.Click += (sender, e) => CameraConfigurationSaved?.Invoke(this, EventArgs.Empty);
             btnSave.Visible = false;
 
         }
 
-        private async void BtnSave_Click(object? sender, EventArgs e)
+     
+
+        private void BtnPreview_Click(object? sender, EventArgs e)
         {
-            if (cbxCameras.SelectedItem is not CameraDevice selectedCamera)
-            {
-                MessageBox.Show(
-                    "Please select a camera before saving.",
-                    "Save Configuration",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Warning);
-                return;
-            }
-            var newCamera = new CameraConfig
-            {
-                CameraIndex = selectedCamera.Index,
-                CameraName = selectedCamera.Name,
-                Enabled = true,
-                FrameWidth = 3840,
-                FrameHeight = 2160,
-                FrameRate = 30
-            };
+            //if (!_isPreviewing)
+            //{
+            //    if (cbxCameras.SelectedItem is not CameraInfo selectedCamera)
+            //    {
+            //        MessageBox.Show(
+            //            "Please select a camera.",
+            //            "Camera Selection",
+            //            MessageBoxButtons.OK,
+            //            MessageBoxIcon.Exclamation);
+            //        return;
+            //    }
+
+            //    _isPreviewing = true;
+            //    cbxCameras.Enabled = false;
+            //    btnPreview.Text = "Stop";
+            //    btnPreview.Enabled = false;
+            //    btnSave.Visible = false;
+
+            //    _loadingLabel.Start();
+
+            //    _previewCts = new CancellationTokenSource();
+            //    Task.Run(() => _cameraService.PreviewCameraAsync(selectedCamera, (mat, bitmap) =>
+            //    {
+            //        if (picCameraPreview.InvokeRequired)
+            //        {
+            //            picCameraPreview.Invoke(() =>
+            //            {
+            //                picCameraPreview.Image?.Dispose();
+            //                picCameraPreview.Image = bitmap;
+            //            });
+            //        }
+            //        else
+            //        {
+            //            picCameraPreview.Image?.Dispose();
+            //            picCameraPreview.Image = bitmap;
+            //        }
+            //    },
+            //   () => new System.Drawing.Size(640, 480),
+            //   _previewCts.Token));
 
 
-            try
-            {
-                await _deviceConfigService.UpdateCameraAsync(newCamera);
+            //    btnPreview.Enabled = true;
+            //    btnSave.Visible = true;
+            //    _loadingLabel.Stop();
+            //}
+            //else
+            //{
+            //    _previewCts?.Cancel();
+            //    picCameraPreview.Image?.Dispose();
+            //    picCameraPreview.Image = null;
 
-                MessageBox.Show(
-                         "Camera configuration saved successfully.",
-                         "Saved",
-                         MessageBoxButtons.OK,
-                         MessageBoxIcon.Information);
+            //    _isPreviewing = false;
+            //    cbxCameras.Enabled = true;
+            //    btnPreview.Text = "Preview";
+            //    btnSave.Visible = false;
 
-                _cameraService.StopPreview(picCameraPreview);
-
-                ConfigurationSaved?.Invoke(); // parent form will handle LoadView
-
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(
-                    $"Failed to save configuration.\n{ex.Message}",
-                    "Error",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Error);
-            }
+            //    //_cameraService.StopPreview(picCameraPreview);
+            //}
         }
 
-        private async void BtnPreview_Click(object? sender, EventArgs e)
+        //private void WebCameraControl_Load(object? sender, EventArgs e)
+        //{
+        //    this.BeginInvoke(async () =>
+        //    {
+        //        var cameras = _cameraEnumerator.GetCameras();
+        //        cbxCameras.DataSource = cameras;
+        //        cbxCameras.DisplayMember = "Name";
+        //        cbxCameras.ValueMember = "Index";
+
+
+        //        //await _deviceConfigService.LoadAsync();
+        //    });
+        //}
+
+        public void SetPreviewButtonEnabled(bool isEnabled)
         {
-            if (!_isPreviewing)
-            {
-                if (cbxCameras.SelectedItem is not CameraDevice selectedCamera)
-                {
-                    MessageBox.Show(
-                        "Please select a camera.",
-                        "Camera Selection",
-                        MessageBoxButtons.OK,
-                        MessageBoxIcon.Exclamation);
-                    return;
-                }
+            throw new NotImplementedException();
+        }
 
-                _isPreviewing = true;
-                cbxCameras.Enabled = false;
-                btnPreview.Text = "Stop";
-                btnPreview.Enabled = false;
-                btnSave.Visible = false;
+        public void SetSaveButtonVisibility(bool visible)
+        {
+            throw new NotImplementedException();
+        }
 
-                _loadingLabel.Start();
+        public void SetCameraList(IEnumerable<CameraInfo> cameras)
+        {   
+            cbxCameras.DataSource = cameras.ToList();
+            cbxCameras.DisplayMember = "Name";
+            cbxCameras.ValueMember = "Index";
+        }
 
-                _ = _cameraService.StartPreviewAsync(selectedCamera, picCameraPreview);
-
-                // wait ONLY for first frame
-                await _cameraService.PreviewStartedAsync;
-
-                btnPreview.Enabled = true;
-                btnSave.Visible = true;
-                _loadingLabel.Stop();
-            }
+        public void InvokeOnUI(Action action)
+        {
+            if (this.InvokeRequired)
+                this.Invoke(action);
             else
-            {
-                _isPreviewing = false;
-                cbxCameras.Enabled = true;
-                btnPreview.Text = "Preview";
-                btnSave.Visible = false;
-
-                _cameraService.StopPreview(picCameraPreview);
-            }
+                action();
         }
 
-        private void WebCameraControl_Load(object? sender, EventArgs e)
+        public void ShowMessage(string message, string title, MessageBoxIcon icon)
         {
-            this.BeginInvoke(async () =>
-            {
-                var cameras = _cameraService.GetAvailableCameras();
-                cbxCameras.DataSource = cameras;
-                cbxCameras.DisplayMember = "Name";
-                cbxCameras.ValueMember = "Index";
-
-
-                await _deviceConfigService.LoadAsync();
-            });
+           MessageBox.Show(message, title, MessageBoxButtons.OK, icon);
         }
     }
 }

@@ -7,21 +7,29 @@ using Velopack.Sources;
 
 namespace LASYS.DesktopApp.Presenters
 {
-    public class LoginPresenter : ILoginPresenter
+    public class LoginPresenter //: ILoginPresenter
     {
-        private ILoginView? _view;
-        private readonly IViewFactory _factory;
-        public LoginPresenter(IViewFactory factory)
-        {
-            _factory = factory;
-        }
+        private ILoginView _view;
 
-        public void AttachView(ILoginView view)
+        public LoginPresenter(ILoginView view)
         {
             _view = view;
             _view.LoginClicked += OnLoginClicked;
-            _view.CheckForUpdatesRequested +=  OnCheckForUpdatesRequested;
+            _view.CheckForUpdatesRequested += OnCheckForUpdatesRequested;
         }
+
+        //private readonly IViewFactory _factory;
+        //public LoginPresenter(IViewFactory factory)
+        //{
+        //    _factory = factory;
+        //}
+
+        //public void AttachView(ILoginView view)
+        //{
+        //    _view = view;
+        //    _view.LoginClicked += OnLoginClicked;
+        //    _view.CheckForUpdatesRequested +=  OnCheckForUpdatesRequested;
+        //}
 
         private async Task OnCheckForUpdatesRequested(object? sender, EventArgs e)
         {
@@ -30,24 +38,25 @@ namespace LASYS.DesktopApp.Presenters
 
         private void OnLoginClicked(object? sender, EventArgs e)
         {
-            if (string.IsNullOrWhiteSpace(_view?.Username) || string.IsNullOrWhiteSpace(_view?.Password))
+            if (string.IsNullOrWhiteSpace(_view.Username) || string.IsNullOrWhiteSpace(_view.Password))
             {
-                _view?.ShowMessage("Please enter both username and password.");
+                _view.ShowMessage("Please enter both username and password.");
                 return;
             }
 
-            if (_view!.Username == "admin" && _view.Password == "1234")
+            if (_view.Username == "admin" && _view.Password == "1234")
             {
-                _view.HideView();
-                var main = _factory.Create<IMainView, MainPresenter>();
-                main.ShowView();
+                _view.SetDialogResult(DialogResult.OK);
             }
             else
             {
                 _view.ShowMessage("Invalid username or password.");
             }
         }
-
+        //_view.HideView();
+        //var main = _factory.Create<IMainView, MainPresenter>();
+        //System.Windows.Forms.Application.Run((Form)main);
+        //main.ShowView();
         public async Task CheckForUpdatesAsync()
         {
             try

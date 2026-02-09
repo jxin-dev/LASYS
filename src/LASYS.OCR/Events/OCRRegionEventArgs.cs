@@ -1,0 +1,14 @@
+﻿using System.Drawing;
+
+namespace LASYS.OCR.Events
+{
+    public sealed class OCRRegionEventArgs : EventArgs
+    {
+        public Rectangle Region { get; }
+
+        public OCRRegionEventArgs(Rectangle region)
+        {
+            Region = region;
+        }
+    }
+}

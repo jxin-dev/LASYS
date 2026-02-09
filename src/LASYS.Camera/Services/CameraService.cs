@@ -1,156 +1,378 @@
-﻿using DirectShowLib;
+﻿using System.Diagnostics;
+using LASYS.Camera.Events;
 using LASYS.Camera.Interfaces;
 using LASYS.Camera.Models;
 using OpenCvSharp;
 using OpenCvSharp.Extensions;
+using DrawingSize = System.Drawing.Size;
 
 namespace LASYS.Camera.Services
 {
-    public class CameraService : ICameraService
+    public class CameraService : ICameraService, IDisposable
     {
+        public event EventHandler<CameraStatusEventArgs>? CameraStatusChanged;
+        public event EventHandler? CameraDisconnected;
+        public event EventHandler? CameraConnected;
+
+        private readonly ICameraConfig _cameraConfig;
+        private readonly ICameraEnumerator _cameraEnumerator;
+
         private VideoCapture? _capture;
-        private CancellationTokenSource? _cts;
-        private bool _firstFrameShown = false;
+        private CameraConfig? _activeConfig;
 
-        //public event Action? PreviewStarted;
+        private bool _hasReportedEmptyFrame;
+        private bool _disposed;
 
-        private TaskCompletionSource<bool>? _previewStartedTcs;
-        public Task PreviewStartedAsync =>_previewStartedTcs?.Task ?? Task.CompletedTask;
-        public List<CameraDevice> GetAvailableCameras()
+
+        private bool _isCameraConnected;
+        private Task? _streamingTask;
+        public Mat LastCapturedFrame { get; set; } = new();
+
+        private CancellationTokenSource _cts;
+        private readonly object _captureLock = new();
+
+        //private Point _startPoint;
+        //private Rectangle _roi;
+        //private bool _drawing = false;
+        //private bool _canDraw = true;
+        public CameraService(ICameraConfig cameraConfig, ICameraEnumerator cameraEnumerator)
         {
-            var devices = DsDevice.GetDevicesOfCat(FilterCategory.VideoInputDevice);
-            var list = new List<CameraDevice>();
 
-            for (int i = 0; i < devices.Length; i++)
+            _cameraConfig = cameraConfig;
+            _cameraEnumerator = cameraEnumerator;
+
+            _cameraConfig.CameraConfigIssue += (s, e) =>
             {
-                list.Add(new CameraDevice
-                {
-                    Index = i,
-                    Name = devices[i].Name
-                });
-            }
-            return list;
+                CameraStatusChanged?.Invoke(this,
+                    new CameraStatusEventArgs(e.Message, true));
+            };
+
+            _cts = new CancellationTokenSource();
         }
 
-        public VideoCapture GetCamera(int index)
-        {
-            var capture = new VideoCapture(index);
-            if (!capture.IsOpened())
-                throw new InvalidOperationException($"Camera {index} could not be opened.");
 
-            return capture;
-        }
-        private void PreviewLoop(PictureBox previewBox, CancellationToken token)
+        public async Task InitializeAsync()
         {
-            int failedReads = 0;
+            CameraStatusChanged?.Invoke(this,
+              new CameraStatusEventArgs("Initializing camera, please wait..."));
+
+            await StopAsync();
+            _activeConfig = await _cameraConfig.LoadAsync();
+            await OpenCameraAsync(_activeConfig);
+        }
+
+        // ----------------------------------------------------
+        // Camera resolution
+        // ----------------------------------------------------
+        public CameraInfo? ResolveCamera(CameraConfig config)
+        {
+            var cameras = _cameraEnumerator.GetCameras();
+
+            return cameras.FirstOrDefault(c =>
+                       c.Index == config.Index &&
+                       string.Equals(c.Name, config.Name, StringComparison.OrdinalIgnoreCase))
+                   ?? cameras.FirstOrDefault(c =>
+                       string.Equals(c.Name, config.Name, StringComparison.OrdinalIgnoreCase));
+        }
+
+
+        private async Task OpenCameraAsync(CameraConfig config)
+        {
+            ReleaseCamera();
+
+            using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(_cts.Token);
+            timeoutCts.CancelAfter(TimeSpan.FromSeconds(5));
 
             try
             {
-                using var frame = new Mat();
-
-                while (!token.IsCancellationRequested)
+                await Task.Run(() =>
                 {
-                    if (!_capture!.Read(frame) || frame.Empty())
+                    var cameraInfo = ResolveCamera(config);
+                    if (cameraInfo == null)
                     {
-                        failedReads++;
-                        if (failedReads > 10) // ~300ms = disconnect
-                            break;
+                        CameraStatusChanged?.Invoke(this, new CameraStatusEventArgs(
+                                $"Device unavailable ({config.Name})", true));
 
-                        Thread.Sleep(30);
-                        continue;
+                        return;
+                    }
+                    var cameraIndex = cameraInfo.Index;
+
+                    var capture = new VideoCapture(cameraIndex);
+                    //var capture = new VideoCapture(cameraIndex, VideoCaptureAPIs.DSHOW);
+
+                    if (!capture.IsOpened())
+                    {
+                        return; // hot-plug safe
                     }
 
-                    failedReads = 0;
+                    capture.Set(VideoCaptureProperties.FrameWidth, config.FrameWidth);
+                    capture.Set(VideoCaptureProperties.FrameHeight, config.FrameHeight);
+                    capture.Set(VideoCaptureProperties.Fps, config.FrameRate);
 
-                    using var bitmap = BitmapConverter.ToBitmap(frame);
+                    _capture = capture;
 
-                    if (!_firstFrameShown)
-                    {
-                        _firstFrameShown = true;
-                        _previewStartedTcs?.TrySetResult(true);
-                    }
+                }, timeoutCts.Token);
 
-                    if (previewBox.InvokeRequired)
-                    {
-                        previewBox.Invoke(() =>
-                        {
-                            previewBox.Image?.Dispose();
-                            previewBox.Image = (Bitmap)bitmap.Clone();
-                        });
-                    }
-                    else
-                    {
-                        previewBox.Image?.Dispose();
-                        previewBox.Image = (Bitmap)bitmap.Clone();
-                    }
 
-                    Thread.Sleep(30);
+                _hasReportedEmptyFrame = false;
+                _isCameraConnected = false;
+            }
+            catch (OperationCanceledException)
+            {
+                if (!_cts.IsCancellationRequested)
+                {
+                    CameraStatusChanged?.Invoke(this,
+                        new CameraStatusEventArgs(
+                            "Camera initialization timed out.", true));
                 }
             }
             catch (Exception ex)
             {
-                _previewStartedTcs?.TrySetException(ex);
+                CameraStatusChanged?.Invoke(this,
+                    new CameraStatusEventArgs(ex.Message, true));
             }
-            finally
+
+        }
+
+        // ----------------------------------------------------
+        // Streaming
+        // ----------------------------------------------------
+
+        public Task StartStreamingAsync(
+            Action<Mat, Bitmap> onFrameCaptured,
+            Func<DrawingSize> getTargetResolution)
+        {
+
+
+            _isCameraConnected = false;
+
+            //if (_streamingTask != null && !_streamingTask.IsCompleted)
+            //    return _streamingTask;
+
+            _streamingTask = Task.Run(async () =>
             {
-                CleanupPreview(previewBox);
+                var frameInterval = TimeSpan.FromMilliseconds(100);
+                var lastUpdate = DateTime.MinValue;
+
+                while (!_cts.Token.IsCancellationRequested)
+                {
+                    if (!IsCameraReady())
+                    {
+                        await HandleDisconnectedCamera(onFrameCaptured, getTargetResolution);
+                        continue;
+                    }
+
+                    using var frame = new Mat();
+                    using var resized = new Mat();
+
+                    if (!TryReadFrame(frame) || frame.Empty())
+                    {
+                        HandleEmptyFrame(onFrameCaptured, getTargetResolution);
+                        continue;
+                    }
+
+
+                    Throttle(ref lastUpdate, frameInterval);
+
+                    var targetSize = getTargetResolution();
+                    Cv2.Resize(frame, resized,
+                        new OpenCvSharp.Size(targetSize.Width, targetSize.Height));
+
+                    using var bitmap = BitmapConverter.ToBitmap(resized);
+                    var bitmapCopy = new Bitmap(bitmap);
+
+                    onFrameCaptured(resized, bitmapCopy);
+                    LastCapturedFrame = resized.Clone();
+
+                    ReportConnectedOnce();
+                }
+            }, _cts.Token);
+
+            return _streamingTask;
+        }
+
+
+        // ----------------------------------------------------
+        // Helpers
+        // ----------------------------------------------------
+        private bool TryReadFrame(Mat frame)
+        {
+            lock (_captureLock)
+            {
+                try
+                {
+                    if (_capture == null || !_capture.IsOpened() || _capture.IsDisposed)
+                        return false;
+
+                    return _capture.Read(frame);
+                }
+                catch (AccessViolationException)
+                {
+                    // The camera was unplugged
+                    ReleaseCamera();
+
+                    //_capture?.Dispose();
+                    //_capture = null;
+                    return false;
+                }
+                catch (Exception)
+                {
+                    // Other errors
+                    return false;
+                }
             }
         }
-        private void CleanupPreview(PictureBox previewBox)
+
+
+        public bool IsCameraReady() =>
+            _capture != null && _capture.IsOpened() && !_capture.IsDisposed;
+
+        private async Task HandleDisconnectedCamera(
+            Action<Mat, Bitmap> onFrameCaptured,
+            Func<DrawingSize> getTargetResolution)
         {
             try
             {
-                _capture?.Release();
-                _capture?.Dispose();
-            }
-            catch { }
 
-            _capture = null;
+                CameraStatusChanged?.Invoke(this,
+                    new CameraStatusEventArgs("Unable to access the camera.", true));
 
-            _cts?.Dispose();
-            _cts = null;
+                CameraDisconnected?.Invoke(this, EventArgs.Empty);
 
-            if (previewBox.IsHandleCreated)
-            {
-                previewBox.Invoke(() =>
+                CreateAndCaptureEmptyFrame(getTargetResolution(), onFrameCaptured);
+
+                await Task.Delay(1000, _cts.Token);
+
+                if (_activeConfig != null && !_cts.Token.IsCancellationRequested)
                 {
-                    previewBox.Image?.Dispose();
-                    previewBox.Image = null;
-                });
+                    await OpenCameraAsync(_activeConfig);
+
+                    if (IsCameraReady())
+                    {
+                        //await OpenCameraAsync(_activeConfig);
+                        _hasReportedEmptyFrame = false;
+                        _isCameraConnected = false;
+                        _streamingTask = null; // Restart streaming
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"HandleDisconnectedCamera failed: {ex}");
+            }
+
+
+        }
+
+        protected virtual void OnCameraDisconnected()
+        {
+            var handler = CameraDisconnected;
+            if (handler == null) return;
+
+            foreach (EventHandler subscriber in handler.GetInvocationList())
+            {
+                try
+                {
+                    subscriber.Invoke(this, EventArgs.Empty);
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"CameraDisconnected subscriber failed: {ex}");
+                }
             }
         }
 
-        public Task StartPreviewAsync(CameraDevice camera, PictureBox previewBox)
+        private void HandleEmptyFrame(
+            Action<Mat, Bitmap> onFrameCaptured,
+            Func<DrawingSize> getTargetResolution)
         {
-            if (_cts != null)
-                throw new InvalidOperationException("Preview already running.");
-
-            _previewStartedTcs = new TaskCompletionSource<bool>(
-                TaskCreationOptions.RunContinuationsAsynchronously);
-
-            _firstFrameShown = false;
-
-            _capture = new VideoCapture(camera.Index);
-            if (!_capture.IsOpened())
-                throw new InvalidOperationException($"Cannot open camera: {camera.Name}");
-
-            _cts = new CancellationTokenSource();
-            var token = _cts.Token;
-
-            // fire-and-forget background loop
-            _ = Task.Run(() => PreviewLoop(previewBox, token), token);
-
-            return Task.CompletedTask;
-            
-        }
-
-        public void StopPreview(PictureBox previewBox)
-        {
-            if (_cts == null)
+            if (_hasReportedEmptyFrame)
                 return;
 
+            _hasReportedEmptyFrame = true;
+            _isCameraConnected = false;
+
+            CameraStatusChanged?.Invoke(this,
+                new CameraStatusEventArgs(
+                    "No image received from the camera.", true));
+            CameraDisconnected?.Invoke(this, EventArgs.Empty);
+
+            CreateAndCaptureEmptyFrame(getTargetResolution(), onFrameCaptured);
+        }
+
+        private static void Throttle(ref DateTime lastUpdate, TimeSpan interval)
+        {
+            var now = DateTime.Now;
+            if (now - lastUpdate < interval)
+                return;
+
+            lastUpdate = now;
+        }
+
+        private void ReportConnectedOnce()
+        {
+            if (_isCameraConnected)
+                return;
+
+            CameraConnected?.Invoke(this, EventArgs.Empty);
+
+            CameraStatusChanged?.Invoke(this,
+                new CameraStatusEventArgs("Connected"));
+
+            _isCameraConnected = true;
+        }
+
+        private void CreateAndCaptureEmptyFrame(DrawingSize size, Action<Mat, Bitmap> onFrameCaptured)
+        {
+            using var mat = new Mat(size.Height, size.Width, MatType.CV_8UC3, Scalar.All(0));
+            using var bitmap = BitmapConverter.ToBitmap(mat);
+            onFrameCaptured(mat, new Bitmap(bitmap));
+
+            ReleaseCamera();
+        }
+
+
+
+        // ----------------------------------------------------
+        // Cleanup
+        // ----------------------------------------------------
+        public void ReleaseCamera()
+        {
+            lock (_captureLock)
+            {
+                try { _capture?.Release(); } catch { }
+                try { _capture?.Dispose(); } catch { }
+                _capture = null;
+            }
+
+        }
+        public async Task StopAsync()
+        {
             _cts.Cancel();
+
+            if (_streamingTask != null)
+                await _streamingTask;
+
+            ReleaseCamera();
+
+            _cts.Dispose();
+            _cts = new CancellationTokenSource();
+
+            _streamingTask = null;
+            _hasReportedEmptyFrame = false;
+            _isCameraConnected = false;
+        }
+
+        public void Dispose()
+        {
+            if (_disposed)
+                return;
+
+            _disposed = true;
+            ReleaseCamera();
+            LastCapturedFrame?.Dispose();
         }
 
     }
 }
+

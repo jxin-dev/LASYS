@@ -1,8 +1,0 @@
-﻿namespace LASYS.Camera.Models
-{
-    public class CameraDevice
-    {
-        public int Index { get; set; }
-        public string Name { get; set; } = string.Empty;
-    }
-}

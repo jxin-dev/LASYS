@@ -5,60 +5,61 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace LASYS.DesktopApp.Presenters
 {
-    public class MainPresenter : IMainPresenter
+    public class MainPresenter // : IMainPresenter
     {
-        private IMainView? _view;
-        private readonly IServiceProvider _services;
-        public MainPresenter(IServiceProvider services)
-        {
-            _services = services;
-        }
+        private IMainView _view;
+        public IMainView View => _view;
 
-        public void AttachView(IMainView view)
+        private readonly IServiceProvider _services;
+        public MainPresenter(IMainView view, IServiceProvider services)
         {
             _view = view;
+            _services = services;
             _view.WorkOrderRequested += OnWorkOrderRequested;
             _view.WebCameraConfigurationRequested += OnWebCameraConfigurationRequested;
             _view.OCRCalibrationRequested += OnOCRCalibrationRequested;
         }
 
+
         private void OnWebCameraConfigurationRequested(object? sender, EventArgs e)
         {
-            var cameraControl = _services.GetRequiredService<WebCameraControl>();
-
-            cameraControl.ConfigurationSaved += () =>
+            var cameraPresenter = _services.GetRequiredService<WebCameraPresenter>();
+            cameraPresenter.ConfigurationSaved += () =>
             {
-                var workOrdersControl = _services.GetRequiredService<WorkOrdersControl>();
-                _view?.LoadView(workOrdersControl);
+                var workOrdersPresenter = _services.GetRequiredService<WorkOrdersPresenter>();
+                _view?.LoadView(workOrdersPresenter.View);
             };
 
-            _view?.LoadView(cameraControl);
+            _view?.LoadView(cameraPresenter.View);
+            cameraPresenter.LoadCameras();
+
         }
 
         private void OnWorkOrderRequested(object? sender, EventArgs e)
         {
-            var workOrdersControl = _services.GetRequiredService<WorkOrdersControl>();
-            _view?.LoadView(workOrdersControl);
+            var workOrdersPresenter = _services.GetRequiredService<WorkOrdersPresenter>();
+            _view?.LoadView(workOrdersPresenter.View);
         }
 
         private void OnOCRCalibrationRequested(object? sender, EventArgs e)
         {
-            var ocrControl = _services.GetRequiredService<OCRCalibrationControl>();
+            var ocrPresenter = _services.GetRequiredService<OCRCalibrationPresenter>();
+            //ocrControl.CameraNotAvailable += () =>
+            //{
+            //    var cameraPresenter = _services.GetRequiredService<WebCameraPresenter>();
+            //    cameraPresenter.LoadCameras();
 
-            ocrControl.CameraNotAvailable += () =>
-            {
-                var cameraControl = _services.GetRequiredService<WebCameraControl>();
-                cameraControl.ConfigurationSaved += () =>
-                {
-                    // Go back to WorkOrdersControl after saving
-                    var workOrdersControl = _services.GetRequiredService<WorkOrdersControl>();
-                    _view?.LoadView(workOrdersControl);
-                };
+            //    cameraPresenter.ConfigurationSaved += () =>
+            //    {
+            //        // Go back to WorkOrdersControl after saving
+            //        var workOrdersPresenter = _services.GetRequiredService<WorkOrdersPresenter>();
+            //        _view?.LoadView(workOrdersPresenter.View);
+            //    };
 
-                _view?.LoadView(cameraControl);
-            };
+            //    _view?.LoadView(cameraPresenter.View);
+            //};
 
-            _view?.LoadView(ocrControl);
+            _view?.LoadView(ocrPresenter.View);
         }
     }
 }

@@ -2,13 +2,12 @@
 using LASYS.Application.Services;
 using LASYS.Camera.Interfaces;
 using LASYS.Camera.Services;
-using LASYS.DesktopApp.Core.Interfaces;
-using LASYS.DesktopApp.Core.Services;
 using LASYS.DesktopApp.Presenters;
 using LASYS.DesktopApp.Views.Forms;
 using LASYS.DesktopApp.Views.Interfaces;
 using LASYS.DesktopApp.Views.UserControls;
-using LASYS.Infrastructure.Repositories;
+using LASYS.OCR.Interfaces;
+using LASYS.OCR.Services;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace LASYS.DesktopApp.Extensions
@@ -17,22 +16,64 @@ namespace LASYS.DesktopApp.Extensions
     {
         public static IServiceCollection AddMvp(this IServiceCollection services)
         {
-            services.AddSingleton<IViewFactory, ViewFactory>();
-            // MVP
-            services.AddTransient<ISplashView, SplashForm>();
-            services.AddTransient<SplashPresenter>();
+            
+            services.AddTransient<SplashForm>(sp =>
+            {
+                var view = new SplashForm();
+                var cameraConfig = sp.GetRequiredService<ICameraConfig>();
+                var cameraService = sp.GetRequiredService<ICameraService>();
+                new SplashPresenter(view, cameraConfig, cameraService);
+                return view;
+            });
+            services.AddTransient<ISplashView>(sp => sp.GetRequiredService<SplashForm>());
 
-            services.AddTransient<ILoginView, LoginForm>();
-            services.AddTransient<LoginPresenter>();
+            services.AddTransient<LoginForm>(sp =>
+            {
+                var view = new LoginForm();
+                new LoginPresenter(view);
+                return view;
+            });
+            services.AddTransient<ILoginView>(sp => sp.GetRequiredService<LoginForm>());
 
-            services.AddTransient<IMainView, MainForm>();
-            services.AddTransient<MainPresenter>();
+            services.AddSingleton<IMainView, MainForm>();
+            services.AddSingleton<MainPresenter>(sp =>
+            {
+                var view = sp.GetRequiredService<IMainView>();
+                return new MainPresenter(view, sp);
+            });
 
 
-            services.AddTransient<WebCameraControl>();
-            services.AddTransient<WorkOrdersControl>();
+            services.AddTransient<ErrorForm>(sp =>
+            {
+                var view = new ErrorForm();
+                new ErrorPresenter(view);
+                return view;
+            });
+
+            services.AddTransient<IErrorView>(sp => sp.GetRequiredService<ErrorForm>());
+
+
+            services.AddTransient<IOCRCalibrationView, OCRCalibrationControl>();
+            services.AddTransient<OCRCalibrationPresenter>();
+
+
+            services.AddTransient<IWebCameraView, WebCameraControl>();
+            services.AddTransient<WebCameraPresenter>();
+
+            //services.AddTransient<WebCameraControl>();
+            services.AddTransient<IWorkOrdersView, WorkOrdersControl>();
+            services.AddTransient<WorkOrdersPresenter>();
+
+
+            services.AddTransient<ILabelPrintingView, LabelPrintingControl>();
+            services.AddTransient<LabelPrintingPresenter>();
+
+            services.AddTransient<OCRCalibrationControl>();
+
+
 
             // Services
+            services.AddScoped<IPrintingService, PrintingService>();
 
 
             return services;
@@ -40,14 +81,14 @@ namespace LASYS.DesktopApp.Extensions
 
         public static IServiceCollection AddDevices(this IServiceCollection services)
         {
-            services.AddScoped<ICameraService, CameraService>();
+            //Camera Service
+            services.AddScoped<ICameraConfig, CameraConfigStore>();
+            services.AddScoped<ICameraEnumerator, CameraEnumerator>();
+            services.AddScoped<ICalibrationService, CalibrationService>();
 
-            services.AddSingleton<IDeviceConfigJsonRepository, DeviceConfigJsonRepository>();
-            services.AddSingleton<DeviceConfigService>();
 
-            services.AddSingleton<IOCRConfigJsonRepository, OCRConfigJsonRepository>();
-            services.AddSingleton<OCRConfigService>();
-
+            services.AddSingleton<ICameraService, CameraService>(); //one instance shared across the app.
+            services.AddScoped<IOCRService, OCRService>();
 
             return services;
         }

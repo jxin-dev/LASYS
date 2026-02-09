@@ -2,9 +2,9 @@
 
 namespace LASYS.DesktopApp.Views.Interfaces
 {
-    public interface ILoginView : IView
+    public interface ILoginView
     {
-        event EventHandler? LoginClicked;
+        event EventHandler LoginClicked;
         string Username { get; }
         string Password { get; }
         void ShowMessage(string errorMessage);
@@ -12,5 +12,6 @@ namespace LASYS.DesktopApp.Views.Interfaces
 
         event Func<object?, EventArgs, Task>? CheckForUpdatesRequested;
         void ShowStatusMessage(string message, MessageBoxIcon icon);
+        void SetDialogResult(DialogResult result);
     }
 }

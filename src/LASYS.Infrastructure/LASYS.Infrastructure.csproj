@@ -14,4 +14,8 @@
     <ProjectReference Include="..\LASYS.Application\LASYS.Application.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Repositories\" />
+  </ItemGroup>
+
 </Project>

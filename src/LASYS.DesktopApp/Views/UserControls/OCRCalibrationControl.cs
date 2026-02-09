@@ -1,32 +1,14 @@
-﻿using LASYS.Application.Services;
-using LASYS.Camera.Interfaces;
-using LASYS.Camera.Services;
-using LASYS.Domain.OCR;
-using LASYS.OCR.Interfaces;
+﻿using System.Reflection;
+using LASYS.DesktopApp.Events;
+using LASYS.DesktopApp.Views.Interfaces;
+using LASYS.OCR.Models;
 using LASYS.UIControls.Controls;
 
 namespace LASYS.DesktopApp.Views.UserControls
 {
-    public partial class OCRCalibrationControl : UserControl
+    public partial class OCRCalibrationControl : UserControl, IOCRCalibrationView
     {
         private readonly DraggableResizerPanel _resizablePanel;
-
-        private readonly OCRConfigService _ocrConfigService;
-        private readonly ICameraService _cameraService;
-
-        private readonly DeviceConfigService _deviceConfigService;
-
-        public event Action? CameraNotAvailable;
-
-        private Point _startPoint;
-        private Rectangle _roi;
-        private bool _drawing = false;
-        private bool _canDraw = true;
-        private NormalizedRect? _normalizedRegion;
-        private Button btnSaveCalibration = new();
-        private Button btnCancelCalibration = new();
-        private Rectangle? _ocrViewerRegion;
-
 
         private GridViewWithPagination _gridWithPagination;
 
@@ -38,11 +20,37 @@ namespace LASYS.DesktopApp.Views.UserControls
         private TextBox? _txtImgWidth;
         private TextBox? _txtImgHeight;
 
-        public OCRCalibrationControl(OCRConfigService ocrConfigService, DeviceConfigService deviceConfigService)
-        {
-            _ocrConfigService = ocrConfigService;
-            _deviceConfigService = deviceConfigService;
+        private Label? _lblCameraStatus;
+        private Button? _btnReconnectCamera;
 
+        private Label? _lblScannerStatus;
+        private Label? _lblOcrStatus;
+
+        private Bitmap? _currentFrame;
+        public Size PictureBoxSize => picCameraPreview.Size;
+
+        //Calibration region
+        public event EventHandler<ImageRegionEventArgs>? ComputeImageRegionRequested;
+        public event EventHandler<CalibrationEventArgs>? SaveCalibrationClicked;
+
+
+        // Events
+        public event EventHandler? InitializeRequested;
+        public event EventHandler? StreamingRequested;
+        public event EventHandler? LoadRegisteredOcrItemsRequested;
+        public event EventHandler<OCRCoordinatesEventArgs>? OCRTriggered;
+
+        private Rectangle _roi;
+        private Point _startPoint;
+        private bool _drawing = false;
+        private bool _canDraw = true;
+        private Rectangle? _ocrViewerRegion;
+
+        private NormalizedRect? _normalizedRegion;
+        private Button btnSaveCalibration = new();
+        private Button btnCancelCalibration = new();
+        public OCRCalibrationControl()
+        {
             InitializeComponent();
             DoubleBuffered = true;
             SetStyle(ControlStyles.OptimizedDoubleBuffer |
@@ -60,24 +68,32 @@ namespace LASYS.DesktopApp.Views.UserControls
             };
 
             pnlContent.Controls.Add(_resizablePanel);
+
             LoadRegisteredItem();
 
             CalibrationSetup();
 
-            _cameraService = new CameraService();
-            Load += OCRCalibrationControl_Load;
+            SystemDevices();
 
+            Load += delegate
+            {
+                BeginInvoke(() =>
+                {
+                    _resizablePanel.ShowTab("System Devices");
+                    StreamingRequested?.Invoke(this, EventArgs.Empty); // start streaming immediately on load
+                });
+            };
 
 
             picCameraPreview.MouseDown += (sender, e) =>
             {
-                if (!_canDraw || picCameraPreview.Image == null) return;
+                if (!_canDraw) return;
 
                 _drawing = true;
                 _startPoint = e.Location;
                 _resizablePanel.HidePanel();
+                ClearCoordinateFields();
             };
-
             picCameraPreview.MouseMove += (sender, e) =>
             {
                 if (_drawing && _canDraw)
@@ -91,7 +107,6 @@ namespace LASYS.DesktopApp.Views.UserControls
                     picCameraPreview.Invalidate(); // Triggers Paint event to redraw
                 }
             };
-
             picCameraPreview.MouseUp += (sender, e) =>
             {
                 if (!_canDraw) return;
@@ -114,26 +129,9 @@ namespace LASYS.DesktopApp.Views.UserControls
                     };
                     btnSaveCalibration.FlatAppearance.BorderSize = 0;
 
-                    btnSaveCalibration.Click += (sender, e) =>
+                    btnSaveCalibration.Click += delegate
                     {
-
-                        // Convert viewer (PictureBox) region to image region
-                        var result = _ocrConfigService.ComputeImageRegion(_roi, picCameraPreview.Size, picCameraPreview.Image.Size);
-                        if (result != null)
-                        {
-                            UpdateCoordinateFields(result.ImageRegion,picCameraPreview.Image.Size);
-                            _resizablePanel.ShowTab("Calibration Setup");
-                        }
-
-                        _normalizedRegion = NormalizedRect.FromAbsolute(_roi, picCameraPreview.Size);
-                        _roi = Rectangle.Empty;
-                        picCameraPreview.Invalidate();
-                        picCameraPreview.Controls.Remove(btnSaveCalibration);
-                        picCameraPreview.Controls.Remove(btnCancelCalibration);
-                        btnSaveCalibration.Dispose();
-                        btnCancelCalibration.Dispose();
-                        _canDraw = true; //Allow drawing again
-
+                        ComputeImageRegionRequested?.Invoke(this, new ImageRegionEventArgs(_roi, picCameraPreview.Size, picCameraPreview.Image?.Size ?? Size.Empty));
                     };
 
                     btnCancelCalibration = new Button
@@ -151,15 +149,14 @@ namespace LASYS.DesktopApp.Views.UserControls
 
                     btnCancelCalibration.Click += (sender, e) =>
                     {
-                        ClearCoordinateFields();
                         _roi = Rectangle.Empty;
                         picCameraPreview.Invalidate();
-
                         picCameraPreview.Controls.Remove(btnSaveCalibration);
                         picCameraPreview.Controls.Remove(btnCancelCalibration);
                         btnSaveCalibration.Dispose();
                         btnCancelCalibration.Dispose();
                         _canDraw = true; //Allow drawing again
+                        _normalizedRegion = null;
                     };
 
 
@@ -182,20 +179,16 @@ namespace LASYS.DesktopApp.Views.UserControls
             {
                 if (_ocrViewerRegion.HasValue)
                 {
-                    using var pen = new Pen(Color.LimeGreen, 1);
+                    using var pen = new Pen(Color.LimeGreen, 2);
                     e.Graphics.DrawRectangle(pen, _ocrViewerRegion.Value);
                 }
 
-                if (_roi != Rectangle.Empty)
+                if (_normalizedRegion != null)
                 {
-
-                    if (_normalizedRegion != null)
-                    {
-                        Rectangle rect = _normalizedRegion.ToAbsolute(picCameraPreview.Size);
-                        e.Graphics.DrawRectangle(Pens.Red, rect);
-                    }
+                    Rectangle rect = _normalizedRegion.ToAbsolute(picCameraPreview.Size);
+                    e.Graphics.DrawRectangle(Pens.Red, rect);
                 }
-                
+
             };
 
             picCameraPreview.Resize += (sender, e) =>
@@ -215,7 +208,8 @@ namespace LASYS.DesktopApp.Views.UserControls
         }
 
 
-        private async void LoadRegisteredItem()
+
+        private void LoadRegisteredItem()
         {
             var container = new Panel
             {
@@ -249,33 +243,147 @@ namespace LASYS.DesktopApp.Views.UserControls
             {
                 if (e is Product data)
                 {
-                    MessageBox.Show($"Item Code: {data.ItemCode}");
+                    //MessageBox.Show($"Item Code: {data.ItemCode}");
+
+                    OCRTriggered?.Invoke(this, new OCRCoordinatesEventArgs(data.Coordinates.X,
+                                                                      data.Coordinates.Y,
+                                                                      data.Coordinates.Width,
+                                                                      data.Coordinates.Height,
+                                                                      data.Coordinates.ImageWidth,
+                                                                      data.Coordinates.ImageHeight));
                 }
             };
 
             container.Controls.Add(_gridWithPagination);
 
             // Initial load
-            await ReloadRegisteredItemsAsync();
+            //await ReloadRegisteredItemsAsync();
+
         }
-        private async Task ReloadRegisteredItemsAsync()
+
+        public void RaiseLoadRegisteredOcrItemsRequested()
         {
-            var config = await _ocrConfigService.LoadAsync();
-
-            _gridWithPagination.SetRows(config.Products, p =>
-            [
-                p.ItemCode,
-                p.Coordinates.X.ToString(),
-                p.Coordinates.Y.ToString(),
-                p.Coordinates.Width.ToString(),
-                p.Coordinates.Height.ToString(),
-                p.Coordinates.ImageWidth.ToString(),
-                p.Coordinates.ImageHeight.ToString(),
-                p.RegisteredAt.ToString("yyyy-MM-dd HH:mm:ss")
-            ]);
+            LoadRegisteredOcrItemsRequested?.Invoke(this, EventArgs.Empty);
         }
 
+        private void SystemDevices()
+        {
+            var container = new Panel
+            {
+                Dock = DockStyle.Fill,
+                AutoSize = true,
+                Padding = new Padding(15)
+            };
+            _resizablePanel.AddTab("System Devices", container);
 
+            var titleLabel = new Label
+            {
+                Text = "System Devices",
+                Font = new Font("Segoe UI", 14, FontStyle.Bold),
+                Dock = DockStyle.Top,
+                Height = 40,
+                TextAlign = ContentAlignment.MiddleLeft
+            };
+
+
+            var table = new TableLayoutPanel
+            {
+                Dock = DockStyle.Top,
+                AutoSize = true,
+                ColumnCount = 3,
+                RowCount = 3,
+                //CellBorderStyle = TableLayoutPanelCellBorderStyle.Inset
+            };
+
+            table.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+            table.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+            table.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+
+            // --- Camera ---
+            var lblCameraTitle = new Label
+            {
+                Text = "Camera:",
+                AutoSize = true,
+                Font = new Font("Segoe UI", 9F, FontStyle.Bold),
+                Padding = new Padding(0, 12, 6, 12),
+                Dock = DockStyle.Fill,
+                TextAlign = ContentAlignment.MiddleLeft
+            };
+
+            _lblCameraStatus = new Label
+            {
+                Text = "Not connected",
+                AutoSize = true,
+                ForeColor = Color.Gray,
+                Dock = DockStyle.Fill,
+                TextAlign = ContentAlignment.MiddleLeft,
+                Padding = new Padding(0, 12, 0, 12)
+            };
+
+            _btnReconnectCamera = new Button
+            {
+                Text = "Reconnect",
+                AutoSize = true,
+                Padding = new Padding(6, 3, 6, 3),
+                Visible = false
+            };
+
+            _btnReconnectCamera.Click += delegate
+            {
+                SetReconnectCameraButtonVisibility(false);
+                InitializeRequested?.Invoke(this, EventArgs.Empty);
+            };
+
+
+            // --- Scanner ---
+            var lblScannerTitle = new Label
+            {
+                Text = "Scanner:",
+                AutoSize = true,
+                Font = new Font("Segoe UI", 9F, FontStyle.Bold),
+                Padding = new Padding(0, 12, 6, 12),
+            };
+
+            _lblScannerStatus = new Label
+            {
+                Text = "Not detected",
+                AutoSize = true,
+                ForeColor = Color.Gray,
+                Padding = new Padding(0, 12, 0, 12)
+            };
+
+            // --- OCR ---
+            var lblOcrTitle = new Label
+            {
+                Text = "OCR:",
+                AutoSize = true,
+                Font = new Font("Segoe UI", 9F, FontStyle.Bold),
+                Padding = new Padding(0, 12, 6, 12),
+            };
+
+            _lblOcrStatus = new Label
+            {
+                Text = "Not ready",
+                AutoSize = true,
+                ForeColor = Color.Gray,
+                Padding = new Padding(0, 12, 0, 12),
+            };
+
+            // Add controls to table
+            table.Controls.Add(lblCameraTitle, 0, 0);
+            table.Controls.Add(_lblCameraStatus, 1, 0);
+            table.Controls.Add(_btnReconnectCamera, 2, 0);
+
+
+            table.Controls.Add(lblScannerTitle, 0, 1);
+            table.Controls.Add(_lblScannerStatus, 1, 1);
+
+            table.Controls.Add(lblOcrTitle, 0, 2);
+            table.Controls.Add(_lblOcrStatus, 1, 2);
+
+            container.Controls.Add(table);
+            container.Controls.Add(titleLabel);
+        }
         private void CalibrationSetup()
         {
             var container = new Panel
@@ -296,7 +404,7 @@ namespace LASYS.DesktopApp.Views.UserControls
                 Height = 40,
                 TextAlign = ContentAlignment.MiddleLeft
             };
-       
+
 
             // Main layout under title
             var layout = new TableLayoutPanel
@@ -322,7 +430,7 @@ namespace LASYS.DesktopApp.Views.UserControls
 
             layout.Controls.Add(coordGrid);
 
-          
+
             // Coordinates title
             var coordLabel = new Label
             {
@@ -421,92 +529,47 @@ namespace LASYS.DesktopApp.Views.UserControls
             };
             buttonPanel.Controls.Add(btnTestOcr, 1, 0);
 
-            btnSave.Click += async(sender, e) =>
+
+            btnSave.Click += delegate
             {
-                if (string.IsNullOrWhiteSpace(_txtItemCode.Text))
-                {
-                    MessageBox.Show("Please enter an Item Code.", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    return;
-                }
-                // Try to parse the coordinate values from the textboxes
-                bool parsedX = int.TryParse(_txtX.Text, out int x);
-                bool parsedY = int.TryParse(_txtY.Text, out int y);
-                bool parsedWidth = int.TryParse(_txtWidth.Text, out int width);
-                bool parsedHeight = int.TryParse(_txtHeight.Text, out int height);
-                bool parsedImgWidth = int.TryParse(_txtImgWidth.Text, out int imgWidth);
-                bool parsedImgHeight = int.TryParse(_txtImgHeight.Text, out int imgHeight);
-
-                if (!parsedX || !parsedY || !parsedWidth || !parsedHeight || !parsedImgWidth || !parsedImgHeight)
-                {
-                    MessageBox.Show("Invalid coordinate values. Please check and try again.", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    return;
-                }
-
-                // Validate rectangle dimensions
-                if (width <= 5 || height <= 5)
-                {
-                    MessageBox.Show("Please specify a valid region with width and height greater than 5.", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    return;
-                }
-
-                Rectangle imageRegion = new Rectangle(x, y, width, height);
-
-                var product = new Product
-                {
-                    ItemCode = _txtItemCode.Text.Trim(),
-                    Coordinates = new Coordinates
-                    {
-                        X = imageRegion.X,
-                        Y = imageRegion.Y,
-                        Width = imageRegion.Width,
-                        Height = imageRegion.Height,
-                        ImageWidth = imgWidth,
-                        ImageHeight = imgHeight
-                    },
-                    RegisteredAt = DateTime.Now
-                };
-
-                await _ocrConfigService.AddOrUpdateProductAsync(product);
-                await ReloadRegisteredItemsAsync();
-
-                MessageBox.Show("Saved successfully", "OCR Registration", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                //_resizablePanel.ShowTab("OCR Registered");
+                SaveCalibrationClicked?.Invoke(this, new CalibrationEventArgs(_roi, picCameraPreview.Size, picCameraPreview.Image?.Size ?? Size.Empty, _txtItemCode.Text.Trim()));
             };
 
-            btnTestOcr.Click += (sender, e) =>
+            btnTestOcr.Click += delegate
             {
-                // Validate coordinates
-                if (!int.TryParse(_txtX!.Text, out int x) ||
-                    !int.TryParse(_txtY!.Text, out int y) ||
-                    !int.TryParse(_txtWidth!.Text, out int width) ||
-                    !int.TryParse(_txtHeight!.Text, out int height))
-                {
-                    MessageBox.Show("Invalid OCR coordinates.", "OCR Read",
-                        MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    return;
-                }
 
+                // Try to parse the coordinate values from the textboxes
+                bool parsedX = int.TryParse(_txtX?.Text, out int x);
+                bool parsedY = int.TryParse(_txtY?.Text, out int y);
+                bool parsedWidth = int.TryParse(_txtWidth?.Text, out int width);
+                bool parsedHeight = int.TryParse(_txtHeight?.Text, out int height);
+                bool parsedImgWidth = int.TryParse(_txtImgWidth?.Text, out int imgWidth);
+                bool parsedImgHeight = int.TryParse(_txtImgHeight?.Text, out int imgHeight);
 
-                _resizablePanel.HidePanel();
-                // Read OCR 
-                // Show messagebox with ocr result
-                string result = "Test123";
-                MessageBox.Show($"OCR Read Completed Successfully.\n\nDetected Text:\n{result}","OCR Result",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Information);
-
+                OCRTriggered?.Invoke(this, new OCRCoordinatesEventArgs(x, y, width, height, imgWidth, imgHeight));
             };
         }
 
-
-        private void UpdateCoordinateFields(Rectangle imageRegion, Size imageSize)
+        public void UpdateCoordinateFields(Rectangle imageRegion, Size imageSize)
         {
+            _normalizedRegion = null;
+            picCameraPreview.Controls.Remove(btnSaveCalibration);
+            picCameraPreview.Controls.Remove(btnCancelCalibration);
+
+            btnSaveCalibration.Dispose();
+            btnCancelCalibration.Dispose();
+
+            _canDraw = true;
+
             _txtX!.Text = imageRegion.X.ToString();
             _txtY!.Text = imageRegion.Y.ToString();
             _txtWidth!.Text = imageRegion.Width.ToString();
             _txtHeight!.Text = imageRegion.Height.ToString();
             _txtImgWidth!.Text = imageSize.Width.ToString();
             _txtImgHeight!.Text = imageSize.Height.ToString();
+            _resizablePanel.ShowTab("Calibration Setup");
+
+            _txtItemCode?.Focus();
         }
 
         private void ClearCoordinateFields()
@@ -519,48 +582,108 @@ namespace LASYS.DesktopApp.Views.UserControls
             _txtImgHeight!.Text = string.Empty;
         }
 
-        private void OCRCalibrationControl_Load(object? sender, EventArgs e)
+
+
+        public void InvokeOnUI(Action action)
         {
+            if (this.InvokeRequired)
+                this.Invoke(action);
+            else
+                action();
+        }
+        public void ShowCameraStatus(string message, bool isError = false)
+        {
+            if (isError)
+                _lblCameraStatus!.ForeColor = Color.Crimson;
+            else
+                _lblCameraStatus!.ForeColor = Color.ForestGreen;
 
-            this.BeginInvoke(async () =>
-            {
-
-                var cameras = _cameraService.GetAvailableCameras();
-
-                if (cameras.Count == 0)
-                {
-                    await Task.Delay(50);
-                    MessageBox.Show(
-                        "No camera devices found. Please connect a camera and try again.",
-                        "Camera Not Found",
-                        MessageBoxButtons.OK,
-                        MessageBoxIcon.Warning);
-                    return;
-                }
-                var config = await _deviceConfigService.LoadAsync();
-                var selectedCamera = cameras.FirstOrDefault(c => c.Index == config.Camera.CameraIndex && c.Name == config.Camera.CameraName);
-
-                if (selectedCamera == null || config.Camera == null || !config.Camera.Enabled || config.Camera.CameraIndex >= cameras.Count)
-                {
-                    await Task.Delay(50);
-                    MessageBox.Show(
-                        "The configured camera is not available or disabled. Please select another camera.",
-                        "Camera Not Available",
-                        MessageBoxButtons.OK,
-                        MessageBoxIcon.Warning
-                    );
-
-                    CameraNotAvailable?.Invoke(); // redirect to camera selection
-                    return;
-                }
-
-                _ = _cameraService.StartPreviewAsync(selectedCamera, picCameraPreview);
-
-                // wait ONLY for first frame
-                await _cameraService.PreviewStartedAsync;
-            });
+            _lblCameraStatus!.Text = message;
         }
 
-    }
+        public void ShowOCRRegion(Rectangle viewerRegion)
+        {
+            _ocrViewerRegion = viewerRegion;
+        }
 
+        public void DisplayFrame(Bitmap bitmap)
+        {
+            _currentFrame?.Dispose();
+            _currentFrame = bitmap;
+            picCameraPreview.Image = _currentFrame;
+        }
+
+        public void SetReconnectCameraButtonVisibility(bool isVisible)
+        {
+            _btnReconnectCamera!.Visible = isVisible;
+        }
+
+        public void FinishCalibration(string message, bool isError = false)
+        {
+            _normalizedRegion = null;
+
+            _roi = Rectangle.Empty;
+
+            picCameraPreview.Invalidate();
+
+            picCameraPreview.Controls.Remove(btnSaveCalibration);
+            picCameraPreview.Controls.Remove(btnCancelCalibration);
+
+            btnSaveCalibration.Dispose();
+            btnCancelCalibration.Dispose();
+
+            _canDraw = true;
+
+            ClearCoordinateFields();
+
+            var title = isError ? "Error Saving" : "Save Coordinates";
+            var icon = isError ? MessageBoxIcon.Warning : MessageBoxIcon.Information;
+
+            MessageBox.Show(message, title, MessageBoxButtons.OK, icon);
+
+            _resizablePanel.ShowTab("OCR Registered");
+
+        }
+
+        public void DisplayRegisteredOcrItems(OCRConfig config)
+        {
+            _gridWithPagination.SetRows(config.Products, p =>
+            [
+             p.ItemCode,
+                p.Coordinates.X.ToString(),
+                p.Coordinates.Y.ToString(),
+                p.Coordinates.Width.ToString(),
+                p.Coordinates.Height.ToString(),
+                p.Coordinates.ImageWidth.ToString(),
+                p.Coordinates.ImageHeight.ToString(),
+                p.RegisteredAt.ToString("yyyy-MM-dd HH:mm:ss")
+            ]);
+        }
+
+        public void ShowOCRResult(string result, string msg, bool isSuccess = true)
+        {
+            if (isSuccess)
+                _lblOcrStatus!.ForeColor = Color.ForestGreen;
+            else
+                _lblOcrStatus!.ForeColor = Color.Crimson;
+
+            _lblOcrStatus!.Text = msg;
+
+            if (string.IsNullOrEmpty(result))
+                MessageBox.Show("No text detected", "OCR Result", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            else
+                MessageBox.Show($"Detected: {result}", "OCR Result", MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+            _ocrViewerRegion = null;
+            picCameraPreview.Invalidate();
+        }
+    }
+}
+public static class ControlExtensions
+{
+    public static void DoubleBuffered(this Control control, bool enable)
+    {
+        typeof(Control).GetProperty("DoubleBuffered", BindingFlags.Instance | BindingFlags.NonPublic)
+            ?.SetValue(control, enable, null);
+    }
 }

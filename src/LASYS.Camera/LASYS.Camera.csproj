@@ -10,6 +10,7 @@
 
 	<ItemGroup>
 	  <PackageReference Include="DirectShowLib.Net" Version="3.0.0" />
+	  <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
 	  <PackageReference Include="OpenCvSharp4" Version="4.11.0.20250507" />
 	  <PackageReference Include="OpenCvSharp4.Extensions" Version="4.11.0.20250507" />
 	  <PackageReference Include="OpenCvSharp4.Windows" Version="4.11.0.20250507" />

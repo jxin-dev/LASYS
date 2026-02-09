@@ -1,9 +1,12 @@
-﻿using LASYS.UIControls.Controls;
+﻿using LASYS.DesktopApp.Events;
+using LASYS.DesktopApp.Views.Interfaces;
+using LASYS.UIControls.Controls;
 
 namespace LASYS.DesktopApp.Views.UserControls
 {
-    public partial class WorkOrdersControl : UserControl
+    public partial class WorkOrdersControl : UserControl, IWorkOrdersView
     {
+        public event EventHandler<LabelPrintingRequestedEventArgs>? LabelPrintingRequested;
         public WorkOrdersControl()
         {
             InitializeComponent();
@@ -66,8 +69,10 @@ namespace LASYS.DesktopApp.Views.UserControls
                 // Handle row double-click event
                 if (e is SampleData data)
                 {
-                    MessageBox.Show($"Data Id: {data.Id.ToString()}");
+                    LabelPrintingRequested?.Invoke(this, new LabelPrintingRequestedEventArgs(data.Id));
+
                 }
+
             };
 
             pnlContent.Controls.Add(gridWithPagination);
@@ -84,7 +89,6 @@ namespace LASYS.DesktopApp.Views.UserControls
                 };
             }
         }
-
 
     }
 

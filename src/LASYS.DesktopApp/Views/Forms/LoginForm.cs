@@ -1,5 +1,4 @@
-﻿using LASYS.DesktopApp.Presenters.Interfaces;
-using LASYS.DesktopApp.Views.Interfaces;
+﻿using LASYS.DesktopApp.Views.Interfaces;
 
 namespace LASYS.DesktopApp.Views.Forms
 {
@@ -15,6 +14,7 @@ namespace LASYS.DesktopApp.Views.Forms
         {
             InitializeComponent();
             btnLogin.Click += (s, e) => LoginClicked?.Invoke(this, EventArgs.Empty);
+            btnCancel.Click += delegate { CloseView(); };
             chkShowPassword.CheckedChanged += (s, e) =>
             {
                 txtPassword.UseSystemPasswordChar = !chkShowPassword.Checked;
@@ -28,7 +28,7 @@ namespace LASYS.DesktopApp.Views.Forms
             base.OnClosed(e);
             CloseView();
         }
-        public void CloseView() => System.Windows.Forms.Application.Exit();
+        public void CloseView() => this.Close();//System.Windows.Forms.Application.Exit();
         public void ShowView() => Show();
         public void HideView() => Hide();
 
@@ -41,6 +41,11 @@ namespace LASYS.DesktopApp.Views.Forms
         {
             MessageBox.Show(message, "Check for updates", MessageBoxButtons.OK, icon);
 
+        }
+
+        public void SetDialogResult(DialogResult result)
+        {
+            this.DialogResult = result;
         }
     }
 }

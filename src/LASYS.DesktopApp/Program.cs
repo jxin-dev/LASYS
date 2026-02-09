@@ -1,6 +1,9 @@
+using LASYS.Camera.Services;
 using LASYS.DesktopApp.Core.Interfaces;
 using LASYS.DesktopApp.Extensions;
 using LASYS.DesktopApp.Presenters;
+using LASYS.DesktopApp.Presenters.Interfaces;
+using LASYS.DesktopApp.Views.Forms;
 using LASYS.DesktopApp.Views.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -18,6 +21,7 @@ namespace LASYS.DesktopApp
             VelopackApp.Build().Run();
 
             ApplicationConfiguration.Initialize();
+
             var host = Host.CreateDefaultBuilder()
            .ConfigureServices(services =>
            {
@@ -26,9 +30,19 @@ namespace LASYS.DesktopApp
            })
            .Build();
 
-            var factory = host.Services.GetRequiredService<IViewFactory>();
-            var splashView = factory.Create<ISplashView, SplashPresenter>();
-            splashView.ShowView();
+            var splashForm = host.Services.GetRequiredService<SplashForm>();
+            splashForm.ShowDialog();
+
+            var loginForm = host.Services.GetRequiredService<LoginForm>();
+            if (loginForm.ShowDialog() != DialogResult.OK)
+                return; // user cancelled login
+
+            var mainPresenter = host.Services.GetRequiredService<MainPresenter>();
+            var mainForm = (Form)mainPresenter.View;
+
+            mainForm.Show();
+            System.Windows.Forms.Application.Run(mainForm);
+
 
         }
     }

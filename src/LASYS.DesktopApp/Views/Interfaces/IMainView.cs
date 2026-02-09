@@ -2,7 +2,7 @@
 
 namespace LASYS.DesktopApp.Views.Interfaces
 {
-    public interface IMainView : IView
+    public interface IMainView
     {
         event EventHandler WorkOrderRequested;
         event EventHandler WebCameraConfigurationRequested;

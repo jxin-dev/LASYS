@@ -7,16 +7,18 @@ namespace LASYS.DesktopApp.Views.Forms
     public partial class SplashForm : Form, ISplashView
     {
         private readonly CustomProgressBar _progressBar;
-        private readonly SplashPresenter _presenter;
-        public SplashForm(SplashPresenter presenter)
+
+        public event EventHandler? ViewShown;
+
+        public SplashForm()
         {
             InitializeComponent();
-            _presenter = presenter;
+            //_presenter = presenter;
 
             _progressBar = new CustomProgressBar
             {
                 Dock = DockStyle.Bottom,
-                ProgressColor = Color.FromArgb(0, 122, 204),
+                ProgressColor = Color.FromArgb(255, 0, 255, 255), //Color.FromArgb(0, 122, 204),
                 ProgressBackgroundColor = Color.LightGray,
                 ShowPercentage = false
             };
@@ -42,11 +44,12 @@ namespace LASYS.DesktopApp.Views.Forms
             Close();
         }
 
-        protected override async void OnShown(EventArgs e)
+        protected override void OnShown(EventArgs e)
         {
             base.OnShown(e);
-            _presenter.AttachView(this);
-            await _presenter.InitializeAsync();
+            //_presenter.AttachView(this);
+            ViewShown?.Invoke(this, EventArgs.Empty);
+            //await _presenter.InitializeAsync();
         }
 
 
@@ -56,7 +59,7 @@ namespace LASYS.DesktopApp.Views.Forms
             _progressBar.UpdateStatus(message);
         }
 
-        public void ShowView() => System.Windows.Forms.Application.Run(this);
+        public void ShowView() => Show();// System.Windows.Forms.Application.Run(this);
         public void HideView() => Hide();
     }
 }

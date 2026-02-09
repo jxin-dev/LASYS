@@ -16,11 +16,13 @@ namespace LASYS.DesktopApp.Views.Forms
         public MainForm()
         {
             InitializeComponent();
+           
             // Initialize layout
             _sideNav = new SideNavigation();
             _sideNav.SetProfile("Guest User", @"C:\Users\ITC - JAYSON OLICIA\Downloads\cartoon-1890438_1280.jpg");
             _contentPanel = new Panel
             {
+                Name = "contentPanel",
                 Dock = DockStyle.Fill,
                 BackColor = Color.FromArgb(221, 221, 221)
             };
@@ -76,7 +78,7 @@ namespace LASYS.DesktopApp.Views.Forms
             base.OnClosed(e);
             CloseView();
         }
-        public void CloseView() => System.Windows.Forms.Application.Exit();
+        public void CloseView() => Close();//System.Windows.Forms.Application.Exit();
 
         public void HideView() => Hide();
 
@@ -84,6 +86,15 @@ namespace LASYS.DesktopApp.Views.Forms
 
         public void LoadView(UserControl control)
         {
+            foreach (Control c in _contentPanel.Controls)
+            {
+                if (c.GetType() == control.GetType())
+                {
+                    // Already showing, do nothing
+                    return;
+                }
+            }
+
             _contentPanel.Controls.Clear();
             control.Dock = DockStyle.Fill;
             _contentPanel.Controls.Add(control);

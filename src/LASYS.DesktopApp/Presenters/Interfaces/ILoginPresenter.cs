@@ -3,7 +3,7 @@ using LASYS.DesktopApp.Views.Interfaces;
 
 namespace LASYS.DesktopApp.Presenters.Interfaces
 {
-    public interface ILoginPresenter : IPresenter<ILoginView>
+    public interface ILoginPresenter //: IPresenter<ILoginView>
     {
         Task CheckForUpdatesAsync();
     }
