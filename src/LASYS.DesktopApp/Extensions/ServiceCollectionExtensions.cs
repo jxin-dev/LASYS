@@ -73,7 +73,6 @@ namespace LASYS.DesktopApp.Extensions
 
 
             // Services
-            services.AddScoped<IPrintingService, PrintingService>();
 
 
             return services;
