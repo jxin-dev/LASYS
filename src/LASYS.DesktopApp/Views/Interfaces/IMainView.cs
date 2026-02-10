@@ -7,6 +7,8 @@ namespace LASYS.DesktopApp.Views.Interfaces
         event EventHandler WorkOrderRequested;
         event EventHandler WebCameraConfigurationRequested;
         event EventHandler OCRCalibrationRequested;
+        event EventHandler PrinterManagementRequested;
+
         void LoadView(UserControl control);
     }
 }

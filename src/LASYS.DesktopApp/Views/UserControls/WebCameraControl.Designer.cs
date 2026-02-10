@@ -28,59 +28,55 @@
         /// </summary>
         private void InitializeComponent()
         {
-            pnlHeader = new Panel();
             label1 = new Label();
             pnlContent = new Panel();
+            label5 = new Label();
             label4 = new Label();
             label3 = new Label();
             cbxResolutions = new ComboBox();
             btnSave = new Button();
             picCameraPreview = new PictureBox();
-            label2 = new Label();
             cbxCameras = new ComboBox();
-            label5 = new Label();
-            pnlHeader.SuspendLayout();
             pnlContent.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)picCameraPreview).BeginInit();
             SuspendLayout();
-            // 
-            // pnlHeader
-            // 
-            pnlHeader.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
-            pnlHeader.BackColor = Color.White;
-            pnlHeader.Controls.Add(label1);
-            pnlHeader.Location = new Point(3, 3);
-            pnlHeader.Name = "pnlHeader";
-            pnlHeader.Size = new Size(827, 48);
-            pnlHeader.TabIndex = 0;
             // 
             // label1
             // 
             label1.AutoSize = true;
             label1.Font = new Font("Segoe UI", 15.75F, FontStyle.Bold, GraphicsUnit.Point, 0);
             label1.ForeColor = Color.FromArgb(240, 84, 84);
-            label1.Location = new Point(12, 8);
+            label1.Location = new Point(14, 11);
             label1.Name = "label1";
-            label1.Size = new Size(136, 30);
+            label1.Size = new Size(230, 30);
             label1.TabIndex = 0;
-            label1.Text = "Web Camera";
+            label1.Text = "Camera Configuration";
             // 
             // pnlContent
             // 
             pnlContent.Anchor = AnchorStyles.None;
             pnlContent.BackColor = Color.White;
+            pnlContent.Controls.Add(label1);
             pnlContent.Controls.Add(label5);
             pnlContent.Controls.Add(label4);
             pnlContent.Controls.Add(label3);
             pnlContent.Controls.Add(cbxResolutions);
             pnlContent.Controls.Add(btnSave);
             pnlContent.Controls.Add(picCameraPreview);
-            pnlContent.Controls.Add(label2);
             pnlContent.Controls.Add(cbxCameras);
             pnlContent.Location = new Point(50, 57);
             pnlContent.Name = "pnlContent";
-            pnlContent.Size = new Size(738, 470);
+            pnlContent.Size = new Size(736, 470);
             pnlContent.TabIndex = 1;
+            // 
+            // label5
+            // 
+            label5.AutoSize = true;
+            label5.Location = new Point(21, 44);
+            label5.Name = "label5";
+            label5.Size = new Size(424, 30);
+            label5.TabIndex = 8;
+            label5.Text = "Select your preferred camera from the list below, choose the desired resolution,\r\nand click 'Save' to store your configuration.";
             // 
             // label4
             // 
@@ -134,17 +130,6 @@
             picCameraPreview.TabIndex = 3;
             picCameraPreview.TabStop = false;
             // 
-            // label2
-            // 
-            label2.AutoSize = true;
-            label2.Font = new Font("Segoe UI", 15.75F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            label2.ForeColor = Color.Black;
-            label2.Location = new Point(21, 16);
-            label2.Name = "label2";
-            label2.Size = new Size(230, 30);
-            label2.TabIndex = 1;
-            label2.Text = "Camera Configuration";
-            // 
             // cbxCameras
             // 
             cbxCameras.DropDownStyle = ComboBoxStyle.DropDownList;
@@ -156,25 +141,13 @@
             cbxCameras.Size = new Size(403, 29);
             cbxCameras.TabIndex = 0;
             // 
-            // label5
-            // 
-            label5.AutoSize = true;
-            label5.Location = new Point(21, 46);
-            label5.Name = "label5";
-            label5.Size = new Size(424, 30);
-            label5.TabIndex = 8;
-            label5.Text = "Select your preferred camera from the list below, choose the desired resolution,\r\nand click 'Save' to store your configuration.";
-            // 
             // WebCameraControl
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             Controls.Add(pnlContent);
-            Controls.Add(pnlHeader);
             Name = "WebCameraControl";
             Size = new Size(833, 541);
-            pnlHeader.ResumeLayout(false);
-            pnlHeader.PerformLayout();
             pnlContent.ResumeLayout(false);
             pnlContent.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)picCameraPreview).EndInit();
@@ -182,8 +155,6 @@
         }
 
         #endregion
-
-        private Panel pnlHeader;
         private Label label1;
         private Panel pnlContent;
         private PictureBox picCameraPreview;

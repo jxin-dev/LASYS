@@ -11,7 +11,8 @@ namespace LASYS.DesktopApp.Views.Forms
 
         public event EventHandler? WorkOrderRequested;
         public event EventHandler? WebCameraConfigurationRequested;
-        public event EventHandler? OCRCalibrationRequested;      
+        public event EventHandler? OCRCalibrationRequested;
+        public event EventHandler? PrinterManagementRequested;
 
         public MainForm()
         {
@@ -39,13 +40,13 @@ namespace LASYS.DesktopApp.Views.Forms
         {
             // Define main menu items
             var workOrders = new NavItem { Text = "Work Orders" };
-            var deviceSetup = new NavItem { Text = "Device Setup" };
+            var deviceSetup = new NavItem { Text = "Settings" };
             var logOut = new NavItem { Text = "Log Out" };
             // Define sub-items
-            deviceSetup.SubItems.Add(new NavItem { Text = "Web Camera" });
+            deviceSetup.SubItems.Add(new NavItem { Text = "Camera Configuration" });
             deviceSetup.SubItems.Add(new NavItem { Text = "OCR Calibration" });
-            deviceSetup.SubItems.Add(new NavItem { Text = "SATO Printer" });
-            deviceSetup.SubItems.Add(new NavItem { Text = "Barcode Scanner" });
+            deviceSetup.SubItems.Add(new NavItem { Text = "Printer Management" });
+            deviceSetup.SubItems.Add(new NavItem { Text = "Barcode Device Setup" });
             // Add to navigation
             _sideNav.AddItem(workOrders);
             _sideNav.AddItem(deviceSetup);
@@ -57,6 +58,8 @@ namespace LASYS.DesktopApp.Views.Forms
             deviceSetup.SubItems[0].Clicked += (_, _) => WebCameraConfigurationRequested?.Invoke(this, EventArgs.Empty);
 
             deviceSetup.SubItems[1].Clicked += (_, _) => OCRCalibrationRequested?.Invoke(this, EventArgs.Empty);
+
+            deviceSetup.SubItems[2].Clicked += (_, _) => PrinterManagementRequested?.Invoke(this, EventArgs.Empty);
         }
       
 

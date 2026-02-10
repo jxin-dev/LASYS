@@ -1,6 +1,4 @@
-﻿using LASYS.DesktopApp.Presenters.Interfaces;
-using LASYS.DesktopApp.Views.Interfaces;
-using LASYS.DesktopApp.Views.UserControls;
+﻿using LASYS.DesktopApp.Views.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace LASYS.DesktopApp.Presenters
@@ -18,8 +16,14 @@ namespace LASYS.DesktopApp.Presenters
             _view.WorkOrderRequested += OnWorkOrderRequested;
             _view.WebCameraConfigurationRequested += OnWebCameraConfigurationRequested;
             _view.OCRCalibrationRequested += OnOCRCalibrationRequested;
+            _view.PrinterManagementRequested += OnPrinterManagementRequested;
         }
 
+        private void OnPrinterManagementRequested(object? sender, EventArgs e)
+        {
+            var printerPresenter = _services.GetRequiredService<PrinterManagementPresenter>();
+            _view?.LoadView(printerPresenter.View);
+        }
 
         private void OnWebCameraConfigurationRequested(object? sender, EventArgs e)
         {
