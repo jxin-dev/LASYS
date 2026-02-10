@@ -22,7 +22,6 @@ namespace LASYS.DesktopApp.Extensions
                 var view = new SplashForm();
                 var cameraConfig = sp.GetRequiredService<ICameraConfig>();
                 var cameraService = sp.GetRequiredService<ICameraService>();
-                //var factory = sp.GetRequiredService<ICameraServiceFactory>();
                 new SplashPresenter(view, cameraConfig, cameraService);
                 return view;
             });
@@ -54,42 +53,29 @@ namespace LASYS.DesktopApp.Extensions
             services.AddTransient<IErrorView>(sp => sp.GetRequiredService<ErrorForm>());
 
 
-            services.AddTransient<IOCRCalibrationView, OCRCalibrationControl>();
-            services.AddTransient<OCRCalibrationPresenter>();
-
-
-            services.AddTransient<IWebCameraView, WebCameraControl>();
-            services.AddTransient<WebCameraPresenter>();
-
             services.AddTransient<IWorkOrdersView, WorkOrdersControl>();
             services.AddTransient<WorkOrdersPresenter>();
-
 
             services.AddTransient<ILabelPrintingView, LabelPrintingControl>();
             services.AddTransient<LabelPrintingPresenter>();
 
-            services.AddTransient<OCRCalibrationControl>();
+            services.AddTransient<IWebCameraView, WebCameraControl>();
+            services.AddTransient<WebCameraPresenter>();
 
+            services.AddTransient<IOCRCalibrationView, OCRCalibrationControl>();
+            services.AddTransient<OCRCalibrationPresenter>();
+
+            services.AddTransient<IPrinterManagementView, PrinterManagementControl>();
+            services.AddTransient<PrinterManagementPresenter>();
 
 
             // Services
 
+            services.AddScoped<IPrintingService, PrintingService>();
+
 
             return services;
         }
 
-        public static IServiceCollection AddDevices(this IServiceCollection services)
-        {
-            //Camera Service
-            services.AddScoped<ICameraConfig, CameraConfigStore>();
-            services.AddScoped<ICameraEnumerator, CameraEnumerator>();
-            services.AddScoped<ICalibrationService, CalibrationService>();
-
-
-            //services.AddSingleton<ICameraService, CameraService>(); //one instance shared across the app.
-            services.AddScoped<IOCRService, OCRService>();
-
-            return services;
-        }
     }
 }

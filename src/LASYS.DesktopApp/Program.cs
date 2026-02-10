@@ -6,6 +6,7 @@ using LASYS.DesktopApp.Presenters;
 using LASYS.DesktopApp.Presenters.Interfaces;
 using LASYS.DesktopApp.Views.Forms;
 using LASYS.DesktopApp.Views.Interfaces;
+using LASYS.OCR;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Velopack;
@@ -27,9 +28,8 @@ namespace LASYS.DesktopApp
            .ConfigureServices(services =>
            {
                services.AddMvp(); // from our extension
-               services.AddDevices(); // from our extension
-
                services.AddCameraServices(); // from camera library extension
+               services.AddOCRServices(); // from ocr library extension
            })
            .Build();
 
