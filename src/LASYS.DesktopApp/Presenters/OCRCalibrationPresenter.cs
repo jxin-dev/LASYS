@@ -1,11 +1,7 @@
-﻿using System.Drawing;
-using System.Runtime.InteropServices;
-using LASYS.Camera.Interfaces;
-using LASYS.Camera.Models;
+﻿using LASYS.Camera.Interfaces;
 using LASYS.DesktopApp.Events;
 using LASYS.DesktopApp.Views.Interfaces;
 using LASYS.OCR.Interfaces;
-using LASYS.OCR.Models;
 using OpenCvSharp;
 using DrawingSize = System.Drawing.Size;
 
@@ -15,9 +11,9 @@ namespace LASYS.DesktopApp.Presenters
     {
         public UserControl View { get; }
         private readonly IOCRCalibrationView _view;
-        private readonly ICameraService _cameraService;
         private readonly IOCRService _ocrService;
         private readonly ICalibrationService _calibrationService;
+        private ICameraService? _cameraService;
         public OCRCalibrationPresenter(IOCRCalibrationView view, ICameraService cameraService, IOCRService ocrService, ICalibrationService calibrationService)
         {
             _view = view;

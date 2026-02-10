@@ -1,6 +1,10 @@
-﻿using LASYS.Camera.Interfaces;
+﻿using System.Threading.Tasks;
+using LASYS.Camera.Interfaces;
 using LASYS.Camera.Models;
+using LASYS.Camera.Services;
+using LASYS.DesktopApp.Events;
 using LASYS.DesktopApp.Views.Interfaces;
+using OpenCvSharp;
 
 namespace LASYS.DesktopApp.Presenters
 {
@@ -10,71 +14,116 @@ namespace LASYS.DesktopApp.Presenters
 
         private readonly IWebCameraView _view;
         private readonly ICameraConfig _cameraConfig;
-        private readonly ICameraService _cameraService;
+        private readonly IPreviewCameraService _previewCameraService;
         private readonly ICameraEnumerator _cameraEnumerator;
-
-        private CancellationTokenSource? _previewCts;
 
         public event Action? ConfigurationSaved;
         public WebCameraPresenter(
             IWebCameraView view,
             ICameraConfig cameraConfig,
             ICameraService cameraService,
-            ICameraEnumerator cameraEnumerator)
+            ICameraEnumerator cameraEnumerator,
+            IPreviewCameraService previewCameraService)
         {
             // Initialize the view
             View = (UserControl)view;
 
             _view = view;
             _cameraConfig = cameraConfig;
-            _cameraService = cameraService;
             _cameraEnumerator = cameraEnumerator;
+            _previewCameraService = previewCameraService;
 
+
+            _previewCameraService.FrameReady += OnFrameReady;
 
             _view.CameraPreviewStateChanged += OnCameraPreviewStateChanged;
             _view.CameraConfigurationSaved += OnCameraConfigurationSaved;
+        }
 
-        }
-        public void LoadCameras()
+        private void OnCameraConfigurationSaved(object? sender, CameraSavedEventArgs e)
         {
-            var cameras = _cameraEnumerator.GetCameras();
-            _view.SetCameraList(cameras);
-        }
-        private async void OnCameraConfigurationSaved(object? sender, EventArgs e)
-        {
-            var selectedCamera = _view.SelectedCamera;
-            if (selectedCamera is null)
+            var selectedName = e.CameraName;
+            var cameraIndex = e.CameraIndex;
+
+            var cameraResolutions = _cameraConfig.GetCameraResolutions();
+
+
+            if (cameraResolutions.TryGetValue(e.Resolution, out var resolution))
             {
-                _view.ShowMessage(
-                    "Please select a camera before saving.",
-                    "Save Configuration",
-                    MessageBoxIcon.Warning);
-                return;
+                int width = resolution.Width;
+                int height = resolution.Height;
+
+                Console.WriteLine($"Selected Camera: {selectedName} (Index {cameraIndex})");
+                Console.WriteLine($"Resolution: {e.Resolution} => {width}x{height}");
+
+                var config = new CameraConfig
+                {
+                    Index = cameraIndex,
+                    Name = selectedName,
+                    FrameWidth = width,
+                    FrameHeight = height
+                };
+                _cameraConfig.SaveAsync(config);
+
+
+                bool restart = _view.AskRestartConfirmation("Camera configuration saved. The application needs to restart to apply changes.\nDo you want to restart now?");
+                
+                if (restart)
+                {
+                    _cameraConfig.RestartApplication();
+                }
             }
-            var newCamera = new CameraConfig
-            {
-                Index = selectedCamera.Index,
-                Name = selectedCamera.Name,
-                FrameWidth = 3840,
-                FrameHeight = 2160,
-                FrameRate = 30
-            };
+        }
+
+        private void OnCameraPreviewStateChanged(object? sender, CameraSelectedEventArgs e)
+        {
             try
             {
-                await _cameraConfig.SaveAsync(newCamera);
-                ConfigurationSaved?.Invoke();
+                _previewCameraService.StartCamera(e.CameraIndex);
+                //_view.ShowMessage("Camera preview started.", "Camera Preview", MessageBoxIcon.Information);
             }
             catch (Exception ex)
             {
-                _view.ShowMessage($"Failed to save configuration.\n{ex.Message}", "Error", MessageBoxIcon.Error);
+                _view.ShowMessage(ex.Message, "Camera Preview", MessageBoxIcon.Error);
+
             }
-          
         }
 
-        private void OnCameraPreviewStateChanged(object? sender, EventArgs e)
+        private void OnFrameReady(Mat mat)
         {
-            throw new NotImplementedException();
+            Bitmap bitmap = OpenCvSharp.Extensions.BitmapConverter.ToBitmap(mat);
+            _view.InvokeOnUI(() => _view.DisplayFrame(bitmap));
         }
+
+        public void StopCameraPreview()
+        {
+            try
+            {
+                _previewCameraService.StopCamera();
+                _view.ShowMessage("Camera preview stopped.", "Camera Preview", MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
+            {
+                _view.ShowMessage(ex.Message, "Camera Preview", MessageBoxIcon.Error);
+            }
+        }
+
+
+
+
+        public void LoadCameras()
+        {
+            var cameras = _cameraEnumerator.GetCameras();
+
+            if (cameras != null)
+            {
+                var cameraResolution = _cameraConfig.GetCameraResolutions().Keys.ToList();
+                _view.SetCameraResolutions(cameraResolution);
+                _view.SetCameraList(cameras);
+            }
+        }
+
+
 
     }
 }

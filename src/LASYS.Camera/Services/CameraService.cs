@@ -8,7 +8,7 @@ using DrawingSize = System.Drawing.Size;
 
 namespace LASYS.Camera.Services
 {
-    public class CameraService : ICameraService, IDisposable
+    public class CameraService : ICameraService
     {
         public event EventHandler<CameraStatusEventArgs>? CameraStatusChanged;
         public event EventHandler? CameraDisconnected;
@@ -363,6 +363,7 @@ namespace LASYS.Camera.Services
             _isCameraConnected = false;
         }
 
+    
         public void Dispose()
         {
             if (_disposed)

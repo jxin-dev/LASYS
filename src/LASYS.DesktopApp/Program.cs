@@ -1,3 +1,4 @@
+using LASYS.Camera;
 using LASYS.Camera.Services;
 using LASYS.DesktopApp.Core.Interfaces;
 using LASYS.DesktopApp.Extensions;
@@ -27,6 +28,8 @@ namespace LASYS.DesktopApp
            {
                services.AddMvp(); // from our extension
                services.AddDevices(); // from our extension
+
+               services.AddCameraServices(); // from camera library extension
            })
            .Build();
 

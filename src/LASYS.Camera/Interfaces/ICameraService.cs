@@ -4,7 +4,7 @@ using OpenCvSharp;
 using DrawingSize = System.Drawing.Size;
 namespace LASYS.Camera.Interfaces
 {
-    public interface ICameraService
+    public interface ICameraService : IDisposable
     {
         Mat LastCapturedFrame { get; set; }
         event EventHandler<CameraStatusEventArgs> CameraStatusChanged;

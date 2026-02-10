@@ -1,4 +1,6 @@
-﻿namespace LASYS.Camera.Events
+﻿using LASYS.Camera.Models;
+
+namespace LASYS.Camera.Events
 {
     public sealed class CameraStatusEventArgs : EventArgs
     {

@@ -22,6 +22,7 @@ namespace LASYS.DesktopApp.Extensions
                 var view = new SplashForm();
                 var cameraConfig = sp.GetRequiredService<ICameraConfig>();
                 var cameraService = sp.GetRequiredService<ICameraService>();
+                //var factory = sp.GetRequiredService<ICameraServiceFactory>();
                 new SplashPresenter(view, cameraConfig, cameraService);
                 return view;
             });
@@ -60,7 +61,6 @@ namespace LASYS.DesktopApp.Extensions
             services.AddTransient<IWebCameraView, WebCameraControl>();
             services.AddTransient<WebCameraPresenter>();
 
-            //services.AddTransient<WebCameraControl>();
             services.AddTransient<IWorkOrdersView, WorkOrdersControl>();
             services.AddTransient<WorkOrdersPresenter>();
 
@@ -86,7 +86,7 @@ namespace LASYS.DesktopApp.Extensions
             services.AddScoped<ICalibrationService, CalibrationService>();
 
 
-            services.AddSingleton<ICameraService, CameraService>(); //one instance shared across the app.
+            //services.AddSingleton<ICameraService, CameraService>(); //one instance shared across the app.
             services.AddScoped<IOCRService, OCRService>();
 
             return services;

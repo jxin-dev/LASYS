@@ -8,5 +8,8 @@ namespace LASYS.Camera.Interfaces
         event EventHandler<CameraConfigEventArgs> CameraConfigIssue;
         Task<CameraConfig> LoadAsync();
         Task SaveAsync(CameraConfig config);
+        Dictionary<string, Resolution> GetCameraResolutions();
+
+        void RestartApplication();
     }
 }

@@ -1,4 +1,5 @@
-﻿using LASYS.Camera.Events;
+﻿using System.Diagnostics;
+using LASYS.Camera.Events;
 using LASYS.Camera.Interfaces;
 using LASYS.Camera.Models;
 using Newtonsoft.Json;
@@ -47,6 +48,54 @@ namespace LASYS.Camera.Services
                 Console.Error.WriteLine($"Failed to save config: {ex.Message}");
                 CameraConfigIssue?.Invoke(this, new CameraConfigEventArgs("Failed to save camera.config.json"));
                 throw;
+            }
+        }
+
+        public Dictionary<string, Resolution> GetCameraResolutions()
+        {
+            return new Dictionary<string, Resolution>
+            {
+                ["HD / 720p"] = new Resolution
+                {
+                    Width = 1280,
+                    Height = 720,
+                    AspectRatio = "16:9",
+                    Notes = "Standard high definition"
+                },
+                ["Full HD / 1080p"] = new Resolution
+                {
+                    Width = 1920,
+                    Height = 1080,
+                    AspectRatio = "16:9",
+                    Notes = "Most webcams, monitors, streaming"
+                },
+                ["4K UHD / 2160p"] = new Resolution
+                {
+                    Width = 3840,
+                    Height = 2160,
+                    AspectRatio = "16:9",
+                    Notes = "Ultra HD"
+                }
+            };
+        }
+
+        public void RestartApplication()
+        {
+           string exePath = Process.GetCurrentProcess().MainModule?.FileName ?? string.Empty;
+            if (string.IsNullOrEmpty(exePath))
+            {
+                Console.Error.WriteLine("Unable to determine executable path for restart.");
+                return;
+            }
+            try
+            {
+                Process.Start(exePath);
+                Environment.Exit(0);
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Failed to restart application: {ex.Message}");
+                CameraConfigIssue?.Invoke(this, new CameraConfigEventArgs("Failed to restart application"));
             }
         }
     }

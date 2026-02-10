@@ -31,11 +31,14 @@
             pnlHeader = new Panel();
             label1 = new Label();
             pnlContent = new Panel();
+            label4 = new Label();
+            label3 = new Label();
+            cbxResolutions = new ComboBox();
             btnSave = new Button();
             picCameraPreview = new PictureBox();
-            btnPreview = new Button();
             label2 = new Label();
             cbxCameras = new ComboBox();
+            label5 = new Label();
             pnlHeader.SuspendLayout();
             pnlContent.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)picCameraPreview).BeginInit();
@@ -66,25 +69,55 @@
             // 
             pnlContent.Anchor = AnchorStyles.None;
             pnlContent.BackColor = Color.White;
+            pnlContent.Controls.Add(label5);
+            pnlContent.Controls.Add(label4);
+            pnlContent.Controls.Add(label3);
+            pnlContent.Controls.Add(cbxResolutions);
             pnlContent.Controls.Add(btnSave);
             pnlContent.Controls.Add(picCameraPreview);
-            pnlContent.Controls.Add(btnPreview);
             pnlContent.Controls.Add(label2);
             pnlContent.Controls.Add(cbxCameras);
-            pnlContent.Location = new Point(160, 89);
+            pnlContent.Location = new Point(50, 57);
             pnlContent.Name = "pnlContent";
-            pnlContent.Size = new Size(571, 438);
+            pnlContent.Size = new Size(738, 470);
             pnlContent.TabIndex = 1;
+            // 
+            // label4
+            // 
+            label4.AutoSize = true;
+            label4.Location = new Point(21, 87);
+            label4.Name = "label4";
+            label4.Size = new Size(83, 15);
+            label4.TabIndex = 7;
+            label4.Text = "Camera Name";
+            // 
+            // label3
+            // 
+            label3.AutoSize = true;
+            label3.Location = new Point(430, 87);
+            label3.Name = "label3";
+            label3.Size = new Size(63, 15);
+            label3.TabIndex = 6;
+            label3.Text = "Resolution";
+            // 
+            // cbxResolutions
+            // 
+            cbxResolutions.DropDownStyle = ComboBoxStyle.DropDownList;
+            cbxResolutions.Font = new Font("Segoe UI", 12F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            cbxResolutions.FormattingEnabled = true;
+            cbxResolutions.Location = new Point(430, 105);
+            cbxResolutions.Name = "cbxResolutions";
+            cbxResolutions.Size = new Size(166, 29);
+            cbxResolutions.TabIndex = 5;
             // 
             // btnSave
             // 
-            btnSave.Anchor = AnchorStyles.Top;
             btnSave.BackColor = SystemColors.HotTrack;
             btnSave.FlatAppearance.BorderColor = SystemColors.HotTrack;
             btnSave.FlatStyle = FlatStyle.Flat;
             btnSave.Font = new Font("Segoe UI Semibold", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 0);
             btnSave.ForeColor = Color.White;
-            btnSave.Location = new Point(433, 392);
+            btnSave.Location = new Point(602, 105);
             btnSave.Name = "btnSave";
             btnSave.Size = new Size(110, 29);
             btnSave.TabIndex = 4;
@@ -93,53 +126,44 @@
             // 
             // picCameraPreview
             // 
-            picCameraPreview.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             picCameraPreview.BackColor = Color.FromArgb(64, 64, 64);
-            picCameraPreview.Location = new Point(27, 115);
+            picCameraPreview.Location = new Point(21, 140);
             picCameraPreview.Name = "picCameraPreview";
-            picCameraPreview.Size = new Size(516, 271);
+            picCameraPreview.Size = new Size(691, 305);
             picCameraPreview.SizeMode = PictureBoxSizeMode.StretchImage;
             picCameraPreview.TabIndex = 3;
             picCameraPreview.TabStop = false;
             // 
-            // btnPreview
-            // 
-            btnPreview.Anchor = AnchorStyles.Top;
-            btnPreview.BackColor = SystemColors.HotTrack;
-            btnPreview.FlatAppearance.BorderColor = SystemColors.HotTrack;
-            btnPreview.FlatStyle = FlatStyle.Flat;
-            btnPreview.Font = new Font("Segoe UI Semibold", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            btnPreview.ForeColor = Color.White;
-            btnPreview.Location = new Point(433, 55);
-            btnPreview.Name = "btnPreview";
-            btnPreview.Size = new Size(110, 29);
-            btnPreview.TabIndex = 2;
-            btnPreview.Text = "Preview";
-            btnPreview.UseVisualStyleBackColor = false;
-            // 
             // label2
             // 
-            label2.Anchor = AnchorStyles.Top;
             label2.AutoSize = true;
             label2.Font = new Font("Segoe UI", 15.75F, FontStyle.Bold, GraphicsUnit.Point, 0);
             label2.ForeColor = Color.Black;
-            label2.Location = new Point(27, 18);
+            label2.Location = new Point(21, 16);
             label2.Name = "label2";
-            label2.Size = new Size(150, 30);
+            label2.Size = new Size(230, 30);
             label2.TabIndex = 1;
-            label2.Text = "Select Camera";
+            label2.Text = "Camera Configuration";
             // 
             // cbxCameras
             // 
-            cbxCameras.Anchor = AnchorStyles.Top;
             cbxCameras.DropDownStyle = ComboBoxStyle.DropDownList;
             cbxCameras.Font = new Font("Segoe UI", 12F, FontStyle.Regular, GraphicsUnit.Point, 0);
             cbxCameras.FormattingEnabled = true;
             cbxCameras.Items.AddRange(new object[] { "Built-In Camera" });
-            cbxCameras.Location = new Point(27, 55);
+            cbxCameras.Location = new Point(21, 105);
             cbxCameras.Name = "cbxCameras";
-            cbxCameras.Size = new Size(390, 29);
+            cbxCameras.Size = new Size(403, 29);
             cbxCameras.TabIndex = 0;
+            // 
+            // label5
+            // 
+            label5.AutoSize = true;
+            label5.Location = new Point(21, 46);
+            label5.Name = "label5";
+            label5.Size = new Size(424, 30);
+            label5.TabIndex = 8;
+            label5.Text = "Select your preferred camera from the list below, choose the desired resolution,\r\nand click 'Save' to store your configuration.";
             // 
             // WebCameraControl
             // 
@@ -163,9 +187,12 @@
         private Label label1;
         private Panel pnlContent;
         private PictureBox picCameraPreview;
-        private Button btnPreview;
         private Label label2;
         private ComboBox cbxCameras;
         private Button btnSave;
+        private ComboBox cbxResolutions;
+        private Label label4;
+        private Label label3;
+        private Label label5;
     }
 }
