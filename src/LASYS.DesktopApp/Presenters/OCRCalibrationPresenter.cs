@@ -13,7 +13,7 @@ namespace LASYS.DesktopApp.Presenters
         private readonly IOCRCalibrationView _view;
         private readonly IOCRService _ocrService;
         private readonly ICalibrationService _calibrationService;
-        private ICameraService? _cameraService;
+        private readonly ICameraService _cameraService;
         public OCRCalibrationPresenter(IOCRCalibrationView view, ICameraService cameraService, IOCRService ocrService, ICalibrationService calibrationService)
         {
             _view = view;
