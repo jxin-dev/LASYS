@@ -2,5 +2,14 @@
 {
     public interface IPrinterManagementView
     {
+        string SelectedInterfaceType { get; }
+        string ComPort { get; }
+        string UsbId { get; }
+
+        event EventHandler ConnectionTypeChanged;
+        void SetPort(int comboWidth, string portTitle);
+        void SetPortList(IReadOnlyList<string> ports);
+
+        event EventHandler SaveClicked;
     }
 }

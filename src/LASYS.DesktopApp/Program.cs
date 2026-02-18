@@ -7,6 +7,7 @@ using LASYS.DesktopApp.Presenters.Interfaces;
 using LASYS.DesktopApp.Views.Forms;
 using LASYS.DesktopApp.Views.Interfaces;
 using LASYS.OCR;
+using LASYS.SatoLabelPrinter;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Velopack;
@@ -30,6 +31,7 @@ namespace LASYS.DesktopApp
                services.AddMvp(); // from our extension
                services.AddCameraServices(); // from camera library extension
                services.AddOCRServices(); // from ocr library extension
+               services.AddSatoLabelPrinterServices(); // from sato label printer library extension
            })
            .Build();
 

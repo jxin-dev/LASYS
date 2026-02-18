@@ -63,6 +63,16 @@ namespace LASYS.DesktopApp.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap check_small24 {
+            get {
+                object obj = ResourceManager.GetObject("check_small24", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap error24 {
             get {
                 object obj = ResourceManager.GetObject("error24", resourceCulture);
@@ -96,6 +106,16 @@ namespace LASYS.DesktopApp.Properties {
         internal static System.Drawing.Bitmap print_add24 {
             get {
                 object obj = ResourceManager.GetObject("print_add24", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap print24 {
+            get {
+                object obj = ResourceManager.GetObject("print24", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }

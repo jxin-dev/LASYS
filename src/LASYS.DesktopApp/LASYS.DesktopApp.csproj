@@ -6,6 +6,7 @@
     <Nullable>enable</Nullable>
     <UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings>
+    <Platforms>AnyCPU;x86</Platforms>
   </PropertyGroup>
 
   <ItemGroup>
@@ -26,6 +27,7 @@
     <ProjectReference Include="..\LASYS.Camera\LASYS.Camera.csproj" />
     <ProjectReference Include="..\LASYS.Infrastructure\LASYS.Infrastructure.csproj" />
     <ProjectReference Include="..\LASYS.OCR\LASYS.OCR.csproj" />
+    <ProjectReference Include="..\LASYS.SatoLabelPrinter\LASYS.SatoLabelPrinter.csproj" />
     <ProjectReference Include="..\LASYS.UIControls\LASYS.UIControls.csproj" />
   </ItemGroup>
 

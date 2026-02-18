@@ -8,6 +8,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="dlls\LabelGalleryPlus3WR.dll" />
+    <None Remove="dlls\SATOPrinterAPI.dll" />
+  </ItemGroup>
+
+  <ItemGroup>
     <COMReference Include="LabelGalleryPlus3WR">
       <VersionMinor>0</VersionMinor>
       <VersionMajor>1</VersionMajor>
@@ -20,18 +25,24 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Dapper" Version="2.1.66" />
-    <PackageReference Include="MySqlConnector" Version="2.5.0" />
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
+    <Content Include="dlls\LabelGalleryPlus3WR.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="dlls\SATOPrinterAPI.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\LASYS.Application\LASYS.Application.csproj" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.10" />
+    <PackageReference Include="System.IO.Ports" Version="10.0.3" />
+    <PackageReference Include="System.Management" Version="10.0.3" />
   </ItemGroup>
 
   <ItemGroup>
     <Reference Include="SATOPrinterAPI">
       <HintPath>dlls\SATOPrinterAPI.dll</HintPath>
+      <Private>True</Private>
     </Reference>
   </ItemGroup>
 
