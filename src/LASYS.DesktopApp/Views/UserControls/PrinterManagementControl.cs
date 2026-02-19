@@ -1,4 +1,5 @@
 ﻿using LASYS.DesktopApp.Views.Interfaces;
+using LASYS.SatoLabelPrinter.Interfaces;
 
 namespace LASYS.DesktopApp.Views.UserControls
 {
@@ -11,13 +12,20 @@ namespace LASYS.DesktopApp.Views.UserControls
 
         public event EventHandler? ConnectionTypeChanged;
         public event EventHandler? SaveClicked;
+        public event EventHandler? TestPrintClicked;
+        public event EventHandler? LoadRequested;
 
         public PrinterManagementControl()
         {
             InitializeComponent();
             cbxInterface.SelectedIndexChanged += (sender, e) => ConnectionTypeChanged?.Invoke(this, EventArgs.Empty);
             btnSavePrinter.Click += (sender, e) => SaveClicked?.Invoke(this, EventArgs.Empty);
+            btnTestPrint.Click += (sender, e) => TestPrintClicked?.Invoke(this, EventArgs.Empty);
+            btnTestPrint.Visible = false;
+
+            Load += delegate { LoadRequested?.Invoke(this, EventArgs.Empty); };
         }
+
 
         public void SetPort(int comboWidth, string portTitle)
         {
@@ -60,6 +68,17 @@ namespace LASYS.DesktopApp.Views.UserControls
                 this.Invoke(action);
             else
                 action();
+        }
+
+        public void UpdateTestPrintButtonState(bool isEnabled)
+        {
+            btnTestPrint.Visible = isEnabled;
+        }
+
+        public void SetSelectedPort(string printerInterface, string port)
+        {
+            cbxInterface.SelectedIndex = cbxInterface.FindStringExact(printerInterface);
+            cbxPort.SelectedIndex = cbxPort.FindStringExact(port);
         }
     }
 }

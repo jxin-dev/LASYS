@@ -64,8 +64,8 @@ namespace LASYS.DesktopApp.Extensions
             services.AddTransient<IOCRCalibrationView, OCRCalibrationControl>();
             services.AddTransient<OCRCalibrationPresenter>();
 
-            services.AddTransient<IPrinterManagementView, PrinterManagementControl>();
-            services.AddTransient<PrinterManagementPresenter>();
+            services.AddSingleton<IPrinterManagementView, PrinterManagementControl>();
+            services.AddSingleton<PrinterManagementPresenter>();
 
 
             // Services

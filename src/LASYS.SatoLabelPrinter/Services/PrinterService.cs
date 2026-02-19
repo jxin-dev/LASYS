@@ -224,19 +224,17 @@ namespace LASYS.SatoLabelPrinter.Services
                 var json = JsonSerializer.Serialize(config, options);
 
                 await File.WriteAllTextAsync(_configPath, json);
+
+                PrinterNotification?.Invoke(this, new PrinterNotificationEventArgs(PrinterMessageType.Info, "Printer configuration saved successfully."));
+
             }
             catch (Exception ex)
             {
                 PrinterNotification?.Invoke(this, new PrinterNotificationEventArgs(PrinterMessageType.Error, $"Failed to save printer configuration: {ex.Message}"));
                 return;
             }
-            finally 
-            {
-                PrinterNotification?.Invoke(this, new PrinterNotificationEventArgs(PrinterMessageType.Info, "Printer configuration saved successfully."));
-                await InitializeAsync();
 
-            }
-
+            await InitializeAsync();
         }
         public async Task InitializeAsync()
         {
@@ -362,11 +360,19 @@ namespace LASYS.SatoLabelPrinter.Services
         {
             if (_printer is null)
             {
-                Console.WriteLine("Printer not initialized. Please initialize the printer before testing.");
+                PrinterStateChanged?.Invoke(this, new PrinterStateChangedEventArgs(PrinterStatus.Error, "Printer not initialized. Please initialize the printer before testing."));
                 return;
             }
-
-            _printer.TestPrint();
+            try
+            {
+                _printer.TestPrint();
+            }
+            catch (Exception ex)
+            {
+                PrinterStateChanged?.Invoke(this, 
+                    new PrinterStateChangedEventArgs(PrinterStatus.Error,
+                    ex.Message));
+            }
         }
         #endregion
 

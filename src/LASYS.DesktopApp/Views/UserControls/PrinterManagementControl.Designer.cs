@@ -29,7 +29,8 @@
         private void InitializeComponent()
         {
             pnlContent = new Panel();
-            button1 = new Button();
+            lblPrinterState = new Label();
+            btnTestPrint = new Button();
             btnSavePrinter = new Button();
             cbxPort = new ComboBox();
             lblPort = new Label();
@@ -37,7 +38,6 @@
             label1 = new Label();
             label5 = new Label();
             label4 = new Label();
-            lblPrinterState = new Label();
             pnlContent.SuspendLayout();
             SuspendLayout();
             // 
@@ -46,7 +46,7 @@
             pnlContent.Anchor = AnchorStyles.None;
             pnlContent.BackColor = Color.White;
             pnlContent.Controls.Add(lblPrinterState);
-            pnlContent.Controls.Add(button1);
+            pnlContent.Controls.Add(btnTestPrint);
             pnlContent.Controls.Add(btnSavePrinter);
             pnlContent.Controls.Add(cbxPort);
             pnlContent.Controls.Add(lblPort);
@@ -59,21 +59,29 @@
             pnlContent.Size = new Size(745, 286);
             pnlContent.TabIndex = 2;
             // 
-            // button1
+            // lblPrinterState
             // 
-            button1.BackColor = Color.DimGray;
-            button1.FlatAppearance.BorderSize = 0;
-            button1.FlatStyle = FlatStyle.Flat;
-            button1.Font = new Font("Segoe UI Semibold", 11.25F, FontStyle.Bold);
-            button1.ForeColor = Color.White;
-            button1.Image = Properties.Resources.print24;
-            button1.Location = new Point(210, 206);
-            button1.Name = "button1";
-            button1.Size = new Size(122, 37);
-            button1.TabIndex = 13;
-            button1.Text = "Test Print";
-            button1.TextImageRelation = TextImageRelation.ImageBeforeText;
-            button1.UseVisualStyleBackColor = false;
+            lblPrinterState.Location = new Point(21, 246);
+            lblPrinterState.Name = "lblPrinterState";
+            lblPrinterState.Size = new Size(703, 34);
+            lblPrinterState.TabIndex = 14;
+            lblPrinterState.TextAlign = ContentAlignment.MiddleLeft;
+            // 
+            // btnTestPrint
+            // 
+            btnTestPrint.BackColor = Color.DimGray;
+            btnTestPrint.FlatAppearance.BorderSize = 0;
+            btnTestPrint.FlatStyle = FlatStyle.Flat;
+            btnTestPrint.Font = new Font("Segoe UI Semibold", 11.25F, FontStyle.Bold);
+            btnTestPrint.ForeColor = Color.White;
+            btnTestPrint.Image = Properties.Resources.print24;
+            btnTestPrint.Location = new Point(210, 206);
+            btnTestPrint.Name = "btnTestPrint";
+            btnTestPrint.Size = new Size(122, 37);
+            btnTestPrint.TabIndex = 13;
+            btnTestPrint.Text = "Test Print";
+            btnTestPrint.TextImageRelation = TextImageRelation.ImageBeforeText;
+            btnTestPrint.UseVisualStyleBackColor = false;
             // 
             // btnSavePrinter
             // 
@@ -150,14 +158,6 @@
             label4.TabIndex = 7;
             label4.Text = "Printer Interface";
             // 
-            // lblPrinterState
-            // 
-            lblPrinterState.Location = new Point(21, 246);
-            lblPrinterState.Name = "lblPrinterState";
-            lblPrinterState.Size = new Size(703, 34);
-            lblPrinterState.TabIndex = 14;
-            lblPrinterState.TextAlign = ContentAlignment.MiddleLeft;
-            // 
             // PrinterManagementControl
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
@@ -179,7 +179,7 @@
         private ComboBox cbxInterface;
         private ComboBox cbxPort;
         private Label lblPort;
-        private Button button1;
+        private Button btnTestPrint;
         private Button btnSavePrinter;
         private Label lblPrinterState;
     }
