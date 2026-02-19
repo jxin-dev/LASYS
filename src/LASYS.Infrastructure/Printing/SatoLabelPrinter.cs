@@ -1,4 +1,4 @@
-﻿using LabelGalleryPlus3WR;
+﻿using Interop.LabelGalleryPlus3WR;
 using SATOPrinterAPI;
 using System.Runtime.InteropServices;
 using System.Text;
