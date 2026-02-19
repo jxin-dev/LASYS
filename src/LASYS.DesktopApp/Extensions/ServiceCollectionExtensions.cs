@@ -1,13 +1,11 @@
 ﻿using LASYS.Application.Interfaces;
 using LASYS.Application.Services;
 using LASYS.Camera.Interfaces;
-using LASYS.Camera.Services;
 using LASYS.DesktopApp.Presenters;
 using LASYS.DesktopApp.Views.Forms;
 using LASYS.DesktopApp.Views.Interfaces;
 using LASYS.DesktopApp.Views.UserControls;
-using LASYS.OCR.Interfaces;
-using LASYS.OCR.Services;
+using LASYS.SatoLabelPrinter.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace LASYS.DesktopApp.Extensions
@@ -22,7 +20,8 @@ namespace LASYS.DesktopApp.Extensions
                 var view = new SplashForm();
                 var cameraConfig = sp.GetRequiredService<ICameraConfig>();
                 var cameraService = sp.GetRequiredService<ICameraService>();
-                new SplashPresenter(view, cameraConfig, cameraService);
+                var printerService = sp.GetRequiredService<IPrinterService>();
+                new SplashPresenter(view, cameraConfig, cameraService, printerService);
                 return view;
             });
             services.AddTransient<ISplashView>(sp => sp.GetRequiredService<SplashForm>());

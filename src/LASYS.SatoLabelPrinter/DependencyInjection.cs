@@ -8,7 +8,7 @@ namespace LASYS.SatoLabelPrinter
     {
         public static IServiceCollection AddSatoLabelPrinterServices(this IServiceCollection services)
         {
-            services.AddScoped<IPrinterService, PrinterService>();
+            services.AddSingleton<IPrinterService, PrinterService>();
             return services;
         }
     }
