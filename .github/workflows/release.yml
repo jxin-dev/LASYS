@@ -49,7 +49,7 @@ jobs:
             -p:PublishSingleFile=false `
             -p:IncludeNativeLibrariesForSelfExtract=true `
             -p:EnableCompressionInSingleFile=true `
-            -o publish32
+            -o publish
 
           # Copy additional resource folders if they exist
           if (Test-Path "src/LASYS.DesktopApp/Resources") { Copy-Item "src/LASYS.DesktopApp/Resources" -Recurse -Destination publish/Resources }
