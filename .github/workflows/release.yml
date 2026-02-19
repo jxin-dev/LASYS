@@ -46,7 +46,7 @@ jobs:
             -c Release `
             -p:RuntimeIdentifier=win-x86 `
             -p:PublishSelfContained=true `
-            -p:PublishSingleFile=true `
+            -p:PublishSingleFile=false `
             -p:IncludeNativeLibrariesForSelfExtract=true `
             -p:EnableCompressionInSingleFile=true `
             -o publish32
