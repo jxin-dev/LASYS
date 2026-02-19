@@ -35,21 +35,21 @@ jobs:
       - name: Restore dependencies
         run: dotnet restore
 
-      - name: Build all projects
-        run: dotnet build --configuration Release
+      - name: Build all projects (32-bit)
+        run: dotnet build --configuration Release -p:Platform=x86
 
       # ───────────────────────────────────────────────
       # Publish Desktop App + include resource subfolders
-      - name: Publish Desktop App
+      - name: Publish 32-bit Desktop App
         run: |
           dotnet publish src/LASYS.DesktopApp/LASYS.DesktopApp.csproj `
             -c Release `
-            -p:RuntimeIdentifier=win-x64 `
+            -p:RuntimeIdentifier=win-x86 `
             -p:PublishSelfContained=true `
             -p:PublishSingleFile=true `
             -p:IncludeNativeLibrariesForSelfExtract=true `
             -p:EnableCompressionInSingleFile=true `
-            -o publish
+            -o publish32
 
           # Copy additional resource folders if they exist
           if (Test-Path "src/LASYS.DesktopApp/Resources") { Copy-Item "src/LASYS.DesktopApp/Resources" -Recurse -Destination publish/Resources }
