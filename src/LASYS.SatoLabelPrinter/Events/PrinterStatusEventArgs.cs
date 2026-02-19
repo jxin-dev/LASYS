@@ -7,7 +7,7 @@
         public PrinterStatusEventArgs(PrinterStatus status, string? message = null)
         {
             Status = status;
-            Message = message ?? GetDefaultMessage(status); ;
+            Message = message ?? GetDefaultMessage(status);
         }
 
         private string GetDefaultMessage(PrinterStatus status) => status switch

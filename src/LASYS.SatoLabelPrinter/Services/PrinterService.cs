@@ -8,7 +8,6 @@ using LASYS.SatoLabelPrinter.Events;
 using LASYS.SatoLabelPrinter.Interfaces;
 using LASYS.SatoLabelPrinter.Models;
 using SATOPrinterAPI;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace LASYS.SatoLabelPrinter.Services
 {
@@ -23,12 +22,21 @@ namespace LASYS.SatoLabelPrinter.Services
         private bool _disposed;
         private string? _printerName;
         private string _prnFilePath = string.Empty;
+        private bool _isByteAvailableSubscribed;
+
         public event EventHandler<LabelPrintEventArgs>? LabelPrintProgress;
         public event EventHandler<PrinterStatusEventArgs>? PrinterStatusChanged;
 
 
         #region Printer Data Receiving & Processing
+        private void EnsureByteAvailableSubscription()
+        {
+            if (_printer == null || _isByteAvailableSubscribed)
+                return;
 
+            _printer.ByteAvailable += AsynDataIn;
+            _isByteAvailableSubscribed = true;
+        }
         private readonly Dictionary<char, PrinterStatus> _printerControlStatusMap = new()
         {
             { '\x11', PrinterStatus.Printing },  // DC1
@@ -133,10 +141,11 @@ namespace LASYS.SatoLabelPrinter.Services
                 // Dispose managed state
                 try
                 {
-                    if (_printer != null)
+                    if (_printer != null && _isByteAvailableSubscribed)
                     {
+                        _printer.Disconnect();
                         _printer.ByteAvailable -= AsynDataIn;
-                        _printer?.Disconnect();
+                        _isByteAvailableSubscribed = false;
                     }
                 }
                 catch { }
@@ -233,9 +242,12 @@ namespace LASYS.SatoLabelPrinter.Services
                 return;
             }
 
-            _printer ??= new Printer();
-            _printer.PermanentConnect = true;
-            _printer.ByteAvailable += AsynDataIn;
+            if (_printer == null)
+            {
+                _printer = new Printer();
+                _printer.PermanentConnect = true;
+            }
+            EnsureByteAvailableSubscription();
 
             if (config.SatoPrinter is SerialPrinterConnection serial)
             {
@@ -247,10 +259,9 @@ namespace LASYS.SatoLabelPrinter.Services
                 _printerName = GetPrinterNameByComPort(_printer.COMPort);
                 if (_printerName == null)
                 {
-                    Console.WriteLine($"No printer found on COM port {_printer.COMPort}");
+                    PrinterStatusChanged?.Invoke(this, new PrinterStatusEventArgs(PrinterStatus.Error, $"No printer found on COM port {_printer.COMPort}"));
                     return;
                 }
-
 
                 try
                 {
@@ -258,7 +269,7 @@ namespace LASYS.SatoLabelPrinter.Services
                 }
                 catch (IOException ex)
                 {
-                    Debug.WriteLine($"Failed to connect to COM port {serial.ComPort}: {ex.Message}");
+                    PrinterStatusChanged?.Invoke(this, new PrinterStatusEventArgs(PrinterStatus.Error, $"Failed to connect to COM port {serial.ComPort}: {ex.Message}"));
                     return;
                 }
             }
@@ -272,11 +283,11 @@ namespace LASYS.SatoLabelPrinter.Services
                 {
                     _printerName = usbPrinter.Name; // Get the friendly name
                     _printer.Connect();
-                    Console.WriteLine($"USB printer connected: {_printerName}");
+                    PrinterStatusChanged?.Invoke(this, new PrinterStatusEventArgs(PrinterStatus.Ready, $"USB printer connected: {_printerName}"));
                 }
                 else
                 {
-                    Debug.WriteLine($"USB printer {usb.UsbId} not connected.");
+                    PrinterStatusChanged?.Invoke(this, new PrinterStatusEventArgs(PrinterStatus.Error, $"USB printer {usb.UsbId} not connected."));
                     return;
                 }
             }
