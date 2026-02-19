@@ -23,6 +23,8 @@ namespace LASYS.SatoLabelPrinter.Interfaces
         void Print(int timeoutSeconds = 300);
 
         event EventHandler<LabelPrintEventArgs> LabelPrintProgress;
-        event EventHandler<PrinterStatusEventArgs> PrinterStatusChanged;
+        event EventHandler<PrinterStateChangedEventArgs> PrinterStateChanged;
+        event EventHandler<PrinterNotificationEventArgs> PrinterNotification;
+
     }
 }

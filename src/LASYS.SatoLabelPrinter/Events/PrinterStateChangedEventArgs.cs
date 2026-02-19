@@ -1,10 +1,12 @@
-﻿namespace LASYS.SatoLabelPrinter.Events
+﻿using LASYS.SatoLabelPrinter.Models;
+
+namespace LASYS.SatoLabelPrinter.Events
 {
-    public class PrinterStatusEventArgs : EventArgs
+    public class PrinterStateChangedEventArgs : EventArgs
     {
         public PrinterStatus Status { get; }
         public string Message { get; }
-        public PrinterStatusEventArgs(PrinterStatus status, string? message = null)
+        public PrinterStateChangedEventArgs(PrinterStatus status, string? message = null)
         {
             Status = status;
             Message = message ?? GetDefaultMessage(status);
@@ -20,12 +22,4 @@
             _ => "Unknown printer status."
         };
     }
-    public enum PrinterStatus
-    {
-        Ready,
-        Offline,
-        Printing,
-        Paused,
-        Error,
     }
-}

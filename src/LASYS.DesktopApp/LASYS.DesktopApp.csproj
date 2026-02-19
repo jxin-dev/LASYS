@@ -29,9 +29,6 @@
 		<ProjectReference Include="..\LASYS.OCR\LASYS.OCR.csproj" />
 		<ProjectReference Include="..\LASYS.SatoLabelPrinter\LASYS.SatoLabelPrinter.csproj" />
 		<ProjectReference Include="..\LASYS.UIControls\LASYS.UIControls.csproj" />
-		<!--<Reference Include="LASYS.SatoLabelPrinter">
-			<HintPath>..\LASYS.SatoLabelPrinter\bin\Release\net48\LASYS.SatoLabelPrinter.dll</HintPath>
-		</Reference>-->
 	</ItemGroup>
 
 	<ItemGroup>

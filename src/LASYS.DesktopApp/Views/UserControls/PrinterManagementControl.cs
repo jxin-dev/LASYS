@@ -42,5 +42,24 @@ namespace LASYS.DesktopApp.Views.UserControls
             cbxPort.MaxDropDownItems = 10; // max visible items
             cbxPort.DropDownHeight = cbxPort.ItemHeight * cbxPort.MaxDropDownItems;
         }
+
+        public void ShowMessage(string message, string caption, MessageBoxIcon icon)
+        {
+            MessageBox.Show(message, caption, MessageBoxButtons.OK, icon);
+        }
+
+        public void ReportPrinterState(string message, bool isError = false)
+        {
+            lblPrinterState.ForeColor = isError ? Color.Red : Color.Green;
+            lblPrinterState.Text = message;
+        }
+
+        public void InvokeOnUI(Action action)
+        {
+            if (this.InvokeRequired)
+                this.Invoke(action);
+            else
+                action();
+        }
     }
 }

@@ -24,7 +24,8 @@ namespace LASYS.SatoLabelPrinter.Services
         private bool _isByteAvailableSubscribed;
 
         public event EventHandler<LabelPrintEventArgs>? LabelPrintProgress;
-        public event EventHandler<PrinterStatusEventArgs>? PrinterStatusChanged;
+        public event EventHandler<PrinterStateChangedEventArgs>? PrinterStateChanged;
+        public event EventHandler<PrinterNotificationEventArgs>? PrinterNotification;
 
 
         #region Printer Data Receiving & Processing
@@ -52,7 +53,7 @@ namespace LASYS.SatoLabelPrinter.Services
                 if (_printerControlStatusMap.TryGetValue(ch, out var status))
                 {
                     // Raise event with default message
-                    PrinterStatusChanged?.Invoke(this, new PrinterStatusEventArgs(status));
+                    PrinterStateChanged?.Invoke(this, new PrinterStateChangedEventArgs(status));
                 }
             }
             // Check multi-byte sequence: ESC+@ (0x1B, 0x40) for Offline
@@ -60,7 +61,7 @@ namespace LASYS.SatoLabelPrinter.Services
             {
                 if (e.Data[i] == 0x1B && e.Data[i + 1] == 0x40)
                 {
-                    PrinterStatusChanged?.Invoke(this, new PrinterStatusEventArgs(PrinterStatus.Offline));
+                    PrinterStateChanged?.Invoke(this, new PrinterStateChangedEventArgs(PrinterStatus.Offline));
                 }
             }
 
@@ -194,19 +195,19 @@ namespace LASYS.SatoLabelPrinter.Services
 
                 if (config?.SatoPrinter is SerialPrinterConnection serial)
                 {
-                    Console.WriteLine($"Serial Port: {serial.ComPort}");
+                    PrinterStateChanged?.Invoke(this, new PrinterStateChangedEventArgs(PrinterStatus.Info, $"Loaded printer config: Serial Port {serial.ComPort}"));
                 }
                 else if (config?.SatoPrinter is UsbPrinterConnection usb)
                 {
-                    Console.WriteLine($"USB ID: {usb.UsbId}");
+                    PrinterStateChanged?.Invoke(this, new PrinterStateChangedEventArgs(PrinterStatus.Info, $"Loaded printer config: USB ID {usb.UsbId}"));
                 }
-
+                await Task.Delay(1000);
                 return config;
 
             }
             catch (Exception ex)
             {
-                Console.Error.WriteLine($"Failed to load printer.config.json: {ex.Message}");
+                PrinterNotification?.Invoke(this, new PrinterNotificationEventArgs(PrinterMessageType.Error, $"Failed to load printer configuration: {ex.Message}"));
                 await Task.Delay(1000);
                 return null;
             }
@@ -226,18 +227,23 @@ namespace LASYS.SatoLabelPrinter.Services
             }
             catch (Exception ex)
             {
-                Console.Error.WriteLine($"Failed to save printer.config.json: {ex.Message}");
-                throw;
+                PrinterNotification?.Invoke(this, new PrinterNotificationEventArgs(PrinterMessageType.Error, $"Failed to save printer configuration: {ex.Message}"));
+                return;
+            }
+            finally 
+            {
+                PrinterNotification?.Invoke(this, new PrinterNotificationEventArgs(PrinterMessageType.Info, "Printer configuration saved successfully."));
+                await InitializeAsync();
+
             }
 
-            await InitializeAsync();
         }
         public async Task InitializeAsync()
         {
             var config = await LoadAsync();
             if (config == null)
             {
-                Console.WriteLine("No printer configuration found. Please set up your printer.");
+                PrinterStateChanged?.Invoke(this, new PrinterStateChangedEventArgs(PrinterStatus.Error, "No printer configuration found. Please set up your printer."));
                 return;
             }
 
@@ -258,17 +264,18 @@ namespace LASYS.SatoLabelPrinter.Services
                 _printerName = GetPrinterNameByComPort(_printer.COMPort);
                 if (_printerName == null)
                 {
-                    PrinterStatusChanged?.Invoke(this, new PrinterStatusEventArgs(PrinterStatus.Error, $"No printer found on COM port {_printer.COMPort}"));
+                    PrinterStateChanged?.Invoke(this, new PrinterStateChangedEventArgs(PrinterStatus.Error, $"No printer detected on COM port {_printer.COMPort}. Please check the connection and try again."));
                     return;
                 }
 
                 try
                 {
                     _printer.Connect();
+                    PrinterStateChanged?.Invoke(this, new PrinterStateChangedEventArgs(PrinterStatus.Ready, $"Serial COM printer connected: {_printerName} (Port: {serial.ComPort})"));
                 }
                 catch (IOException ex)
                 {
-                    PrinterStatusChanged?.Invoke(this, new PrinterStatusEventArgs(PrinterStatus.Error, $"Failed to connect to COM port {serial.ComPort}: {ex.Message}"));
+                    PrinterNotification?.Invoke(this, new PrinterNotificationEventArgs(PrinterMessageType.Error, $"Failed to connect to COM port {serial.ComPort}: {ex.Message}"));
                     return;
                 }
             }
@@ -282,11 +289,11 @@ namespace LASYS.SatoLabelPrinter.Services
                 {
                     _printerName = usbPrinter.Name; // Get the friendly name
                     _printer.Connect();
-                    PrinterStatusChanged?.Invoke(this, new PrinterStatusEventArgs(PrinterStatus.Ready, $"USB printer connected: {_printerName}"));
+                    PrinterStateChanged?.Invoke(this, new PrinterStateChangedEventArgs(PrinterStatus.Ready, $"USB printer connected: {_printerName}"));
                 }
                 else
                 {
-                    PrinterStatusChanged?.Invoke(this, new PrinterStatusEventArgs(PrinterStatus.Error, $"USB printer {usb.UsbId} not connected."));
+                    PrinterStateChanged?.Invoke(this, new PrinterStateChangedEventArgs(PrinterStatus.Error, $"USB printer {usb.UsbId} not connected."));
                     return;
                 }
             }

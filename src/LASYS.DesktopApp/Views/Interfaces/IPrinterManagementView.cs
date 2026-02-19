@@ -11,5 +11,8 @@
         void SetPortList(IReadOnlyList<string> ports);
 
         event EventHandler SaveClicked;
+        void ShowMessage(string message, string caption, MessageBoxIcon icon);
+        void ReportPrinterState(string message, bool isError = false);
+        void InvokeOnUI(Action action);
     }
 }

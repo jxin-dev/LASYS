@@ -37,6 +37,7 @@
             label1 = new Label();
             label5 = new Label();
             label4 = new Label();
+            lblPrinterState = new Label();
             pnlContent.SuspendLayout();
             SuspendLayout();
             // 
@@ -44,6 +45,7 @@
             // 
             pnlContent.Anchor = AnchorStyles.None;
             pnlContent.BackColor = Color.White;
+            pnlContent.Controls.Add(lblPrinterState);
             pnlContent.Controls.Add(button1);
             pnlContent.Controls.Add(btnSavePrinter);
             pnlContent.Controls.Add(cbxPort);
@@ -54,7 +56,7 @@
             pnlContent.Controls.Add(label4);
             pnlContent.Location = new Point(52, 83);
             pnlContent.Name = "pnlContent";
-            pnlContent.Size = new Size(745, 270);
+            pnlContent.Size = new Size(745, 286);
             pnlContent.TabIndex = 2;
             // 
             // button1
@@ -148,6 +150,14 @@
             label4.TabIndex = 7;
             label4.Text = "Printer Interface";
             // 
+            // lblPrinterState
+            // 
+            lblPrinterState.Location = new Point(21, 246);
+            lblPrinterState.Name = "lblPrinterState";
+            lblPrinterState.Size = new Size(703, 34);
+            lblPrinterState.TabIndex = 14;
+            lblPrinterState.TextAlign = ContentAlignment.MiddleLeft;
+            // 
             // PrinterManagementControl
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
@@ -171,5 +181,6 @@
         private Label lblPort;
         private Button button1;
         private Button btnSavePrinter;
+        private Label lblPrinterState;
     }
 }
