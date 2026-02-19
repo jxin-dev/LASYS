@@ -1,8 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFramework>net8.0</TargetFramework>
-		<!--<TargetFramework>net48</TargetFramework>-->
+		<TargetFramework>net8.0-windows</TargetFramework>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 		<Platforms>AnyCPU;x86</Platforms>
@@ -11,18 +10,6 @@
 	<ItemGroup>
 		<None Remove="dlls\LabelGalleryPlus3WR.dll" />
 		<None Remove="dlls\SATOPrinterAPI.dll" />
-	</ItemGroup>
-
-	<ItemGroup>
-		<COMReference Include="LabelGalleryPlus3WR">
-			<VersionMinor>0</VersionMinor>
-			<VersionMajor>1</VersionMajor>
-			<Guid>3387c360-df59-4769-9781-61751cc6a14c</Guid>
-			<Lcid>0</Lcid>
-			<WrapperTool>tlbimp</WrapperTool>
-			<Isolated>false</Isolated>
-			<EmbedInteropTypes>true</EmbedInteropTypes>
-		</COMReference>
 	</ItemGroup>
 
 	<ItemGroup>
@@ -44,6 +31,13 @@
 		<Reference Include="SATOPrinterAPI">
 			<HintPath>dlls\SATOPrinterAPI.dll</HintPath>
 			<Private>True</Private>
+		</Reference>
+	</ItemGroup>
+
+	<ItemGroup>
+		<Reference Include="Interop.LabelGalleryPlus3WR">
+			<HintPath>dlls\Interop.LabelGalleryPlus3WR.dll</HintPath>
+			<Private>true</Private>
 		</Reference>
 	</ItemGroup>
 

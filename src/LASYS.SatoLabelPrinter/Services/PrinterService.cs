@@ -1,5 +1,4 @@
-﻿using System.Diagnostics;
-using System.IO.Ports;
+﻿using System.IO.Ports;
 using System.Management;
 using System.Runtime.InteropServices;
 using System.Text.Json;
