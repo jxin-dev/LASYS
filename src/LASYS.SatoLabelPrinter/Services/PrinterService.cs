@@ -2,7 +2,7 @@
 using System.Management;
 using System.Runtime.InteropServices;
 using System.Text.Json;
-using LabelGalleryPlus3WR;
+using Interop.LabelGalleryPlus3WR;
 using LASYS.SatoLabelPrinter.Events;
 using LASYS.SatoLabelPrinter.Interfaces;
 using LASYS.SatoLabelPrinter.Models;
