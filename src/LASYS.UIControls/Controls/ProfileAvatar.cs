@@ -1,4 +1,5 @@
 ﻿using System.Drawing.Drawing2D;
+using System.ComponentModel;
 
 namespace LASYS.UIControls.Controls
 {
@@ -7,6 +8,7 @@ namespace LASYS.UIControls.Controls
         private Image? _resizedProfileImage;
 
         private Image? _profileImage;
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public Image? ProfileImage
         {
             get => _profileImage;
@@ -19,6 +21,7 @@ namespace LASYS.UIControls.Controls
             }
         }
 
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public Color CircleColor { get; set; } = Color.FromArgb(82, 145, 192);
 
         public ProfileAvatar(Image? image = null)

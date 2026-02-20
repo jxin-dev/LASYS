@@ -1,4 +1,6 @@
-﻿namespace LASYS.UIControls.Controls
+﻿using System.ComponentModel;
+
+namespace LASYS.UIControls.Controls
 {
     public class DraggableResizerPanel : Panel
     {
@@ -13,9 +15,12 @@
         private int startY;
         private int startHeight;
 
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public int MinimumPanelHeight { get; set; } = 200;
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public int DefaultPanelHeight { get; set; } = 300;
         public Panel Content => contentPanel;
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public double HeightPercentage { get; set; } = 0.7;
 
         private readonly Dictionary<string, Control> tabContents = new();

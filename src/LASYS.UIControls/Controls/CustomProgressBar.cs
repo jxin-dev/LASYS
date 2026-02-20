@@ -17,6 +17,7 @@ namespace LASYS.UIControls.Controls
         [Browsable(true)]
         [Category("Behavior")]
         [Description("Gets or sets the current progress value.")]
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public int Value
         {
             get => _value;
@@ -34,6 +35,7 @@ namespace LASYS.UIControls.Controls
         [Browsable(true)]
         [Category("Behavior")]
         [Description("Gets or sets the maximum progress value.")]
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public int Maximum
         {
             get => _maximum;
@@ -47,6 +49,7 @@ namespace LASYS.UIControls.Controls
         [Browsable(true)]
         [Category("Appearance")]
         [Description("Gets or sets the color of the progress fill.")]
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public Color ProgressColor
         {
             get => _progressColor;
@@ -61,6 +64,7 @@ namespace LASYS.UIControls.Controls
         [Browsable(true)]
         [Category("Appearance")]
         [Description("Gets or sets the background color of the progress bar.")]
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public Color ProgressBackgroundColor
         {
             get => _backgroundColor;
@@ -74,6 +78,7 @@ namespace LASYS.UIControls.Controls
         [Browsable(true)]
         [Category("Appearance")]
         [Description("Show or hide percentage beside the status message.")]
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public bool ShowPercentage
         {
             get => _showPercentage;
