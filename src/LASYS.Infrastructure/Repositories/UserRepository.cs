@@ -82,7 +82,7 @@ namespace LASYS.Infrastructure.Repositories
             }
         }
 
-        public async Task<User> GetUserByCode(string code)
+        public async Task<User?> GetUserByCode(string code)
         {
             string sql = "select * from sec_users_mst where USER_CODE = @USER_CODE";
 
@@ -99,7 +99,7 @@ namespace LASYS.Infrastructure.Repositories
             }
         }
 
-        public async Task<User> GetUserByUsername(string username)
+        public async Task<User?> GetUserByUsername(string username)
         {
             string sql = "select * from sec_users_mst where USER_NAME = @USER_NAME";
 
@@ -116,7 +116,7 @@ namespace LASYS.Infrastructure.Repositories
             }
         }
 
-        public async Task<User> GetUserByUsernameAndPassword(string username, string password)
+        public async Task<User?> GetUserByUsernameAndPassword(string username, string password)
         {
             string sql = @"
                 SELECT USR.USER_CODE, USR.USER_NAME, USR.FIRST_NAME, USR.MIDDLE_NAME, USR.LAST_NAME, USR.ROLE_CODE, USR.SECTION_ID, 
@@ -128,7 +128,7 @@ namespace LASYS.Infrastructure.Repositories
             {
                 using (var connection = _context.CreateConnection())
                 {
-                    return await connection.QueryFirstAsync<User>(sql, new { USER_NAME = username, USER_PASSWORD = password });
+                    return await connection.QueryFirstOrDefaultAsync<User>(sql, new { USER_NAME = username, USER_PASSWORD = password });
                 }
             }
             catch

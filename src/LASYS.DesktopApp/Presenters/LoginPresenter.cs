@@ -1,4 +1,5 @@
 ﻿using System.Threading.Tasks;
+using LASYS.Application.Interfaces;
 using LASYS.DesktopApp.Core.Interfaces;
 using LASYS.DesktopApp.Presenters.Interfaces;
 using LASYS.DesktopApp.Views.Interfaces;
@@ -10,12 +11,14 @@ namespace LASYS.DesktopApp.Presenters
     public class LoginPresenter //: ILoginPresenter
     {
         private ILoginView _view;
+        private readonly IUserRepository _userRepository;
 
-        public LoginPresenter(ILoginView view)
+        public LoginPresenter(ILoginView view, IUserRepository userRepository)
         {
             _view = view;
             _view.LoginClicked += OnLoginClicked;
             _view.CheckForUpdatesRequested += OnCheckForUpdatesRequested;
+            _userRepository = userRepository;
         }
 
         //private readonly IViewFactory _factory;
@@ -36,7 +39,7 @@ namespace LASYS.DesktopApp.Presenters
             await CheckForUpdatesAsync();
         }
 
-        private void OnLoginClicked(object? sender, EventArgs e)
+        private async Task OnLoginClicked(object? sender, EventArgs e)
         {
             if (string.IsNullOrWhiteSpace(_view.Username) || string.IsNullOrWhiteSpace(_view.Password))
             {
@@ -44,7 +47,9 @@ namespace LASYS.DesktopApp.Presenters
                 return;
             }
 
-            if (_view.Username == "admin" && _view.Password == "1234")
+            var user = await _userRepository.GetUserByUsernameAndPassword(_view.Username, _view.Password);
+
+            if (user != null)
             {
                 _view.SetDialogResult(DialogResult.OK);
             }

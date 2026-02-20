@@ -4,7 +4,7 @@ namespace LASYS.DesktopApp.Views.Interfaces
 {
     public interface ILoginView
     {
-        event EventHandler LoginClicked;
+        event Func<object?, EventArgs, Task>? LoginClicked;
         string Username { get; }
         string Password { get; }
         void ShowMessage(string errorMessage);

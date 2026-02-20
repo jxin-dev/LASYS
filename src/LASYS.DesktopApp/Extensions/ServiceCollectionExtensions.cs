@@ -20,7 +20,7 @@ namespace LASYS.DesktopApp.Extensions
                 var view = new SplashForm();
                 var cameraConfig = sp.GetRequiredService<ICameraConfig>();
                 var cameraService = sp.GetRequiredService<ICameraService>();
-                var printerService = sp.GetRequiredService<IPrinterService>();
+                var printerService = sp.GetRequiredService<IPrinterService>();              
                 new SplashPresenter(view, cameraConfig, cameraService, printerService);
                 return view;
             });
@@ -28,8 +28,9 @@ namespace LASYS.DesktopApp.Extensions
 
             services.AddTransient<LoginForm>(sp =>
             {
+                var userRepo = sp.GetRequiredService<IUserRepository>();
                 var view = new LoginForm();
-                new LoginPresenter(view);
+                new LoginPresenter(view, userRepo);
                 return view;
             });
             services.AddTransient<ILoginView>(sp => sp.GetRequiredService<LoginForm>());
