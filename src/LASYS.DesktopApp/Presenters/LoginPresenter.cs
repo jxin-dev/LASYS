@@ -46,7 +46,9 @@ namespace LASYS.DesktopApp.Presenters
                 _view.ShowMessage("Please enter both username and password.");
                 return;
             }
-
+#if (DEBUG)
+            _view.SetDialogResult(DialogResult.OK);
+#else
             var user = await _userRepository.GetUserByUsernameAndPassword(_view.Username, _view.Password);
 
             if (user != null)
@@ -57,6 +59,8 @@ namespace LASYS.DesktopApp.Presenters
             {
                 _view.ShowMessage("Invalid username or password.");
             }
+#endif
+
         }
         //_view.HideView();
         //var main = _factory.Create<IMainView, MainPresenter>();
