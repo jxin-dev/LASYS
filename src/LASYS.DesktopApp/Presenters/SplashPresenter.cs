@@ -71,7 +71,7 @@ namespace LASYS.DesktopApp.Presenters
             }
 
 
-            await _printerService.InitializeAsync();// 50%
+            //await _printerService.InitializeAsync();// 50%
 
             _view?.UpdateProgress(80, "Finalizing setup...");
             await Task.Delay(2000);
