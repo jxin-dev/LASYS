@@ -4,7 +4,7 @@ namespace LASYS.DesktopApp.Views.Forms
 {
     public partial class LoginForm : Form, ILoginView
     {
-        public event EventHandler? LoginClicked;
+        public event Func<object?, EventArgs, Task>? LoginClicked;
         public event Func<object?, EventArgs, Task>? CheckForUpdatesRequested;
 
         public string Username => txtUsername.Text;
