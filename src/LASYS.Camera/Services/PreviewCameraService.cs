@@ -37,7 +37,7 @@ namespace LASYS.Camera.Services
             if (_capture == null || !_capture.IsOpened())
                 throw new InvalidOperationException("Cannot start capture loop: camera is not initialized.");
 
-            Task.Run(() =>
+            Task.Run(async () =>
             {
                 while (!token.IsCancellationRequested)
                 {
@@ -48,9 +48,8 @@ namespace LASYS.Camera.Services
                     try
                     {
                         using var frame = new Mat(); // Dispose frame automatically
-                        _capture.Read(frame);
-
-                        if (!frame.Empty())
+                        
+                        if (_capture.Read(frame) && !frame.Empty())
                             FrameReady?.Invoke(frame.Clone()); // Clone to avoid disposed Mat issues
                     }
                     catch (Exception ex)
@@ -60,7 +59,16 @@ namespace LASYS.Camera.Services
                         break; // stop the loop if an exception occurs
                     }
 
-                    Thread.Sleep(30); // ~33 FPS
+                    // Use async delay to respect cancellation
+                    try
+                    {
+                        await Task.Delay(30, token);
+                    }
+                    catch (TaskCanceledException)
+                    {
+                        break;
+                    }
+                    //Thread.Sleep(30); // ~33 FPS
                 }
             }, token);
         }
