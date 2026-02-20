@@ -608,8 +608,19 @@ namespace LASYS.DesktopApp.Views.UserControls
 
         public void DisplayFrame(Bitmap bitmap)
         {
-            _currentFrame?.Dispose();
-            _currentFrame = bitmap;
+            if (bitmap == null) return;
+
+            // Dispose previous frame safely
+            if (_currentFrame != null)
+            {
+                var old = picCameraPreview.Image;
+                picCameraPreview.Image = null; // detach from PictureBox
+                old?.Dispose();
+                _currentFrame.Dispose();
+            }
+
+            // Clone the incoming bitmap (so PictureBox owns its own copy)
+            _currentFrame = (Bitmap)bitmap.Clone();
             picCameraPreview.Image = _currentFrame;
         }
 

@@ -95,26 +95,47 @@ namespace LASYS.OCR.Services
                  result = await Task.Run(() =>
                 {
 
-                    Mat roiMat = region.HasValue ? new Mat(mat, region.Value) : mat.Clone();
+                    Mat roiMat = region.HasValue ? new Mat(mat, region.Value).Clone() : mat.Clone();
 
-                    using var bitmap = OpenCvSharp.Extensions.BitmapConverter.ToBitmap(roiMat);
-                    using var ms = new MemoryStream();
-                    bitmap.Save(ms, System.Drawing.Imaging.ImageFormat.Tiff);
-                    ms.Position = 0;
-
-                    using var img = Pix.LoadTiffFromMemory(ms.ToArray());
-                    using var page = _engine!.Process(img); // Tesseract.NET throws if reused
-
-                    var ocrResult = page.GetText()?.Trim() ?? string.Empty;
-
-                    if (!string.IsNullOrEmpty(ocrResult))
+                    using (var bitmap = OpenCvSharp.Extensions.BitmapConverter.ToBitmap(roiMat))
+                    using (var ms = new MemoryStream())
                     {
-                        string safeResult = string.Concat(ocrResult.Where(c => !Path.GetInvalidFileNameChars().Contains(c)));
-                        string savePath = Path.Combine(_ocrLogsDirectory, $"{safeResult}_{DateTime.Now:yyyyMMdd_HHmmss}.png");
-                        File.WriteAllBytes(savePath, ms.ToArray());
+                        bitmap.Save(ms, System.Drawing.Imaging.ImageFormat.Tiff);
+                        ms.Position = 0;
+
+                        using var img = Pix.LoadTiffFromMemory(ms.ToArray());
+                        using var page = _engine!.Process(img);
+
+                        // OCR result handling...
+                        var ocrResult = page.GetText()?.Trim() ?? string.Empty;
+
+                        if (!string.IsNullOrEmpty(ocrResult))
+                        {
+                            string safeResult = string.Concat(ocrResult.Where(c => !Path.GetInvalidFileNameChars().Contains(c)));
+                            string savePath = Path.Combine(_ocrLogsDirectory, $"{safeResult}_{DateTime.Now:yyyyMMdd_HHmmss}.png");
+                            File.WriteAllBytes(savePath, ms.ToArray());
+                        }
+                        return ocrResult;
                     }
 
-                    return ocrResult;
+                    //using var bitmap = OpenCvSharp.Extensions.BitmapConverter.ToBitmap(roiMat);
+                    //using var ms = new MemoryStream();
+                    //bitmap.Save(ms, System.Drawing.Imaging.ImageFormat.Tiff);
+                    //ms.Position = 0;
+
+                    //using var img = Pix.LoadTiffFromMemory(ms.ToArray());
+                    //using var page = _engine!.Process(img); // Tesseract.NET throws if reused
+
+                    //var ocrResult = page.GetText()?.Trim() ?? string.Empty;
+
+                    //if (!string.IsNullOrEmpty(ocrResult))
+                    //{
+                    //    string safeResult = string.Concat(ocrResult.Where(c => !Path.GetInvalidFileNameChars().Contains(c)));
+                    //    string savePath = Path.Combine(_ocrLogsDirectory, $"{safeResult}_{DateTime.Now:yyyyMMdd_HHmmss}.png");
+                    //    File.WriteAllBytes(savePath, ms.ToArray());
+                    //}
+
+                    //return ocrResult;
 
                 });
 

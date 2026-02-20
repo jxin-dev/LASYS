@@ -20,7 +20,17 @@ namespace LASYS.DesktopApp.Views.Forms
            
             // Initialize layout
             _sideNav = new SideNavigation();
-            _sideNav.SetProfile("Guest User", @"C:\Users\ITC - JAYSON OLICIA\Downloads\cartoon-1890438_1280.jpg");
+            //_sideNav.SetProfile("Guest User", @"C:\Users\ITC - JAYSON OLICIA\Downloads\cartoon-1890438_1280.jpg");
+
+            try
+            {
+                _sideNav.SetProfile("Guest User", @"C:\Users\ITC - JAYSON OLICIA\Downloads\cartoon-1890438_1280.jpg");
+            }
+            catch (ArgumentException ex)
+            {
+                MessageBox.Show($"Failed to load profile image: {ex.Message}");
+            }
+
             _contentPanel = new Panel
             {
                 Name = "contentPanel",

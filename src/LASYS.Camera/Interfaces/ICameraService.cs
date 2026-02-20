@@ -6,7 +6,7 @@ namespace LASYS.Camera.Interfaces
 {
     public interface ICameraService : IDisposable
     {
-        Mat LastCapturedFrame { get; set; }
+        Mat? LastCapturedFrame { get; set; }
         event EventHandler<CameraStatusEventArgs> CameraStatusChanged;
         event EventHandler CameraDisconnected;
         event EventHandler CameraConnected;
@@ -17,6 +17,8 @@ namespace LASYS.Camera.Interfaces
         Task StartStreamingAsync(Action<Mat, Bitmap> onFrameCaptured, Func<DrawingSize> getTargetResolution);
         void ReleaseCamera();
         bool IsCameraReady();
+
+        bool IsStreaming { get; }
 
     }
 }

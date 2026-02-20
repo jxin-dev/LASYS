@@ -124,7 +124,7 @@ namespace LASYS.DesktopApp.Presenters
 
         private async void OnOCRTriggered(object? sender, OCRCoordinatesEventArgs e)
         {
-            await _ocrService.ReadTextAsync(_cameraService.LastCapturedFrame, _view.PictureBoxSize, e.X, e.Y, e.Width, e.Height, e.ImageWidth, e.ImageHeight);
+            await _ocrService.ReadTextAsync(_cameraService.LastCapturedFrame!, _view.PictureBoxSize, e.X, e.Y, e.Width, e.Height, e.ImageWidth, e.ImageHeight);
         }
 
         private async void OnLoadRegisteredOcrItemsRequested(object? sender, EventArgs e)
@@ -155,11 +155,14 @@ namespace LASYS.DesktopApp.Presenters
 
         private void HandleFrame(Mat mat, Bitmap bitmap)
         {
+            if (bitmap == null) return;
             Console.WriteLine($"Frame: {bitmap.Width}x{bitmap.Height}");
             _view.InvokeOnUI(() =>
             {
                 _view.DisplayFrame(bitmap);
             });
+            bitmap.Dispose(); // free temporary bitmap
+
         }
         private async void OnStreamingRequested(object? sender, EventArgs e)
         {

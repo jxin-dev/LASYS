@@ -26,15 +26,17 @@ namespace LASYS.Camera.Services
 
         private bool _isCameraConnected;
         private Task? _streamingTask;
-        public Mat LastCapturedFrame { get; set; } = new();
+        public Mat? LastCapturedFrame { get; set; }
 
         private CancellationTokenSource _cts;
         private readonly object _captureLock = new();
+        private readonly object _frameLock = new();
 
-        //private Point _startPoint;
-        //private Rectangle _roi;
-        //private bool _drawing = false;
-        //private bool _canDraw = true;
+        private Bitmap? _lastBitmap;
+
+        private bool _isStreaming = false;
+        public bool IsStreaming => _isStreaming;
+
         public CameraService(ICameraConfig cameraConfig, ICameraEnumerator cameraEnumerator)
         {
 
@@ -92,7 +94,7 @@ namespace LASYS.Camera.Services
                     {
                         CameraStatusChanged?.Invoke(this, new CameraStatusEventArgs(
                                 $"Device unavailable ({config.Name})", true));
-
+                        CameraDisconnected?.Invoke(this, EventArgs.Empty);
                         return;
                     }
                     var cameraIndex = cameraInfo.Index;
@@ -104,7 +106,24 @@ namespace LASYS.Camera.Services
                     {
                         return; // hot-plug safe
                     }
+                    // Set properties safely — check return values
+                    //if (!capture.Set(VideoCaptureProperties.FrameWidth, config.FrameWidth))
+                    //{
+                    //    CameraStatusChanged?.Invoke(this,
+                    //        new CameraStatusEventArgs("Width not supported", false));
+                    //}
 
+                    //if (!capture.Set(VideoCaptureProperties.FrameHeight, config.FrameHeight))
+                    //{
+                    //    CameraStatusChanged?.Invoke(this,
+                    //        new CameraStatusEventArgs("Height not supported", false));
+                    //}
+
+                    //if (!capture.Set(VideoCaptureProperties.Fps, config.FrameRate))
+                    //{
+                    //    CameraStatusChanged?.Invoke(this,
+                    //        new CameraStatusEventArgs("FPS not supported", false));
+                    //}
                     capture.Set(VideoCaptureProperties.FrameWidth, config.FrameWidth);
                     capture.Set(VideoCaptureProperties.FrameHeight, config.FrameHeight);
                     capture.Set(VideoCaptureProperties.Fps, config.FrameRate);
@@ -124,6 +143,7 @@ namespace LASYS.Camera.Services
                     CameraStatusChanged?.Invoke(this,
                         new CameraStatusEventArgs(
                             "Camera initialization timed out.", true));
+                    CameraDisconnected?.Invoke(this, EventArgs.Empty);
                 }
             }
             catch (Exception ex)
@@ -142,6 +162,18 @@ namespace LASYS.Camera.Services
             Action<Mat, Bitmap> onFrameCaptured,
             Func<DrawingSize> getTargetResolution)
         {
+
+            lock (_captureLock)
+            {
+                if (_isStreaming)
+                    return Task.CompletedTask; // Already streaming
+
+                if (_capture == null || !_capture.IsOpened())
+                    throw new InvalidOperationException("Camera not initialized.");
+
+                _isStreaming = true;
+                _cts ??= new CancellationTokenSource();
+            }
 
 
             _isCameraConnected = false;
@@ -178,17 +210,35 @@ namespace LASYS.Camera.Services
                     Cv2.Resize(frame, resized,
                         new OpenCvSharp.Size(targetSize.Width, targetSize.Height));
 
-                    using var bitmap = BitmapConverter.ToBitmap(resized);
-                    var bitmapCopy = new Bitmap(bitmap);
+                    HandleFrameSafe(resized, onFrameCaptured);
 
-                    onFrameCaptured(resized, bitmapCopy);
-                    LastCapturedFrame = resized.Clone();
+                    lock (_frameLock)
+                    {
+                        LastCapturedFrame?.Dispose();
+                        LastCapturedFrame = resized.Clone();
+                    }
+
+                    //using var bitmap = BitmapConverter.ToBitmap(resized);
+                    //var bitmapCopy = new Bitmap(bitmap);
+
+                    //onFrameCaptured(resized, bitmapCopy);
+                    //LastCapturedFrame = resized.Clone();
 
                     ReportConnectedOnce();
                 }
             }, _cts.Token);
 
             return _streamingTask;
+        }
+        private void HandleFrameSafe(Mat resized, Action<Mat, Bitmap> onFrameCaptured)
+        {
+            // Dispose previous bitmap
+            _lastBitmap?.Dispose();
+
+            using var bitmap = BitmapConverter.ToBitmap(resized);
+            _lastBitmap = new Bitmap(bitmap);
+
+            onFrameCaptured(resized, _lastBitmap);
         }
 
 
@@ -234,10 +284,7 @@ namespace LASYS.Camera.Services
             try
             {
 
-                CameraStatusChanged?.Invoke(this,
-                    new CameraStatusEventArgs("Unable to access the camera.", true));
 
-                CameraDisconnected?.Invoke(this, EventArgs.Empty);
 
                 CreateAndCaptureEmptyFrame(getTargetResolution(), onFrameCaptured);
 
@@ -245,14 +292,21 @@ namespace LASYS.Camera.Services
 
                 if (_activeConfig != null && !_cts.Token.IsCancellationRequested)
                 {
-                    await OpenCameraAsync(_activeConfig);
+                    //await OpenCameraAsync(_activeConfig);
 
                     if (IsCameraReady())
                     {
-                        //await OpenCameraAsync(_activeConfig);
+                        await OpenCameraAsync(_activeConfig);
                         _hasReportedEmptyFrame = false;
                         _isCameraConnected = false;
                         _streamingTask = null; // Restart streaming
+                    }
+                    else
+                    {
+                        CameraStatusChanged?.Invoke(this,
+                            new CameraStatusEventArgs("Unable to access the camera.", true));
+
+                        CameraDisconnected?.Invoke(this, EventArgs.Empty);
                     }
                 }
             }
@@ -292,10 +346,10 @@ namespace LASYS.Camera.Services
             _hasReportedEmptyFrame = true;
             _isCameraConnected = false;
 
-            CameraStatusChanged?.Invoke(this,
-                new CameraStatusEventArgs(
-                    "No image received from the camera.", true));
-            CameraDisconnected?.Invoke(this, EventArgs.Empty);
+            //CameraStatusChanged?.Invoke(this,
+            //    new CameraStatusEventArgs(
+            //        "No image received from the camera.", true));
+            //CameraDisconnected?.Invoke(this, EventArgs.Empty);
 
             CreateAndCaptureEmptyFrame(getTargetResolution(), onFrameCaptured);
         }
@@ -326,7 +380,11 @@ namespace LASYS.Camera.Services
         {
             using var mat = new Mat(size.Height, size.Width, MatType.CV_8UC3, Scalar.All(0));
             using var bitmap = BitmapConverter.ToBitmap(mat);
-            onFrameCaptured(mat, new Bitmap(bitmap));
+
+            _lastBitmap?.Dispose();
+            _lastBitmap = new Bitmap(bitmap);
+
+            onFrameCaptured(mat, _lastBitmap);
 
             ReleaseCamera();
         }
@@ -348,19 +406,55 @@ namespace LASYS.Camera.Services
         }
         public async Task StopAsync()
         {
-            _cts.Cancel();
+            lock (_captureLock)
+            {
+                if (!_isStreaming)
+                    return;
 
-            if (_streamingTask != null)
-                await _streamingTask;
+                _cts?.Cancel();
+            }
 
-            ReleaseCamera();
+            try
+            {
+                if (_streamingTask != null)
+                    await _streamingTask;
+            }
+            catch (OperationCanceledException)
+            {
+                // expected
+            }
+            finally
+            {
+                lock (_captureLock)
+                {
+                    _isStreaming = false;
+                    _cts?.Dispose();
+                    _cts = new CancellationTokenSource();
+                    _streamingTask = null;
+                    _hasReportedEmptyFrame = false;
+                    _isCameraConnected = false;
+                }
+                LastCapturedFrame?.Dispose();
+                LastCapturedFrame = null;
 
-            _cts.Dispose();
-            _cts = new CancellationTokenSource();
+                _lastBitmap?.Dispose();
+                _lastBitmap = null;
 
-            _streamingTask = null;
-            _hasReportedEmptyFrame = false;
-            _isCameraConnected = false;
+                ReleaseCamera();
+            }
+            //_cts.Cancel();
+
+            //if (_streamingTask != null)
+            //    await _streamingTask;
+
+            //ReleaseCamera();
+
+            //_cts.Dispose();
+            //_cts = new CancellationTokenSource();
+
+            //_streamingTask = null;
+            //_hasReportedEmptyFrame = false;
+            //_isCameraConnected = false;
         }
 
     
