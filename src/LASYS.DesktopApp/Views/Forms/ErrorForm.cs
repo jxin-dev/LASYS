@@ -1,4 +1,5 @@
 ﻿using LASYS.DesktopApp.Views.Interfaces;
+using System.ComponentModel;
 
 namespace LASYS.DesktopApp.Views.Forms
 {
@@ -9,6 +10,8 @@ namespace LASYS.DesktopApp.Views.Forms
         public event EventHandler? RetryRequested;
         public event EventHandler? SkipRequested;
         public event EventHandler? StopBatchRequested;
+
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public string MessageText
         {
             get => lblMessage.Text;

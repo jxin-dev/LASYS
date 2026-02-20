@@ -1,7 +1,10 @@
-﻿namespace LASYS.UIControls.Controls
+﻿using System.ComponentModel;
+
+namespace LASYS.UIControls.Controls
 {
     public class HeaderColumn : Control
     {
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public int ColSpan { get; set; } = 1;
     }
     internal class MultiHeaderGridView : Control
@@ -14,14 +17,23 @@
         private List<string[]> _rows = new();
         private int[] _columnWidths = Array.Empty<int>();
 
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public int RowHeight { get; set; } = 28;
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public int HeaderHeight { get; set; } = 32;
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public Color HeaderBackColor { get; set; } = Color.FromArgb(45, 45, 48);
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public Color HeaderForeColor { get; set; } = Color.White;
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public Color RowBackColor { get; set; } = Color.White;
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public Color AltRowBackColor { get; set; } = Color.FromArgb(245, 245, 245);
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public Color GridLineColor { get; set; } = Color.FromArgb(200, 200, 200);
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public Font HeaderFont { get; set; } = new Font("Segoe UI", 9F, FontStyle.Bold);
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public Font RowFont { get; set; } = new Font("Segoe UI", 9F, FontStyle.Regular);
 
 
@@ -446,19 +458,23 @@
 
         public event EventHandler? Clicked;
 
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public Image? Icon
         {
             get => _icon.Image;
             set => _icon.Image = value;
         }
 
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public string ButtonText
         {
             get => _textLabel.Text;
             set => _textLabel.Text = value;
         }
 
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public Color HoverBackColor { get; set; } = Color.FromArgb(50, 50, 50);
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public new Color DefaultBackColor { get; set; } = Color.FromArgb(45, 45, 48);
 
         public IconButton()
@@ -508,8 +524,11 @@
     }
     internal class PlaceholderTextBox : TextBox
     {
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public new string PlaceholderText { get; set; } = "Search…";
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public Color PlaceholderColor { get; set; } = Color.Gray;
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public int PlaceholderPaddingLeft { get; set; } = 0;
         protected override void WndProc(ref Message m)
         {
@@ -734,6 +753,7 @@
             };
         }
 
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public int PageSize
         {
             get => _pageSize;

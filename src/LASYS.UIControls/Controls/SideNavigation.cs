@@ -1,6 +1,7 @@
 ﻿using LASYS.UIControls.Models;
 using System.Drawing;
 using System.IO;
+using System.ComponentModel;
 namespace LASYS.UIControls.Controls
 {
     public class SideNavigation : Panel
@@ -11,8 +12,11 @@ namespace LASYS.UIControls.Controls
         private readonly ProfileAvatar _avatar;
         private readonly Label _username;
 
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public Color BackgroundColor { get; set; } = Color.FromArgb(45, 45, 48);
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public Color SubItemColor { get; set; } = Color.FromArgb(37, 37, 38);
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public Color HoverColor { get; set; } = Color.FromArgb(63, 63, 70);
 
         public SideNavigation()

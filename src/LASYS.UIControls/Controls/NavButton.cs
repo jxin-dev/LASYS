@@ -1,9 +1,13 @@
-﻿
+﻿using System.ComponentModel;
+
+
 namespace LASYS.UIControls.Controls
 {
     public class NavButton : Button
     {
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public bool IsExpanded { get; set; }
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public bool IsSubButton { get; set; }
 
         public NavButton()

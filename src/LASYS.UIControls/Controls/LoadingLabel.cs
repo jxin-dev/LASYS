@@ -1,4 +1,6 @@
-﻿namespace LASYS.UIControls.Controls
+﻿using System.ComponentModel;
+
+namespace LASYS.UIControls.Controls
 {
     public class LoadingLabel : Label
     {
@@ -6,9 +8,12 @@
         private int _dotCount = 0;
         private string _baseText = "Please wait";
 
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public int AnimationSpeed { get; set; } = 500; // in milliseconds
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public int MaxDots { get; set; } = 3;           // number of dots to cycle through
 
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public string BaseText
         {
             get => _baseText;
