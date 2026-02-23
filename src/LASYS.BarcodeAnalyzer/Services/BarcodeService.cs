@@ -1,4 +1,6 @@
 ﻿using System.IO.Ports;
+using System.Management;
+using System.Runtime.InteropServices;
 using System.Text;
 using LASYS.BarcodeAnalyzer.Events;
 using LASYS.BarcodeAnalyzer.Interfaces;
@@ -28,7 +30,7 @@ namespace LASYS.BarcodeAnalyzer.Services
             var config = await LoadAsync();
             if (config == null || string.IsNullOrWhiteSpace(config.Port))
             {
-                BarcodeStatusChanged?.Invoke(this, new BarcodeStatusEventArgs("Barcode scanner not configured. Please set the port in barcode.config.json."));
+                BarcodeStatusChanged?.Invoke(this, new BarcodeStatusEventArgs("Barcode scanner not configured."));
                 return;
             }
 
@@ -209,21 +211,21 @@ namespace LASYS.BarcodeAnalyzer.Services
             {
                 if (!File.Exists(_configPath))
                 {
-                    BarcodeStatusChanged?.Invoke(this, new BarcodeStatusEventArgs("Configuration file not found."));
+                    BarcodeStatusChanged?.Invoke(this, new BarcodeStatusEventArgs("Configuration file not found.", true));
                     return null;
                 }
 
                 var json = await File.ReadAllTextAsync(_configPath);
                 if (string.IsNullOrWhiteSpace(json))
                 {
-                    BarcodeStatusChanged?.Invoke(this, new BarcodeStatusEventArgs("Configuration file is empty."));
+                    BarcodeStatusChanged?.Invoke(this, new BarcodeStatusEventArgs("Configuration file is empty.", true));
                     return null;
                 }
 
                 var config = JsonConvert.DeserializeObject<BarcodeConfig>(json);
                 if (config == null)
                 {
-                    BarcodeStatusChanged?.Invoke(this, new BarcodeStatusEventArgs("Invalid configuration format."));
+                    BarcodeStatusChanged?.Invoke(this, new BarcodeStatusEventArgs("Invalid configuration format.", true));
                     return null;
                 }
 
@@ -234,9 +236,9 @@ namespace LASYS.BarcodeAnalyzer.Services
                 BarcodeStatusChanged?.Invoke(this, new BarcodeStatusEventArgs(portMessage));
                 return config;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                BarcodeStatusChanged?.Invoke(this, new BarcodeStatusEventArgs("Failed to load barcode.config.json"));
+                BarcodeStatusChanged?.Invoke(this, new BarcodeStatusEventArgs("Failed to load barcode.config.json", true));
                 return null;
             }
         }
@@ -256,6 +258,28 @@ namespace LASYS.BarcodeAnalyzer.Services
             }
         }
 
+        public IReadOnlyList<string> GetUSBVirtualCOMPortList()
+        {
+            var ports = new List<string>();
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                // Non-Windows fallback
+                return SerialPort.GetPortNames().ToList();
+            }
 
+            using (var searcher = new ManagementObjectSearcher("SELECT * FROM Win32_PnPEntity WHERE Name LIKE '%(COM%' AND Name LIKE '%USB%'"))
+            {
+                foreach (var obj in searcher.Get())
+                {
+                    var name = obj["Name"]?.ToString();
+                    if (!string.IsNullOrEmpty(name))
+                    {
+                        ports.Add(name);
+                    }
+                }
+            }
+
+            return ports;
+        }
     }
 }

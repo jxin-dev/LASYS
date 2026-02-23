@@ -13,6 +13,7 @@ namespace LASYS.DesktopApp.Views.Forms
         public event EventHandler? WebCameraConfigurationRequested;
         public event EventHandler? OCRCalibrationRequested;
         public event EventHandler? PrinterManagementRequested;
+        public event EventHandler? BarcodeDeviceSetupRequested;
 
         public MainForm()
         {
@@ -70,6 +71,8 @@ namespace LASYS.DesktopApp.Views.Forms
             deviceSetup.SubItems[1].Clicked += (_, _) => OCRCalibrationRequested?.Invoke(this, EventArgs.Empty);
 
             deviceSetup.SubItems[2].Clicked += (_, _) => PrinterManagementRequested?.Invoke(this, EventArgs.Empty);
+
+            deviceSetup.SubItems[3].Clicked += (_, _) => BarcodeDeviceSetupRequested?.Invoke(this, EventArgs.Empty);
         }
       
 

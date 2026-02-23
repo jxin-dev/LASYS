@@ -17,6 +17,13 @@ namespace LASYS.DesktopApp.Presenters
             _view.WebCameraConfigurationRequested += OnWebCameraConfigurationRequested;
             _view.OCRCalibrationRequested += OnOCRCalibrationRequested;
             _view.PrinterManagementRequested += OnPrinterManagementRequested;
+            _view.BarcodeDeviceSetupRequested += OnBarcodeDeviceSetupRequested;
+        }
+
+        private void OnBarcodeDeviceSetupRequested(object? sender, EventArgs e)
+        {
+            var barcodePresenter = _services.GetRequiredService<BarcodeDeviceSetupPresenter>();
+            _view?.LoadView(barcodePresenter.View);
         }
 
         private void OnPrinterManagementRequested(object? sender, EventArgs e)

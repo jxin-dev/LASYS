@@ -153,6 +153,16 @@ namespace LASYS.DesktopApp.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap rule_settings24 {
+            get {
+                object obj = ResourceManager.GetObject("rule_settings24", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap skip24 {
             get {
                 object obj = ResourceManager.GetObject("skip24", resourceCulture);

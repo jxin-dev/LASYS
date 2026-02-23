@@ -3,9 +3,11 @@
     public class BarcodeStatusEventArgs : EventArgs
     {
         public string Message { get; }
-        public BarcodeStatusEventArgs(string message)
+        public bool IsError { get; }
+        public BarcodeStatusEventArgs(string message, bool isError = false)
         {
             Message = message;
+            IsError = isError;
         }
     }
 }

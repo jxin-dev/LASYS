@@ -71,6 +71,8 @@ namespace LASYS.DesktopApp.Extensions
             services.AddSingleton<IPrinterManagementView, PrinterManagementControl>();
             services.AddSingleton<PrinterManagementPresenter>();
 
+            services.AddSingleton<IBarcodeDeviceSetupView, BarcodeDeviceSetupControl>();
+            services.AddSingleton<BarcodeDeviceSetupPresenter>();
 
             // Services
 
