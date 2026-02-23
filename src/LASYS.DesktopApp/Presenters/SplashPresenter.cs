@@ -1,6 +1,9 @@
-﻿using LASYS.Camera.Events;
+﻿using LASYS.BarcodeAnalyzer.Events;
+using LASYS.BarcodeAnalyzer.Interfaces;
+using LASYS.Camera.Events;
 using LASYS.Camera.Interfaces;
 using LASYS.DesktopApp.Views.Interfaces;
+using LASYS.SatoLabelPrinter.Events;
 using LASYS.SatoLabelPrinter.Interfaces;
 
 namespace LASYS.DesktopApp.Presenters
@@ -11,8 +14,9 @@ namespace LASYS.DesktopApp.Presenters
         private readonly ICameraConfig _cameraConfig;
         private readonly ICameraService _cameraService;
         private readonly IPrinterService _printerService;
+        private readonly IBarcodeService _barcodeService;
 
-        public SplashPresenter(ISplashView view, ICameraConfig cameraConfig, ICameraService cameraService, IPrinterService printerService)
+        public SplashPresenter(ISplashView view, ICameraConfig cameraConfig, ICameraService cameraService, IPrinterService printerService, IBarcodeService barcodeService)
         {
             _view = view;
             _view.ViewShown += OnViewShown;
@@ -20,12 +24,20 @@ namespace LASYS.DesktopApp.Presenters
             _cameraConfig = cameraConfig;
             _cameraService = cameraService;
             _printerService = printerService;
+            _barcodeService = barcodeService;
 
             _cameraConfig.CameraConfigIssue += OnCameraConfigIssue;
             _printerService.PrinterStateChanged += OnPrinterStateChanged;
+            _barcodeService.BarcodeStatusChanged += OnBarcodeStatusChanged;
         }
 
-        private void OnPrinterStateChanged(object? sender, SatoLabelPrinter.Events.PrinterStateChangedEventArgs e)
+
+        
+        private void OnBarcodeStatusChanged(object? sender, BarcodeStatusEventArgs e)
+        {
+           _view.UpdateProgress(70, e.Message);
+        }
+        private void OnPrinterStateChanged(object? sender, PrinterStateChangedEventArgs e)
         {
             _view.UpdateProgress(50, e.Message);
         }
@@ -72,8 +84,11 @@ namespace LASYS.DesktopApp.Presenters
 
 
             await _printerService.InitializeAsync();// 50%
+            await Task.Delay(500);
+            await _barcodeService.InitializeAsync();// 70%
 
-            _view?.UpdateProgress(80, "Finalizing setup...");
+            await Task.Delay(2000);
+            _view?.UpdateProgress(96, "Finalizing setup...");
             await Task.Delay(2000);
             _view?.UpdateProgress(100, "Launching application...");
             await Task.Delay(1000);

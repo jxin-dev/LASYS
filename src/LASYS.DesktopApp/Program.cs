@@ -1,11 +1,8 @@
+using LASYS.BarcodeAnalyzer;
 using LASYS.Camera;
-using LASYS.Camera.Services;
-using LASYS.DesktopApp.Core.Interfaces;
 using LASYS.DesktopApp.Extensions;
 using LASYS.DesktopApp.Presenters;
-using LASYS.DesktopApp.Presenters.Interfaces;
 using LASYS.DesktopApp.Views.Forms;
-using LASYS.DesktopApp.Views.Interfaces;
 using LASYS.Infrastructure;
 using LASYS.OCR;
 using LASYS.SatoLabelPrinter;
@@ -34,6 +31,7 @@ namespace LASYS.DesktopApp
                services.AddCameraServices(); // from camera library extension
                services.AddOCRServices(); // from ocr library extension
                services.AddSatoLabelPrinterServices(); // from sato label printer library extension
+               services.AddBarcodeAnalyzerServices(); // from barcode analyzer library extension
            })
            .Build();
 

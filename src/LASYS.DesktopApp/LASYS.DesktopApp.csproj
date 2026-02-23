@@ -24,6 +24,7 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\LASYS.Application\LASYS.Application.csproj" />
+		<ProjectReference Include="..\LASYS.BarcodeAnalyzer\LASYS.BarcodeAnalyzer.csproj" />
 		<ProjectReference Include="..\LASYS.Camera\LASYS.Camera.csproj" />
 		<ProjectReference Include="..\LASYS.Infrastructure\LASYS.Infrastructure.csproj" />
 		<ProjectReference Include="..\LASYS.OCR\LASYS.OCR.csproj" />

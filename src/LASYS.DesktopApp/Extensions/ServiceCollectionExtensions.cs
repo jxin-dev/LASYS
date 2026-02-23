@@ -1,5 +1,6 @@
 ﻿using LASYS.Application.Interfaces;
 using LASYS.Application.Services;
+using LASYS.BarcodeAnalyzer.Interfaces;
 using LASYS.Camera.Interfaces;
 using LASYS.DesktopApp.Presenters;
 using LASYS.DesktopApp.Views.Forms;
@@ -20,8 +21,10 @@ namespace LASYS.DesktopApp.Extensions
                 var view = new SplashForm();
                 var cameraConfig = sp.GetRequiredService<ICameraConfig>();
                 var cameraService = sp.GetRequiredService<ICameraService>();
-                var printerService = sp.GetRequiredService<IPrinterService>();              
-                new SplashPresenter(view, cameraConfig, cameraService, printerService);
+                var printerService = sp.GetRequiredService<IPrinterService>();  
+                var barcodeService = sp.GetRequiredService<IBarcodeService>();
+
+                new SplashPresenter(view, cameraConfig, cameraService, printerService, barcodeService);
                 return view;
             });
             services.AddTransient<ISplashView>(sp => sp.GetRequiredService<SplashForm>());
