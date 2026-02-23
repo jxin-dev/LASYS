@@ -8,7 +8,7 @@ using Velopack.Sources;
 
 namespace LASYS.DesktopApp.Presenters
 {
-    public class LoginPresenter //: ILoginPresenter
+    public class LoginPresenter
     {
         private ILoginView _view;
         private readonly IUserRepository _userRepository;
@@ -20,20 +20,6 @@ namespace LASYS.DesktopApp.Presenters
             _view.CheckForUpdatesRequested += OnCheckForUpdatesRequested;
             _userRepository = userRepository;
         }
-
-        //private readonly IViewFactory _factory;
-        //public LoginPresenter(IViewFactory factory)
-        //{
-        //    _factory = factory;
-        //}
-
-        //public void AttachView(ILoginView view)
-        //{
-        //    _view = view;
-        //    _view.LoginClicked += OnLoginClicked;
-        //    _view.CheckForUpdatesRequested +=  OnCheckForUpdatesRequested;
-        //}
-
         private async Task OnCheckForUpdatesRequested(object? sender, EventArgs e)
         {
             await CheckForUpdatesAsync();
