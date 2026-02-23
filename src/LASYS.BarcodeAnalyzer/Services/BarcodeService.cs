@@ -152,7 +152,57 @@ namespace LASYS.BarcodeAnalyzer.Services
                 _isWaitingForScan = false; // reset flag on error
             }
         }
+        //
+        // TODO: Replace with real command from scanner manual
+        private readonly byte[] CMD_SET_MANUAL_MODE = new byte[] { 0x16, 0x4D };
+        // Optional if available:
+        //private readonly byte[] CMD_SET_MANUAL_MODE = Encoding.ASCII.GetBytes("SETTRIGGER=MANUAL\r\n");
 
+        // TODO: Replace with real command from scanner manual
+        private readonly byte[] CMD_SAVE_SETTINGS = new byte[] { 0x16, 0x53 };
+        private async Task<bool> SendScannerCommandAsync(byte[] command, int delayAfterMs = 200)
+        {
+            if (_port == null)
+            {
+                BarcodeStatusChanged?.Invoke(this, new BarcodeStatusEventArgs("Barcode scanner not initialized."));
+                return false;
+            }
+            try
+            {
+                if (!_port.IsOpen) _port.Open();
+                // Clear old data
+                _port.DiscardInBuffer();
+                _port.DiscardOutBuffer();
+
+                // Send command
+                await _port.BaseStream.WriteAsync(command, 0, command.Length);
+                await _port.BaseStream.FlushAsync();
+
+                if (delayAfterMs > 0)
+                    await Task.Delay(delayAfterMs);
+
+                BarcodeStatusChanged?.Invoke(this, new BarcodeStatusEventArgs("Command sent successfully."));
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                BarcodeStatusChanged?.Invoke(this, new BarcodeStatusEventArgs($"Command failed: {ex.Message}"));
+                return false;
+            }
+        }
+        public async Task SetManualModeAsync()
+        {
+            BarcodeStatusChanged?.Invoke(this, new BarcodeStatusEventArgs("Setting scanner to manual mode..."));
+
+            await SendScannerCommandAsync(CMD_SET_MANUAL_MODE);
+            await SendScannerCommandAsync(CMD_SAVE_SETTINGS);
+            // To verify, barcode light should turn off after this command,
+            // indicating manual mode is active. If not, check scanner manual for correct command bytes.
+        }
+
+
+        //
         public async Task<BarcodeConfig?> LoadAsync()
         {
             try

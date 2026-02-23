@@ -15,6 +15,7 @@ namespace LASYS.BarcodeAnalyzer.Interfaces
 
         Task InitializeAsync();
         Task ScanAsync();
+        Task SetManualModeAsync();
 
     }
 }
