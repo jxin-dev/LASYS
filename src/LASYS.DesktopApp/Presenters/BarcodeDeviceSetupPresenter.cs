@@ -1,6 +1,9 @@
-﻿using LASYS.BarcodeAnalyzer.Events;
+﻿using System.Threading.Tasks;
+using LASYS.BarcodeAnalyzer.Events;
 using LASYS.BarcodeAnalyzer.Interfaces;
+using LASYS.BarcodeAnalyzer.Models;
 using LASYS.DesktopApp.Views.Interfaces;
+using LASYS.SatoLabelPrinter.Models;
 
 namespace LASYS.DesktopApp.Presenters
 {
@@ -18,14 +21,48 @@ namespace LASYS.DesktopApp.Presenters
             _barcodeService = barcodeService;
 
             _view.LoadRequested += OnLoadRequested;
+            _view.SaveClicked += OnSaveClicked;
+            _view.SetManualModeClicked += OnSetManualModeClicked;
 
             _barcodeService.BarcodeStatusChanged += OnBarcodeStatusChanged;
+            _barcodeService.BarcodeNotification += OnBarcodeNotification;
 
+        }
+
+        private async void OnSetManualModeClicked(object? sender, EventArgs e)
+        {
+            await _barcodeService.SetManualModeAsync();
+        }
+
+        private void OnBarcodeNotification(object? sender, BarcodeNotificationEventArgs e)
+        {
+            var messageBoxIcon = e.MessageType switch
+            {
+                BarcodeMessageType.Info => MessageBoxIcon.Information,
+                BarcodeMessageType.Error => MessageBoxIcon.Error,
+                _ => MessageBoxIcon.Information
+            };
+            _view.ShowNotification(e.Message, "Barcode Device", messageBoxIcon);
+        }
+
+        private async void OnSaveClicked(object? sender, EventArgs e)
+        {
+            if (string.IsNullOrEmpty(_view.USBPort))
+            {
+                OnBarcodeStatusChanged(this, new BarcodeStatusEventArgs("Please select a USB port before saving.", true));
+                return;
+            }
+
+            var config = new BarcodeConfig
+            {
+                Port = _view.USBPort
+            };
+            await _barcodeService.SaveAsync(config);
         }
 
         private void OnBarcodeStatusChanged(object? sender, BarcodeStatusEventArgs e)
         {
-            _view.InvokeOnUI(()=> _view.DisplayBarcodeStatus(e.Message, e.IsError));
+            _view.InvokeOnUI(() => _view.DisplayBarcodeStatus(e.Message, e.IsError));
         }
 
         private async void OnLoadRequested(object? sender, EventArgs e)
@@ -33,12 +70,16 @@ namespace LASYS.DesktopApp.Presenters
             var config = await _barcodeService.LoadAsync();
             if (config?.Port != null)
             {
-                var usbPorts = _barcodeService.GetUSBVirtualCOMPortList();
+                //var usbPorts = _barcodeService.GetUSBVirtualCOMPortList();
+                var usbPorts = _barcodeService.GetManualCOMList();
                 _view.SetUSBVirtualCOMPortList(usbPorts);
                 _view.SetSelectedPort(config.Port);
             }
             else
             {
+                //var usbPorts = _barcodeService.GetUSBVirtualCOMPortList();
+                var usbPorts = _barcodeService.GetManualCOMList();
+                _view.SetUSBVirtualCOMPortList(usbPorts);
                 OnBarcodeStatusChanged(this, new BarcodeStatusEventArgs("No barcode device configured.", true));
             }
         }

@@ -4,11 +4,19 @@ namespace LASYS.DesktopApp.Views.UserControls
 {
     public partial class BarcodeDeviceSetupControl : UserControl, IBarcodeDeviceSetupView
     {
+        public string USBPort => cbxPort.SelectedItem?.ToString() ?? string.Empty;
+
         public event EventHandler? LoadRequested;
+        public event EventHandler? SaveClicked;
+        public event EventHandler? SetManualModeClicked;
+
         public BarcodeDeviceSetupControl()
         {
             InitializeComponent();
             Load += delegate { LoadRequested?.Invoke(this, EventArgs.Empty); };
+            btnSaveBarcode.Click += (sender, e) => SaveClicked?.Invoke(this, EventArgs.Empty);
+            btnSetManualMode.Click += (sender, e) => SetManualModeClicked?.Invoke(this, EventArgs.Empty);
+
         }
 
 
@@ -47,6 +55,11 @@ namespace LASYS.DesktopApp.Views.UserControls
             // Limit drop-down height
             cbxPort.MaxDropDownItems = 5; // max visible items
             cbxPort.DropDownHeight = cbxPort.ItemHeight * cbxPort.MaxDropDownItems;
+        }
+
+        public void ShowNotification(string message, string caption, MessageBoxIcon icon)
+        {
+            MessageBox.Show(message, caption, MessageBoxButtons.OK, icon);
         }
     }
 }

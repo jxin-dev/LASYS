@@ -185,11 +185,11 @@ namespace LASYS.BarcodeAnalyzer.Services
 
                 BarcodeStatusChanged?.Invoke(this, new BarcodeStatusEventArgs("Command sent successfully."));
 
-                return true;
+                return true;    
             }
             catch (Exception ex)
             {
-                BarcodeStatusChanged?.Invoke(this, new BarcodeStatusEventArgs($"Command failed: {ex.Message}"));
+                BarcodeStatusChanged?.Invoke(this, new BarcodeStatusEventArgs(ex.Message, true));
                 return false;
             }
         }
@@ -249,6 +249,7 @@ namespace LASYS.BarcodeAnalyzer.Services
                 var json = JsonConvert.SerializeObject(config, Formatting.Indented);
                 await File.WriteAllTextAsync(_configPath, json);
                 BarcodeNotification?.Invoke(this, new BarcodeNotificationEventArgs(BarcodeMessageType.Info, "Barcode configuration saved successfully."));
+                await InitializeAsync();
             }
             catch (Exception ex)
             {
@@ -280,6 +281,17 @@ namespace LASYS.BarcodeAnalyzer.Services
             }
 
             return ports;
+        }
+        public IReadOnlyList<string> GetManualCOMList(int start = 1, int end = 5)
+        {
+            if (start < 1 || end < start)
+                throw new ArgumentException("Invalid COM port range.");
+
+            var list = Enumerable.Range(start, end - start + 1)
+                                 .Select(i => $"COM{i}")
+                                 .ToList()
+                                 .AsReadOnly();
+            return list;
         }
     }
 }

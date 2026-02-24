@@ -9,6 +9,7 @@ namespace LASYS.BarcodeAnalyzer.Interfaces
         Task SaveAsync(BarcodeConfig config);
 
         IReadOnlyList<string> GetUSBVirtualCOMPortList();
+        IReadOnlyList<string> GetManualCOMList(int start = 1, int end = 5);
 
         // Events
         event EventHandler<BarcodeNotificationEventArgs> BarcodeNotification;
