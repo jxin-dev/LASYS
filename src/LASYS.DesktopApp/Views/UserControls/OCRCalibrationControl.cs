@@ -175,7 +175,6 @@ namespace LASYS.DesktopApp.Views.UserControls
                     btnCancelCalibration.BringToFront();
                 }
             };
-
             picCameraPreview.Paint += (sender, e) =>
             {
                 if (_ocrViewerRegion.HasValue)
@@ -191,7 +190,6 @@ namespace LASYS.DesktopApp.Views.UserControls
                 }
 
             };
-
             picCameraPreview.Resize += (sender, e) =>
             {
                 if (btnSaveCalibration != null && btnCancelCalibration != null && _normalizedRegion != null)
