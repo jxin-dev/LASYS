@@ -24,6 +24,7 @@ namespace LASYS.DesktopApp.Views.UserControls
         private Button? _btnReconnectCamera;
 
         private Label? _lblScannerStatus;
+        private Label? _lblPrinterStatus;
         private Label? _lblOcrStatus;
 
         private Bitmap? _currentFrame;
@@ -291,7 +292,7 @@ namespace LASYS.DesktopApp.Views.UserControls
                 Dock = DockStyle.Top,
                 AutoSize = true,
                 ColumnCount = 3,
-                RowCount = 3,
+                RowCount = 4,
                 //CellBorderStyle = TableLayoutPanelCellBorderStyle.Inset
             };
 
@@ -352,6 +353,23 @@ namespace LASYS.DesktopApp.Views.UserControls
                 Padding = new Padding(0, 12, 0, 12)
             };
 
+            // --- Printer ---
+            var lblPrinterTitle = new Label
+            {
+                Text = "Printer:",
+                AutoSize = true,
+                Font = new Font("Segoe UI", 9F, FontStyle.Bold),
+                Padding = new Padding(0, 12, 6, 12),
+            };
+
+            _lblPrinterStatus = new Label
+            {
+                Text = "Not detected",
+                AutoSize = true,
+                ForeColor = Color.Gray,
+                Padding = new Padding(0, 12, 0, 12)
+            };
+
             // --- OCR ---
             var lblOcrTitle = new Label
             {
@@ -378,8 +396,11 @@ namespace LASYS.DesktopApp.Views.UserControls
             table.Controls.Add(lblScannerTitle, 0, 1);
             table.Controls.Add(_lblScannerStatus, 1, 1);
 
-            table.Controls.Add(lblOcrTitle, 0, 2);
-            table.Controls.Add(_lblOcrStatus, 1, 2);
+            table.Controls.Add(lblPrinterTitle, 0, 2);
+            table.Controls.Add(_lblPrinterStatus, 1, 2);
+
+            table.Controls.Add(lblOcrTitle, 0, 3);
+            table.Controls.Add(_lblOcrStatus, 1, 3);
 
             container.Controls.Add(table);
             container.Controls.Add(titleLabel);
@@ -687,6 +708,18 @@ namespace LASYS.DesktopApp.Views.UserControls
 
             _ocrViewerRegion = null;
             picCameraPreview.Invalidate();
+        }
+
+        public void ShowPrinterStatus(string message)
+        {
+            _lblPrinterStatus!.ForeColor = Color.ForestGreen;
+            _lblPrinterStatus!.Text = message;
+        }
+
+        public void ShowBarcodeStatus(string message, bool isError = false)
+        {
+            _lblScannerStatus!.ForeColor = isError ? Color.Crimson : Color.ForestGreen;
+            _lblScannerStatus!.Text = message;
         }
     }
 }

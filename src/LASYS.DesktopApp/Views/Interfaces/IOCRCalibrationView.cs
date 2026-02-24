@@ -16,6 +16,10 @@ namespace LASYS.DesktopApp.Views.Interfaces
         DrawingSize PictureBoxSize { get; }
         void InvokeOnUI(Action action);
         void ShowCameraStatus(string message, bool isError = false);
+        void ShowPrinterStatus(string message);
+        void ShowBarcodeStatus(string message, bool isError = false);
+
+
         void ShowOCRRegion(Rectangle viewerRegion);
 
         void ShowOCRResult(string result, string msg, bool isSuccess = true);

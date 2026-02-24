@@ -14,18 +14,15 @@ namespace LASYS.DesktopApp.Presenters
         private readonly ILabelPrintingView _view;
         private readonly IMainView _mainView;
         private readonly IServiceProvider _services;
-        private readonly IPrintingService _printingService;
 
         public LabelPrintingPresenter(ILabelPrintingView view,
                                       IMainView mainView,
-                                      IServiceProvider services,
-                                      IPrintingService printingService)
+                                      IServiceProvider services)
         {
 
             _view = view;
             _mainView = mainView;
             _services = services;
-            _printingService = printingService;
 
             View = (UserControl)view;
 

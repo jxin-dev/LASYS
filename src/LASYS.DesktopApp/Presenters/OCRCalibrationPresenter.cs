@@ -1,7 +1,13 @@
-﻿using LASYS.Camera.Interfaces;
+﻿using LASYS.BarcodeAnalyzer.Events;
+using LASYS.BarcodeAnalyzer.Interfaces;
+using LASYS.Camera.Events;
+using LASYS.Camera.Interfaces;
 using LASYS.DesktopApp.Events;
 using LASYS.DesktopApp.Views.Interfaces;
+using LASYS.OCR.Events;
 using LASYS.OCR.Interfaces;
+using LASYS.SatoLabelPrinter.Events;
+using LASYS.SatoLabelPrinter.Interfaces;
 using OpenCvSharp;
 using DrawingSize = System.Drawing.Size;
 
@@ -14,7 +20,10 @@ namespace LASYS.DesktopApp.Presenters
         private readonly IOCRService _ocrService;
         private readonly ICalibrationService _calibrationService;
         private readonly ICameraService _cameraService;
-        public OCRCalibrationPresenter(IOCRCalibrationView view, ICameraService cameraService, IOCRService ocrService, ICalibrationService calibrationService)
+        private readonly IPrinterService _printerService;
+        private readonly IBarcodeService _barcodeService;
+
+        public OCRCalibrationPresenter(IOCRCalibrationView view, ICameraService cameraService, IOCRService ocrService, ICalibrationService calibrationService, IPrinterService printerService, IBarcodeService barcodeService)
         {
             _view = view;
             View = (UserControl)view;
@@ -22,6 +31,8 @@ namespace LASYS.DesktopApp.Presenters
             _cameraService = cameraService;
             _ocrService = ocrService;
             _calibrationService = calibrationService;
+            _printerService = printerService;
+            _barcodeService = barcodeService;
 
 
             _view.InitializeRequested += OnInitializeRequested;
@@ -37,26 +48,40 @@ namespace LASYS.DesktopApp.Presenters
 
             _cameraService.CameraDisconnected += OnCameraDeviceDisconnected;
             _cameraService.CameraConnected += OnCameraDeviceConnected;
+            _cameraService.CameraStatusChanged += OnCameraStatusChanged;
 
+            _ocrService.OCRRegionDetected += OnOCRRegionDetected;
+            _ocrService.OCRCompleted += OnOCRCompleted;
 
-            _cameraService.CameraStatusChanged += (sender, e) =>
-            {
-                _view?.InvokeOnUI(() =>
-                {
-                    _view.ShowCameraStatus(e.StatusMessage, e.IsError);
-                });
-            };
+            _printerService.PrinterStateChanged += OnPrinterStateChanged;
+            _barcodeService.BarcodeStatusChanged += OnBarcodeStatusChanged;
 
-            _ocrService.OCRRegionDetected += (sender, e) =>
-            {
-                var region = e.Region;
-                _view?.InvokeOnUI(() => _view.ShowOCRRegion(region));
-            };
+        }
 
-            _ocrService.OCRCompleted += (sender, e) =>
-            {
-                _view?.InvokeOnUI(() => _view.ShowOCRResult(e.Result, e.Message, e.Success));
-            };
+        private void OnBarcodeStatusChanged(object? sender, BarcodeStatusEventArgs e)
+        {
+            _view.InvokeOnUI(() => _view.ShowBarcodeStatus(e.Message, e.IsError));
+        }
+
+        private void OnPrinterStateChanged(object? sender, PrinterStateChangedEventArgs e)
+        {
+            _view.InvokeOnUI(() => _view.ShowPrinterStatus(e.Message));
+        }
+
+        private void OnOCRCompleted(object? sender, OCRCompletedEventArgs e)
+        {
+            _view.InvokeOnUI(() => _view.ShowOCRResult(e.Result, e.Message, e.Success));
+        }
+
+        private void OnOCRRegionDetected(object? sender, OCRRegionEventArgs e)
+        {
+            var region = e.Region;
+            _view?.InvokeOnUI(() => _view.ShowOCRRegion(region));
+        }
+
+        private void OnCameraStatusChanged(object? sender, CameraStatusEventArgs e)
+        {
+            _view.InvokeOnUI(() => _view.ShowCameraStatus(e.StatusMessage, e.IsError));
         }
 
         private async void OnSaveCalibrationClicked(object? sender, CalibrationEventArgs e)

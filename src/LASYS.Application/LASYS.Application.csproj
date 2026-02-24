@@ -11,4 +11,8 @@
     <ProjectReference Include="..\LASYS.Domain\LASYS.Domain.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Services\" />
+  </ItemGroup>
+
 </Project>

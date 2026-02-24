@@ -1,5 +1,4 @@
 ﻿using LASYS.Application.Interfaces;
-using LASYS.Application.Services;
 using LASYS.BarcodeAnalyzer.Interfaces;
 using LASYS.Camera.Interfaces;
 using LASYS.DesktopApp.Presenters;
@@ -76,7 +75,6 @@ namespace LASYS.DesktopApp.Extensions
 
             // Services
 
-            services.AddScoped<IPrintingService, PrintingService>();
 
 
             return services;
