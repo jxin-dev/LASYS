@@ -35,8 +35,8 @@ namespace LASYS.DesktopApp.Presenters
             _barcodeService = barcodeService;
 
 
+            _view.ReconnectCameraRequested += OnReconnectCameraRequested;
             _view.InitializeRequested += OnInitializeRequested;
-            _view.StreamingRequested += OnStreamingRequested;
 
             _view.ComputeImageRegionRequested += OnComputeImageRegionRequested;
             _view.SaveCalibrationClicked += OnSaveCalibrationClicked;
@@ -189,13 +189,16 @@ namespace LASYS.DesktopApp.Presenters
             bitmap.Dispose(); // free temporary bitmap
 
         }
-        private async void OnStreamingRequested(object? sender, EventArgs e)
+        private async void OnInitializeRequested(object? sender, EventArgs e)
         {
             try
             {
                 await _cameraService.StartStreamingAsync(
                     HandleFrame,
                     GetSafePictureBoxSize);
+
+                await _printerService.InitializeAsync();
+                await _barcodeService.InitializeAsync();
             }
             catch (OperationCanceledException)
             {
@@ -206,7 +209,7 @@ namespace LASYS.DesktopApp.Presenters
                 // log or show error
             }
         }
-        private async void OnInitializeRequested(object? sender, EventArgs e)
+        private async void OnReconnectCameraRequested(object? sender, EventArgs e)
         {
             try
             {

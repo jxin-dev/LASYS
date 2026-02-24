@@ -169,7 +169,11 @@ namespace LASYS.Camera.Services
                     return Task.CompletedTask; // Already streaming
 
                 if (_capture == null || !_capture.IsOpened())
-                    throw new InvalidOperationException("Camera not initialized.");
+                {
+                    CameraStatusChanged?.Invoke(this, new CameraStatusEventArgs("Camera not initialized", true));
+                    CameraDisconnected?.Invoke(this, EventArgs.Empty);
+                    return Task.CompletedTask;
+                }
 
                 _isStreaming = true;
                 _cts ??= new CancellationTokenSource();

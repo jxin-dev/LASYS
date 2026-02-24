@@ -7,8 +7,8 @@ namespace LASYS.DesktopApp.Views.Interfaces
     public interface IOCRCalibrationView
     {
 
+        event EventHandler ReconnectCameraRequested;
         event EventHandler InitializeRequested;
-        event EventHandler StreamingRequested;
 
 
         void SetReconnectCameraButtonVisibility(bool isVisible);

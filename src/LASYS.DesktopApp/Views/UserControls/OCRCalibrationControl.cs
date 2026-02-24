@@ -36,9 +36,9 @@ namespace LASYS.DesktopApp.Views.UserControls
 
 
         // Events
-        public event EventHandler? InitializeRequested;
-        public event EventHandler? StreamingRequested;
+        public event EventHandler? ReconnectCameraRequested;
         public event EventHandler? LoadRegisteredOcrItemsRequested;
+        public event EventHandler? InitializeRequested;
         public event EventHandler<OCRCoordinatesEventArgs>? OCRTriggered;
 
         private Rectangle _roi;
@@ -81,7 +81,9 @@ namespace LASYS.DesktopApp.Views.UserControls
                 BeginInvoke(() =>
                 {
                     _resizablePanel.ShowTab("System Devices");
-                    StreamingRequested?.Invoke(this, EventArgs.Empty); // start streaming immediately on load
+                    InitializeRequested?.Invoke(this, EventArgs.Empty); // start streaming immediately on load
+
+
                 });
             };
 
@@ -330,7 +332,7 @@ namespace LASYS.DesktopApp.Views.UserControls
             _btnReconnectCamera.Click += delegate
             {
                 SetReconnectCameraButtonVisibility(false);
-                InitializeRequested?.Invoke(this, EventArgs.Empty);
+                ReconnectCameraRequested?.Invoke(this, EventArgs.Empty);
             };
 
 
