@@ -7,7 +7,7 @@ namespace LASYS.DesktopApp.Views.Forms
     public partial class MainForm : Form, IMainView
     {
         private readonly SideNavigation _sideNav;
-        private readonly Panel _contentPanel;
+        private readonly DoubleBufferedPanel _contentPanel;
 
         public event EventHandler? WorkOrderRequested;
         public event EventHandler? WebCameraConfigurationRequested;
@@ -18,7 +18,7 @@ namespace LASYS.DesktopApp.Views.Forms
         public MainForm()
         {
             InitializeComponent();
-           
+
             // Initialize layout
             _sideNav = new SideNavigation();
             //_sideNav.SetProfile("Guest User", @"C:\Users\ITC - JAYSON OLICIA\Downloads\cartoon-1890438_1280.jpg");
@@ -32,7 +32,7 @@ namespace LASYS.DesktopApp.Views.Forms
                 MessageBox.Show($"Failed to load profile image: {ex.Message}");
             }
 
-            _contentPanel = new Panel
+            _contentPanel = new DoubleBufferedPanel
             {
                 Name = "contentPanel",
                 Dock = DockStyle.Fill,
@@ -63,7 +63,7 @@ namespace LASYS.DesktopApp.Views.Forms
             _sideNav.AddItem(deviceSetup);
             _sideNav.AddItem(logOut);
 
-   
+
             workOrders.Clicked += (_, _) => WorkOrderRequested?.Invoke(this, EventArgs.Empty);
 
             deviceSetup.SubItems[0].Clicked += (_, _) => WebCameraConfigurationRequested?.Invoke(this, EventArgs.Empty);
@@ -74,7 +74,7 @@ namespace LASYS.DesktopApp.Views.Forms
 
             deviceSetup.SubItems[3].Clicked += (_, _) => BarcodeDeviceSetupRequested?.Invoke(this, EventArgs.Empty);
         }
-      
+
 
         private void ShowMessage(string message)
         {
@@ -100,20 +100,39 @@ namespace LASYS.DesktopApp.Views.Forms
 
         public void ShowView() => Show();
 
+        private Dictionary<Type, UserControl> _views = new Dictionary<Type, UserControl>();
         public void LoadView(UserControl control)
         {
-            foreach (Control c in _contentPanel.Controls)
-            {
-                if (c.GetType() == control.GetType())
-                {
-                    // Already showing, do nothing
-                    return;
-                }
-            }
+            var type = control.GetType();
+            if (_contentPanel.Controls.Count > 0 && _contentPanel.Controls[0].GetType() == type) return;
+
+            _contentPanel.SuspendLayout();
+
+            if (!_views.ContainsKey(type))
+                _views[type] = control;
 
             _contentPanel.Controls.Clear();
-            control.Dock = DockStyle.Fill;
-            _contentPanel.Controls.Add(control);
+            _contentPanel.Controls.Add(_views[type]);
+            _views[type].Dock = DockStyle.Fill;
+
+            _contentPanel.ResumeLayout();
+            _contentPanel.Refresh();
+
+
+            //foreach (Control c in _contentPanel.Controls)
+            //{
+            //    if (c.GetType() == control.GetType())
+            //    {
+            //        // Already showing, do nothing
+            //        return;
+            //    }
+            //}
+            //_contentPanel.SuspendLayout();
+            //_contentPanel.Controls.Clear();
+            //control.Dock = DockStyle.Fill;
+            //_contentPanel.Controls.Add(control);
+            //_contentPanel.ResumeLayout();
+            //_contentPanel.Refresh();
         }
     }
 }
