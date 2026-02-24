@@ -193,7 +193,7 @@ namespace LASYS.DesktopApp.Presenters
         {
             try
             {
-                await _cameraService.StartStreamingAsync(
+                _ = _cameraService.StartStreamingAsync(
                     HandleFrame,
                     GetSafePictureBoxSize);
 
@@ -214,7 +214,7 @@ namespace LASYS.DesktopApp.Presenters
             try
             {
                 await _cameraService.InitializeAsync();
-                await _cameraService.StartStreamingAsync(
+                _ = _cameraService.StartStreamingAsync(
                     HandleFrame,
                     GetSafePictureBoxSize);
             }
