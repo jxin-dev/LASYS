@@ -2,6 +2,7 @@
 using LASYS.Camera.Events;
 using LASYS.Camera.Interfaces;
 using LASYS.Camera.Models;
+using Newtonsoft.Json.Linq;
 using OpenCvSharp;
 using OpenCvSharp.Extensions;
 using DrawingSize = System.Drawing.Size;
@@ -182,19 +183,25 @@ namespace LASYS.Camera.Services
 
             _isCameraConnected = false;
 
-            //if (_streamingTask != null && !_streamingTask.IsCompleted)
-            //    return _streamingTask;
+            var token = _cts.Token;
 
-            _streamingTask = Task.Run(async () =>
+            _streamingTask = Task.Factory.StartNew(() =>
             {
                 var frameInterval = TimeSpan.FromMilliseconds(100);
-                var lastUpdate = DateTime.MinValue;
+                var lastUpdate = DateTime.UtcNow;
 
-                while (!_cts.Token.IsCancellationRequested)
+                while (!token.IsCancellationRequested)
                 {
                     if (!IsCameraReady())
                     {
-                        await HandleDisconnectedCamera(onFrameCaptured, getTargetResolution);
+                        CreateAndCaptureEmptyFrame(getTargetResolution(), onFrameCaptured);
+
+                        CameraStatusChanged?.Invoke(this,
+                          new CameraStatusEventArgs("Unable to access the camera.", true));
+
+                        CameraDisconnected?.Invoke(this, EventArgs.Empty);
+
+                        Thread.Sleep(1000);
                         continue;
                     }
 
@@ -204,33 +211,85 @@ namespace LASYS.Camera.Services
                     if (!TryReadFrame(frame) || frame.Empty())
                     {
                         HandleEmptyFrame(onFrameCaptured, getTargetResolution);
+
+                        CameraStatusChanged?.Invoke(this,
+                          new CameraStatusEventArgs("Unable to access the camera.", true));
+
+                        CameraDisconnected?.Invoke(this, EventArgs.Empty);
                         continue;
                     }
 
+                    var elapsed = DateTime.UtcNow - lastUpdate;
+                    if (elapsed < frameInterval)
+                        Thread.Sleep(frameInterval - elapsed);
 
-                    Throttle(ref lastUpdate, frameInterval);
+                    lastUpdate = DateTime.UtcNow;
 
                     var targetSize = getTargetResolution();
-                    Cv2.Resize(frame, resized,
-                        new OpenCvSharp.Size(targetSize.Width, targetSize.Height));
+                    Cv2.Resize(frame, resized, new OpenCvSharp.Size(targetSize.Width, targetSize.Height));
 
-                    HandleFrameSafe(resized, onFrameCaptured);
+                    // clone BEFORE passing
+                    var frameCopy = resized.Clone();
+
+                    HandleFrameSafe(frameCopy, onFrameCaptured);
 
                     lock (_frameLock)
                     {
                         LastCapturedFrame?.Dispose();
-                        LastCapturedFrame = resized.Clone();
+                        LastCapturedFrame = frameCopy.Clone();
                     }
-
-                    //using var bitmap = BitmapConverter.ToBitmap(resized);
-                    //var bitmapCopy = new Bitmap(bitmap);
-
-                    //onFrameCaptured(resized, bitmapCopy);
-                    //LastCapturedFrame = resized.Clone();
 
                     ReportConnectedOnce();
                 }
-            }, _cts.Token);
+
+            }, token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+
+            //_streamingTask = Task.Run(async () =>
+            //{
+            //    var frameInterval = TimeSpan.FromMilliseconds(100);
+            //    var lastUpdate = DateTime.MinValue;
+
+            //    while (!_cts.Token.IsCancellationRequested)
+            //    {
+            //        if (!IsCameraReady())
+            //        {
+            //            await HandleDisconnectedCamera(onFrameCaptured, getTargetResolution);
+            //            continue;
+            //        }
+
+            //        using var frame = new Mat();
+            //        using var resized = new Mat();
+
+            //        if (!TryReadFrame(frame) || frame.Empty())
+            //        {
+            //            HandleEmptyFrame(onFrameCaptured, getTargetResolution);
+            //            continue;
+            //        }
+
+
+            //        Throttle(ref lastUpdate, frameInterval);
+
+            //        var targetSize = getTargetResolution();
+            //        Cv2.Resize(frame, resized,
+            //            new OpenCvSharp.Size(targetSize.Width, targetSize.Height));
+
+            //        HandleFrameSafe(resized, onFrameCaptured);
+
+            //        lock (_frameLock)
+            //        {
+            //            LastCapturedFrame?.Dispose();
+            //            LastCapturedFrame = resized.Clone();
+            //        }
+
+            //        //using var bitmap = BitmapConverter.ToBitmap(resized);
+            //        //var bitmapCopy = new Bitmap(bitmap);
+
+            //        //onFrameCaptured(resized, bitmapCopy);
+            //        //LastCapturedFrame = resized.Clone();
+
+            //        ReportConnectedOnce();
+            //    }
+            //}, _cts.Token);
 
             return _streamingTask;
         }
@@ -287,9 +346,6 @@ namespace LASYS.Camera.Services
         {
             try
             {
-
-
-
                 CreateAndCaptureEmptyFrame(getTargetResolution(), onFrameCaptured);
 
                 await Task.Delay(1000, _cts.Token);
@@ -461,7 +517,7 @@ namespace LASYS.Camera.Services
             //_isCameraConnected = false;
         }
 
-    
+
         public void Dispose()
         {
             if (_disposed)

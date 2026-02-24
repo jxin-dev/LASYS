@@ -1,4 +1,5 @@
-﻿using LASYS.BarcodeAnalyzer.Events;
+﻿using System.Diagnostics;
+using LASYS.BarcodeAnalyzer.Events;
 using LASYS.BarcodeAnalyzer.Interfaces;
 using LASYS.Camera.Events;
 using LASYS.Camera.Interfaces;
@@ -193,9 +194,16 @@ namespace LASYS.DesktopApp.Presenters
         {
             try
             {
+                // Start camera streaming in the background
                 _ = _cameraService.StartStreamingAsync(
                     HandleFrame,
-                    GetSafePictureBoxSize);
+                    GetSafePictureBoxSize)
+                    .ContinueWith(t =>
+                    {
+                        if (t.Exception != null)
+                            Debug.WriteLine(t.Exception.Flatten());
+                    }, TaskContinuationOptions.OnlyOnFaulted);
+
 
                 await _printerService.InitializeAsync();
                 await _barcodeService.InitializeAsync();
@@ -206,7 +214,7 @@ namespace LASYS.DesktopApp.Presenters
             }
             catch (Exception ex)
             {
-                // log or show error
+                Debug.WriteLine(ex);
             }
         }
         private async void OnReconnectCameraRequested(object? sender, EventArgs e)
@@ -214,9 +222,15 @@ namespace LASYS.DesktopApp.Presenters
             try
             {
                 await _cameraService.InitializeAsync();
+                // Start streaming in background safely
                 _ = _cameraService.StartStreamingAsync(
                     HandleFrame,
-                    GetSafePictureBoxSize);
+                    GetSafePictureBoxSize)
+                    .ContinueWith(t =>
+                    {
+                        if (t.Exception != null)
+                            Debug.WriteLine(t.Exception.Flatten());
+                    }, TaskContinuationOptions.OnlyOnFaulted);
             }
             catch (OperationCanceledException)
             {
@@ -224,7 +238,7 @@ namespace LASYS.DesktopApp.Presenters
             }
             catch (Exception ex)
             {
-                // log or show error
+                Debug.WriteLine(ex);
             }
 
         }
