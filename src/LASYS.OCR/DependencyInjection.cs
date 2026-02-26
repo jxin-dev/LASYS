@@ -9,7 +9,7 @@ namespace LASYS.OCR
         public static IServiceCollection AddOCRServices(this IServiceCollection services)
         {
             services.AddScoped<ICalibrationService, CalibrationService>();
-            services.AddScoped<IOCRService, OCRService>();
+            services.AddSingleton<IOCRService, OCRService>();
 
             return services;
         }

@@ -64,8 +64,8 @@ namespace LASYS.DesktopApp.Extensions
             services.AddTransient<IWebCameraView, WebCameraControl>();
             services.AddTransient<WebCameraPresenter>();
 
-            services.AddTransient<IOCRCalibrationView, OCRCalibrationControl>();
-            services.AddTransient<OCRCalibrationPresenter>();
+            services.AddSingleton<IOCRCalibrationView, OCRCalibrationControl>();
+            services.AddSingleton<OCRCalibrationPresenter>();
 
             services.AddSingleton<IPrinterManagementView, PrinterManagementControl>();
             services.AddSingleton<PrinterManagementPresenter>();
