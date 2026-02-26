@@ -107,29 +107,13 @@ namespace LASYS.Camera.Services
                     {
                         return; // hot-plug safe
                     }
-                    // Set properties safely — check return values
-                    //if (!capture.Set(VideoCaptureProperties.FrameWidth, config.FrameWidth))
-                    //{
-                    //    CameraStatusChanged?.Invoke(this,
-                    //        new CameraStatusEventArgs("Width not supported", false));
-                    //}
-
-                    //if (!capture.Set(VideoCaptureProperties.FrameHeight, config.FrameHeight))
-                    //{
-                    //    CameraStatusChanged?.Invoke(this,
-                    //        new CameraStatusEventArgs("Height not supported", false));
-                    //}
-
-                    //if (!capture.Set(VideoCaptureProperties.Fps, config.FrameRate))
-                    //{
-                    //    CameraStatusChanged?.Invoke(this,
-                    //        new CameraStatusEventArgs("FPS not supported", false));
-                    //}
                     capture.Set(VideoCaptureProperties.FrameWidth, config.FrameWidth);
                     capture.Set(VideoCaptureProperties.FrameHeight, config.FrameHeight);
                     capture.Set(VideoCaptureProperties.Fps, config.FrameRate);
-
                     _capture = capture;
+                    //capture.Set(VideoCaptureProperties.FrameWidth, 640);
+                    //capture.Set(VideoCaptureProperties.FrameHeight, 480);
+                    //capture.Set(VideoCaptureProperties.Fps, 10);
 
                 }, timeoutCts.Token);
 
@@ -228,15 +212,12 @@ namespace LASYS.Camera.Services
                     var targetSize = getTargetResolution();
                     Cv2.Resize(frame, resized, new OpenCvSharp.Size(targetSize.Width, targetSize.Height));
 
-                    // clone BEFORE passing
-                    var frameCopy = resized.Clone();
-
-                    HandleFrameSafe(frameCopy, onFrameCaptured);
+                    HandleFrameSafe(resized, onFrameCaptured);
 
                     lock (_frameLock)
                     {
                         LastCapturedFrame?.Dispose();
-                        LastCapturedFrame = frameCopy.Clone();
+                        LastCapturedFrame = resized.Clone();
                     }
 
                     ReportConnectedOnce();
@@ -244,64 +225,15 @@ namespace LASYS.Camera.Services
 
             }, token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
 
-            //_streamingTask = Task.Run(async () =>
-            //{
-            //    var frameInterval = TimeSpan.FromMilliseconds(100);
-            //    var lastUpdate = DateTime.MinValue;
-
-            //    while (!_cts.Token.IsCancellationRequested)
-            //    {
-            //        if (!IsCameraReady())
-            //        {
-            //            await HandleDisconnectedCamera(onFrameCaptured, getTargetResolution);
-            //            continue;
-            //        }
-
-            //        using var frame = new Mat();
-            //        using var resized = new Mat();
-
-            //        if (!TryReadFrame(frame) || frame.Empty())
-            //        {
-            //            HandleEmptyFrame(onFrameCaptured, getTargetResolution);
-            //            continue;
-            //        }
-
-
-            //        Throttle(ref lastUpdate, frameInterval);
-
-            //        var targetSize = getTargetResolution();
-            //        Cv2.Resize(frame, resized,
-            //            new OpenCvSharp.Size(targetSize.Width, targetSize.Height));
-
-            //        HandleFrameSafe(resized, onFrameCaptured);
-
-            //        lock (_frameLock)
-            //        {
-            //            LastCapturedFrame?.Dispose();
-            //            LastCapturedFrame = resized.Clone();
-            //        }
-
-            //        //using var bitmap = BitmapConverter.ToBitmap(resized);
-            //        //var bitmapCopy = new Bitmap(bitmap);
-
-            //        //onFrameCaptured(resized, bitmapCopy);
-            //        //LastCapturedFrame = resized.Clone();
-
-            //        ReportConnectedOnce();
-            //    }
-            //}, _cts.Token);
-
+         
             return _streamingTask;
         }
         private void HandleFrameSafe(Mat resized, Action<Mat, Bitmap> onFrameCaptured)
         {
-            // Dispose previous bitmap
-            _lastBitmap?.Dispose();
-
             using var bitmap = BitmapConverter.ToBitmap(resized);
-            _lastBitmap = new Bitmap(bitmap);
-
-            onFrameCaptured(resized, _lastBitmap);
+            onFrameCaptured(resized, new Bitmap(bitmap));
+            if (_capture != null)
+                Debug.Write($"FH:{_capture.FrameHeight} | FW:{_capture.FrameWidth} | FPS: {_capture.Fps}\n");
         }
 
 

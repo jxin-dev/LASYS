@@ -4,7 +4,7 @@ using DrawingSize = System.Drawing.Size;
 
 namespace LASYS.OCR.Interfaces
 {
-    public interface IOCRService
+    public interface IOCRService : IDisposable
     {
         event EventHandler<OCRCompletedEventArgs> OCRCompleted;
         event EventHandler<OCRRegionEventArgs> OCRRegionDetected;

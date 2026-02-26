@@ -2,6 +2,7 @@
 using LASYS.OCR.Events;
 using LASYS.OCR.Interfaces;
 using OpenCvSharp;
+using OpenCvSharp.Extensions;
 using Tesseract;
 using CvRect = OpenCvSharp.Rect;
 using DrawingSize = System.Drawing.Size;
@@ -92,55 +93,61 @@ namespace LASYS.OCR.Services
             string result = string.Empty;
             try
             {
-                 result = await Task.Run(() =>
-                {
+                result = await Task.Run(() =>
+               {
 
-                    Mat roiMat = region.HasValue ? new Mat(mat, region.Value).Clone() : mat.Clone();
+                   using Mat roiMat = region.HasValue
+                       ? new Mat(mat, region.Value).Clone()
+                       : mat.Clone();
 
-                    using (var bitmap = OpenCvSharp.Extensions.BitmapConverter.ToBitmap(roiMat))
-                    using (var ms = new MemoryStream())
-                    {
-                        bitmap.Save(ms, System.Drawing.Imaging.ImageFormat.Tiff);
-                        ms.Position = 0;
+                   // UPSCALE HERE (for small text)
+                   using Mat resized = new Mat();
+                   Cv2.Resize(
+                       roiMat,
+                       resized,
+                       new OpenCvSharp.Size(),   // auto size
+                       2.0,                      // scale X
+                       2.0,                      // scale Y
+                       InterpolationFlags.Cubic  // best for text
+                   );
 
-                        using var img = Pix.LoadTiffFromMemory(ms.ToArray());
-                        using var page = _engine!.Process(img);
+                   // Preprocessing improves small text detection
+                   using Mat gray = new Mat();
+                   Cv2.CvtColor(resized, gray, ColorConversionCodes.BGR2GRAY);
 
-                        // OCR result handling...
-                        var ocrResult = page.GetText()?.Trim() ?? string.Empty;
+                   // Improve contrast
+                   using Mat claheResult = new Mat();
+                   using (var clahe = Cv2.CreateCLAHE(2.0, new OpenCvSharp.Size(8, 8)))
+                   {
+                       clahe.Apply(gray, claheResult);
+                   }
+                   // Threshold
+                   using Mat thresholded = new Mat();
+                   Cv2.Threshold(claheResult, thresholded, 0, 255, ThresholdTypes.Binary | ThresholdTypes.Otsu);
 
-                        if (!string.IsNullOrEmpty(ocrResult))
-                        {
-                            string safeResult = string.Concat(ocrResult.Where(c => !Path.GetInvalidFileNameChars().Contains(c)));
-                            string savePath = Path.Combine(_ocrLogsDirectory, $"{safeResult}_{DateTime.Now:yyyyMMdd_HHmmss}.png");
-                            File.WriteAllBytes(savePath, ms.ToArray());
-                        }
-                        return ocrResult;
-                    }
+                   using Bitmap bitmap = BitmapConverter.ToBitmap(thresholded);
+                   //using Bitmap bitmap = BitmapConverter.ToBitmap(roiMat); //no improvement
 
-                    //using var bitmap = OpenCvSharp.Extensions.BitmapConverter.ToBitmap(roiMat);
-                    //using var ms = new MemoryStream();
-                    //bitmap.Save(ms, System.Drawing.Imaging.ImageFormat.Tiff);
-                    //ms.Position = 0;
+                   // NO MEMORYSTREAM
+                   using var pix = PixConverter.ToPix(bitmap);
+                   using var page = _engine!.Process(pix);
 
-                    //using var img = Pix.LoadTiffFromMemory(ms.ToArray());
-                    //using var page = _engine!.Process(img); // Tesseract.NET throws if reused
+                   var text = page.GetText()?.Trim() ?? string.Empty;
+                   
+                   // Save ROI image only
+                   if (!string.IsNullOrWhiteSpace(text))
+                   {
+                       string safeResult = string.Concat(text.Where(c => !Path.GetInvalidFileNameChars().Contains(c)));
+                       string savePath = Path.Combine(_ocrLogsDirectory, $"{safeResult}_{DateTime.Now:yyyyMMdd_HHmmss}.jpg");
+                       Cv2.ImWrite(savePath, roiMat, new ImageEncodingParam(ImwriteFlags.JpegQuality, 90));
+                   }
 
-                    //var ocrResult = page.GetText()?.Trim() ?? string.Empty;
+                   return text;
 
-                    //if (!string.IsNullOrEmpty(ocrResult))
-                    //{
-                    //    string safeResult = string.Concat(ocrResult.Where(c => !Path.GetInvalidFileNameChars().Contains(c)));
-                    //    string savePath = Path.Combine(_ocrLogsDirectory, $"{safeResult}_{DateTime.Now:yyyyMMdd_HHmmss}.png");
-                    //    File.WriteAllBytes(savePath, ms.ToArray());
-                    //}
-
-                    //return ocrResult;
-
-                });
+               });
 
                 success = !string.IsNullOrWhiteSpace(result);
-                //OCRCompleted?.Invoke(this, new OCRCompletedEventArgs(result, success));
+
                 return result;
             }
             catch (Exception)
@@ -154,6 +161,12 @@ namespace LASYS.OCR.Services
                 OCRCompleted?.Invoke(this, new OCRCompletedEventArgs(result, success));
                 _ocrSemaphore.Release();
             }
+        }
+
+        public void Dispose()
+        {
+            _engine?.Dispose();
+            _ocrSemaphore.Dispose();
         }
     }
 }
