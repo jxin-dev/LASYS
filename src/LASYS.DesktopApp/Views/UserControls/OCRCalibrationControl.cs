@@ -1,7 +1,7 @@
 ﻿using System.Reflection;
+using LASYS.Application.Contracts;
 using LASYS.DesktopApp.Events;
 using LASYS.DesktopApp.Views.Interfaces;
-using LASYS.OCR.Models;
 using LASYS.UIControls.Controls;
 
 namespace LASYS.DesktopApp.Views.UserControls
@@ -701,10 +701,10 @@ namespace LASYS.DesktopApp.Views.UserControls
 
             _lblOcrStatus!.Text = msg;
 
-            if (string.IsNullOrEmpty(result))
-                MessageBox.Show("No text detected", "OCR Result", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-            else
-                MessageBox.Show($"Detected: {result}", "OCR Result", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            //if (string.IsNullOrEmpty(result))
+            //    MessageBox.Show("No text detected", "OCR Result", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            //else
+            //    MessageBox.Show($"Detected: {result}", "OCR Result", MessageBoxButtons.OK, MessageBoxIcon.Information);
 
             _ocrViewerRegion = null;
             picCameraPreview.Invalidate();

@@ -14,6 +14,7 @@ namespace LASYS.DesktopApp.Views.Forms
         public event EventHandler? OCRCalibrationRequested;
         public event EventHandler? PrinterManagementRequested;
         public event EventHandler? BarcodeDeviceSetupRequested;
+        public event EventHandler? EndToEndTestRequested;
 
         public MainForm()
         {
@@ -52,6 +53,7 @@ namespace LASYS.DesktopApp.Views.Forms
             // Define main menu items
             var workOrders = new NavItem { Text = "Work Orders" };
             var deviceSetup = new NavItem { Text = "Settings" };
+            var endToEndTest = new NavItem { Text = "End-to-End Test" };
             var logOut = new NavItem { Text = "Log Out" };
             // Define sub-items
             deviceSetup.SubItems.Add(new NavItem { Text = "Camera Configuration" });
@@ -61,18 +63,22 @@ namespace LASYS.DesktopApp.Views.Forms
             // Add to navigation
             _sideNav.AddItem(workOrders);
             _sideNav.AddItem(deviceSetup);
+            _sideNav.AddItem(endToEndTest);
             _sideNav.AddItem(logOut);
 
 
-            workOrders.Clicked += (_, _) => WorkOrderRequested?.Invoke(this, EventArgs.Empty);
+            workOrders.Clicked += delegate { WorkOrderRequested?.Invoke(this, EventArgs.Empty); };
 
-            deviceSetup.SubItems[0].Clicked += (_, _) => WebCameraConfigurationRequested?.Invoke(this, EventArgs.Empty);
+            deviceSetup.SubItems[0].Clicked += delegate { WebCameraConfigurationRequested?.Invoke(this, EventArgs.Empty); };
 
-            deviceSetup.SubItems[1].Clicked += (_, _) => OCRCalibrationRequested?.Invoke(this, EventArgs.Empty);
+            deviceSetup.SubItems[1].Clicked += delegate { OCRCalibrationRequested?.Invoke(this, EventArgs.Empty); };
 
-            deviceSetup.SubItems[2].Clicked += (_, _) => PrinterManagementRequested?.Invoke(this, EventArgs.Empty);
+            deviceSetup.SubItems[2].Clicked += delegate { PrinterManagementRequested?.Invoke(this, EventArgs.Empty); };
 
-            deviceSetup.SubItems[3].Clicked += (_, _) => BarcodeDeviceSetupRequested?.Invoke(this, EventArgs.Empty);
+            deviceSetup.SubItems[3].Clicked += delegate { BarcodeDeviceSetupRequested?.Invoke(this, EventArgs.Empty); };
+
+            endToEndTest.Clicked += delegate { EndToEndTestRequested?.Invoke(this, EventArgs.Empty); };
+
         }
 
 

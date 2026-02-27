@@ -1,11 +1,7 @@
-using LASYS.BarcodeAnalyzer;
-using LASYS.Camera;
 using LASYS.DesktopApp.Extensions;
 using LASYS.DesktopApp.Presenters;
 using LASYS.DesktopApp.Views.Forms;
 using LASYS.Infrastructure;
-using LASYS.OCR;
-using LASYS.SatoLabelPrinter;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Velopack;
@@ -26,7 +22,7 @@ namespace LASYS.DesktopApp
             var host = Host.CreateDefaultBuilder()
            .ConfigureServices(services =>
            {
-               services.AddInfrastructureServices(); // from infrastructure library
+               services.AddRepositoryServices(); // from infrastructure library
                services.AddMvp(); // from our extension
                services.AddCameraServices(); // from camera library extension
                services.AddOCRServices(); // from ocr library extension

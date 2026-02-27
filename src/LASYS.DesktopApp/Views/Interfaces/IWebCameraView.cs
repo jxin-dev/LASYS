@@ -1,4 +1,4 @@
-﻿using LASYS.Camera.Models;
+﻿using LASYS.Application.Contracts;
 using LASYS.DesktopApp.Events;
 
 namespace LASYS.DesktopApp.Views.Interfaces

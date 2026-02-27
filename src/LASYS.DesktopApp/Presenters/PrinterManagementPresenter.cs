@@ -1,8 +1,9 @@
 ﻿using System.Windows.Forms;
+using LASYS.Application.Common.Enums;
+using LASYS.Application.Contracts;
+using LASYS.Application.Events;
+using LASYS.Application.Interfaces;
 using LASYS.DesktopApp.Views.Interfaces;
-using LASYS.SatoLabelPrinter.Events;
-using LASYS.SatoLabelPrinter.Interfaces;
-using LASYS.SatoLabelPrinter.Models;
 
 namespace LASYS.DesktopApp.Presenters
 {
@@ -74,8 +75,8 @@ namespace LASYS.DesktopApp.Presenters
         {
             var messageBoxIcon = e.MessageType switch
             {
-                PrinterMessageType.Info => MessageBoxIcon.Information,
-                PrinterMessageType.Error => MessageBoxIcon.Error,
+                MessageType.Info => MessageBoxIcon.Information,
+                MessageType.Error => MessageBoxIcon.Error,
                 _ => MessageBoxIcon.Information
             };
 

@@ -1,7 +1,5 @@
-﻿using System.Threading.Tasks;
-using LASYS.Camera.Interfaces;
-using LASYS.Camera.Models;
-using LASYS.Camera.Services;
+﻿using LASYS.Application.Contracts;
+using LASYS.Application.Interfaces;
 using LASYS.DesktopApp.Events;
 using LASYS.DesktopApp.Views.Interfaces;
 using OpenCvSharp;

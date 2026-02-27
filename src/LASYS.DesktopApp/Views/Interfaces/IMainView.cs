@@ -1,6 +1,4 @@
-﻿using LASYS.DesktopApp.Core.Interfaces;
-
-namespace LASYS.DesktopApp.Views.Interfaces
+﻿namespace LASYS.DesktopApp.Views.Interfaces
 {
     public interface IMainView
     {
@@ -9,6 +7,8 @@ namespace LASYS.DesktopApp.Views.Interfaces
         event EventHandler OCRCalibrationRequested;
         event EventHandler PrinterManagementRequested;
         event EventHandler BarcodeDeviceSetupRequested;
+
+        event EventHandler EndToEndTestRequested;
 
 
         void LoadView(UserControl control);

@@ -1,5 +1,4 @@
 ﻿using LASYS.DesktopApp.Views.Interfaces;
-using LASYS.SatoLabelPrinter.Interfaces;
 
 namespace LASYS.DesktopApp.Views.UserControls
 {

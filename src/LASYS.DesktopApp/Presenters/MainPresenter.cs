@@ -18,6 +18,14 @@ namespace LASYS.DesktopApp.Presenters
             _view.OCRCalibrationRequested += OnOCRCalibrationRequested;
             _view.PrinterManagementRequested += OnPrinterManagementRequested;
             _view.BarcodeDeviceSetupRequested += OnBarcodeDeviceSetupRequested;
+
+            _view.EndToEndTestRequested += EndToEndTestRequested;
+        }
+
+        private void EndToEndTestRequested(object? sender, EventArgs e)
+        {
+            var endToEndTestPresenter = _services.GetRequiredService<IEndToEndTestPresenter>();
+            _view?.LoadView(endToEndTestPresenter.View);
         }
 
         private void OnBarcodeDeviceSetupRequested(object? sender, EventArgs e)

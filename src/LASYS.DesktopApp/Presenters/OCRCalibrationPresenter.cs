@@ -1,14 +1,9 @@
-﻿using System.Diagnostics;
-using LASYS.BarcodeAnalyzer.Events;
-using LASYS.BarcodeAnalyzer.Interfaces;
-using LASYS.Camera.Events;
-using LASYS.Camera.Interfaces;
+﻿using System.Collections.Concurrent;
+using System.Diagnostics;
+using LASYS.Application.Events;
+using LASYS.Application.Interfaces;
 using LASYS.DesktopApp.Events;
 using LASYS.DesktopApp.Views.Interfaces;
-using LASYS.OCR.Events;
-using LASYS.OCR.Interfaces;
-using LASYS.SatoLabelPrinter.Events;
-using LASYS.SatoLabelPrinter.Interfaces;
 using OpenCvSharp;
 using DrawingSize = System.Drawing.Size;
 
@@ -150,7 +145,65 @@ namespace LASYS.DesktopApp.Presenters
 
         private async void OnOCRTriggered(object? sender, OCRCoordinatesEventArgs e)
         {
-            await _ocrService.ReadTextAsync(_cameraService.LastCapturedFrame!, _view.PictureBoxSize, e.X, e.Y, e.Width, e.Height, e.ImageWidth, e.ImageHeight);
+            ConcurrentBag<string> ocrResults = new();
+            int ocrCounter = 0;
+
+
+            var tasks = new List<Task>();
+
+            for (int i = 0; i < 50; i++)
+            {
+                var snapshot = _cameraService.GetSnapshot();
+                if (snapshot == null)
+                    continue;
+
+                tasks.Add(Task.Run(async () =>
+                {
+                    var result = await _ocrService.ReadTextAsync(
+                        snapshot,
+                        _view.PictureBoxSize,
+                        e.X, e.Y, e.Width, e.Height,
+                        e.ImageWidth, e.ImageHeight);
+
+                    if (!string.IsNullOrWhiteSpace(result))
+                    {
+                        ocrResults.Add(result);
+                        var count = Interlocked.Increment(ref ocrCounter);
+                        Debug.WriteLine($"[{count}] {result}");
+                    }
+                }));
+
+                await Task.Delay(1000); // 👈 delay between triggers
+            }
+
+            await Task.WhenAll(tasks);
+            Debug.WriteLine($"Parallel stress complete. Count: {ocrResults.Count}");
+
+
+            //var tasks = Enumerable.Range(0, 50).Select(async _ =>
+            //{
+            //    var snapshot = _cameraService.GetSnapshot();
+            //    if (snapshot == null) return;
+
+            //   var result = await _ocrService.ReadTextAsync(snapshot, _view.PictureBoxSize, e.X, e.Y, e.Width, e.Height, e.ImageWidth, e.ImageHeight);
+            //    if (!string.IsNullOrWhiteSpace(result))
+            //    {
+            //        _ocrResults.Add(result);
+            //        var count = Interlocked.Increment(ref _ocrCounter);
+
+            //        Debug.WriteLine(
+            //            $"[{count}] {DateTime.Now:HH:mm:ss.fff} | OCR: {result}");
+            //        await Task.Delay(500);
+            //    }
+            //});
+            //await Task.WhenAll(tasks);
+            //Debug.WriteLine($"Parallel stress complete. Count: {ocrResults.Count}");
+
+
+            //var snapshot = _cameraService.GetSnapshot();
+            //if (snapshot == null) return;
+
+            //await _ocrService.ReadTextAsync(snapshot, _view.PictureBoxSize, e.X, e.Y, e.Width, e.Height, e.ImageWidth, e.ImageHeight);
         }
 
         private async void OnLoadRegisteredOcrItemsRequested(object? sender, EventArgs e)

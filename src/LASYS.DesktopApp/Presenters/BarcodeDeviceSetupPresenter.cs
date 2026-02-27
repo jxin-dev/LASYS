@@ -1,9 +1,8 @@
-﻿using System.Threading.Tasks;
-using LASYS.BarcodeAnalyzer.Events;
-using LASYS.BarcodeAnalyzer.Interfaces;
-using LASYS.BarcodeAnalyzer.Models;
+﻿using LASYS.Application.Common.Enums;
+using LASYS.Application.Contracts;
+using LASYS.Application.Events;
+using LASYS.Application.Interfaces;
 using LASYS.DesktopApp.Views.Interfaces;
-using LASYS.SatoLabelPrinter.Models;
 
 namespace LASYS.DesktopApp.Presenters
 {
@@ -38,8 +37,8 @@ namespace LASYS.DesktopApp.Presenters
         {
             var messageBoxIcon = e.MessageType switch
             {
-                BarcodeMessageType.Info => MessageBoxIcon.Information,
-                BarcodeMessageType.Error => MessageBoxIcon.Error,
+                MessageType.Info => MessageBoxIcon.Information,
+                MessageType.Error => MessageBoxIcon.Error,
                 _ => MessageBoxIcon.Information
             };
             _view.ShowNotification(e.Message, "Barcode Device", messageBoxIcon);

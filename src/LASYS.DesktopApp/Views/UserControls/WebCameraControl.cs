@@ -1,5 +1,4 @@
-﻿using LASYS.Camera.Interfaces;
-using LASYS.Camera.Models;
+﻿using LASYS.Application.Contracts;
 using LASYS.DesktopApp.Events;
 using LASYS.DesktopApp.Views.Interfaces;
 using LASYS.UIControls.Controls;

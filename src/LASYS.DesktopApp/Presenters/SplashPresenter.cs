@@ -1,10 +1,6 @@
-﻿using LASYS.BarcodeAnalyzer.Events;
-using LASYS.BarcodeAnalyzer.Interfaces;
-using LASYS.Camera.Events;
-using LASYS.Camera.Interfaces;
+﻿using LASYS.Application.Events;
+using LASYS.Application.Interfaces;
 using LASYS.DesktopApp.Views.Interfaces;
-using LASYS.SatoLabelPrinter.Events;
-using LASYS.SatoLabelPrinter.Interfaces;
 
 namespace LASYS.DesktopApp.Presenters
 {

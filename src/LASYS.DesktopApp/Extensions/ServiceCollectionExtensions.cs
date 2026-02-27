@@ -1,11 +1,8 @@
 ﻿using LASYS.Application.Interfaces;
-using LASYS.BarcodeAnalyzer.Interfaces;
-using LASYS.Camera.Interfaces;
 using LASYS.DesktopApp.Presenters;
 using LASYS.DesktopApp.Views.Forms;
 using LASYS.DesktopApp.Views.Interfaces;
 using LASYS.DesktopApp.Views.UserControls;
-using LASYS.SatoLabelPrinter.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace LASYS.DesktopApp.Extensions
@@ -72,6 +69,9 @@ namespace LASYS.DesktopApp.Extensions
 
             services.AddSingleton<IBarcodeDeviceSetupView, BarcodeDeviceSetupControl>();
             services.AddSingleton<BarcodeDeviceSetupPresenter>();
+
+            services.AddSingleton<IEndToEndTestView, EndToEndTestControl>();
+            services.AddSingleton<IEndToEndTestPresenter>();
 
             // Services
 

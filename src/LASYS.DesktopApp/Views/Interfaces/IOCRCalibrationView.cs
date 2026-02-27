@@ -1,4 +1,4 @@
-﻿using LASYS.OCR.Models;
+﻿using LASYS.Application.Contracts;
 using LASYS.DesktopApp.Events;
 using DrawingSize = System.Drawing.Size;
 
