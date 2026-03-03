@@ -1,3 +1,4 @@
+using LASYS.Application;
 using LASYS.DesktopApp.Extensions;
 using LASYS.DesktopApp.Presenters;
 using LASYS.DesktopApp.Views.Forms;
@@ -22,12 +23,9 @@ namespace LASYS.DesktopApp
             var host = Host.CreateDefaultBuilder()
            .ConfigureServices(services =>
            {
-               services.AddRepositoryServices(); // from infrastructure library
                services.AddMvp(); // from our extension
-               services.AddCameraServices(); // from camera library extension
-               services.AddOCRServices(); // from ocr library extension
-               services.AddSatoLabelPrinterServices(); // from sato label printer library extension
-               services.AddBarcodeAnalyzerServices(); // from barcode analyzer library extension
+               services.AddApplication(); // from our application layer
+               services.AddInfrastructure(); // from our infrastructure layer
            })
            .Build();
 

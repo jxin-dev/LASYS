@@ -10,19 +10,29 @@ namespace LASYS.Infrastructure;
 
 public static class DependencyInjection
 {
-    public static IServiceCollection AddRepositoryServices(this IServiceCollection services)
+    public static IServiceCollection AddInfrastructure(this IServiceCollection services)
+    {
+        services.AddRepositoryServices();
+        services.AddBarcodeAnalyzerServices();
+        services.AddCameraServices();
+        services.AddOCRServices();
+        services.AddSatoLabelPrinterServices();
+        return services;
+    }
+
+    private static IServiceCollection AddRepositoryServices(this IServiceCollection services)
     {
         services.AddTransient<IUserRepository, UserRepository>();
         return services;
     }
 
-    public static IServiceCollection AddBarcodeAnalyzerServices(this IServiceCollection services)
+    private static IServiceCollection AddBarcodeAnalyzerServices(this IServiceCollection services)
     {
         services.AddSingleton<IBarcodeService, BarcodeService>();
         return services;
     }
 
-    public static IServiceCollection AddCameraServices(this IServiceCollection services)
+    private static IServiceCollection AddCameraServices(this IServiceCollection services)
     {
 
         services.AddScoped<ICameraConfig, CameraConfigStore>();
@@ -34,14 +44,14 @@ public static class DependencyInjection
         return services;
     }
 
-    public static IServiceCollection AddOCRServices(this IServiceCollection services)
+    private static IServiceCollection AddOCRServices(this IServiceCollection services)
     {
         services.AddScoped<ICalibrationService, CalibrationService>();
         services.AddSingleton<IOCRService, OCRService>();
 
         return services;
     }
-    public static IServiceCollection AddSatoLabelPrinterServices(this IServiceCollection services)
+    private static IServiceCollection AddSatoLabelPrinterServices(this IServiceCollection services)
     {
         services.AddSingleton<IPrinterService, PrinterService>();
         return services;
