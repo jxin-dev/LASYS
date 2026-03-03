@@ -2,7 +2,7 @@
 
 namespace LASYS.Application.Interfaces
 {
-    public interface IDeviceManager
+    public interface ILabelProcessingService
     {
         Task StartJobAsync(CancellationToken token);
         event EventHandler<DeviceStatusChangedEventArgs> StatusChanged;

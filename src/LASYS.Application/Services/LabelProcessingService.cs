@@ -4,11 +4,11 @@ using Microsoft.Extensions.Logging;
 
 namespace LASYS.Application.Services
 {
-    public class DeviceManager : IDeviceManager
+    public class LabelProcessingService : ILabelProcessingService
     {
         public event EventHandler<DeviceStatusChangedEventArgs>? StatusChanged;
 
-        private readonly ILogger<DeviceManager> _logger;
+        private readonly ILogger<LabelProcessingService> _logger;
    
 
         public Task StartJobAsync(CancellationToken token)
