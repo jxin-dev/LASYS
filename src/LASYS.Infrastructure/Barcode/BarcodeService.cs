@@ -14,10 +14,13 @@ namespace LASYS.Infrastructure.Barcode
     {
         private readonly string _configPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "barcode.config.json");
 
-        private readonly object _syncRoot = new object();
+        private readonly object _syncRoot = new();
+        private readonly object _scanLock = new();
+
         private SerialPort? _port;
         private readonly StringBuilder _buffer = new();
-        private volatile bool _isWaitingForScan;
+
+        private bool _isWaitingForScan;
 
         private readonly byte[] TRIGGER_ON = [0x7E, 0x80, 0x02, 0x00, 0x00, 0x00, 0x01, 0x01, 0x82, 0x7E];
         private readonly byte[] TRIGGER_OFF = [0x7E, 0x80, 0x02, 0x00, 0x00, 0x00, 0x01, 0x00, 0x83, 0x7E];
@@ -25,8 +28,6 @@ namespace LASYS.Infrastructure.Barcode
         public event EventHandler<BarcodeNotificationEventArgs>? BarcodeNotification;
         public event EventHandler<BarcodeStatusEventArgs>? BarcodeStatusChanged;
         public event EventHandler<BarcodeScannedEventArgs>? BarcodeScanned;
-
-        private TaskCompletionSource<string?>? _scanTcs;
 
         public async Task InitializeAsync()
         {
@@ -93,19 +94,21 @@ namespace LASYS.Infrastructure.Barcode
                     if (string.IsNullOrWhiteSpace(barcode))
                         continue;
 
-                    // Accept only if scan requested
-                    if (!_isWaitingForScan)
-                        return;
+                    lock (_scanLock)
+                    {
+                        if (!_isWaitingForScan)
+                            return;
 
-                    _isWaitingForScan = false;
+                        _isWaitingForScan = false;
+                    }
 
-                    BarcodeScanned?.Invoke(this, new BarcodeScannedEventArgs(barcode));
+                    BarcodeScanned?.Invoke(this,
+                        new BarcodeScannedEventArgs(barcode));
 
-                    _scanTcs?.TrySetResult(barcode);
+                    BarcodeStatusChanged?.Invoke(this,
+                        new BarcodeStatusEventArgs($"Scan received: {barcode}"));
 
-                    BarcodeStatusChanged?.Invoke(this, new BarcodeStatusEventArgs($"Scan received: {barcode}"));
-
-                    break; // Stop after first valid scan
+                    break;
                 }
 
             }
@@ -115,56 +118,80 @@ namespace LASYS.Infrastructure.Barcode
             }
         }
 
-        public async Task<string?> ScanAsync(CancellationToken token)
+        public async Task ScanAsync()
         {
-            if (_isWaitingForScan) // already waiting
+            lock (_scanLock)
             {
-                BarcodeStatusChanged?.Invoke(this, new BarcodeStatusEventArgs("Scan already in progress."));
-                return null;
+                if (_isWaitingForScan)
+                {
+                    BarcodeStatusChanged?.Invoke(this, new BarcodeStatusEventArgs("Scan already in progress."));
+                    return;
+                }
+
+                _isWaitingForScan = true;
             }
+
             if (_port == null)
             {
+                lock (_scanLock)
+                {
+                    _isWaitingForScan = false;
+                }
                 BarcodeStatusChanged?.Invoke(this, new BarcodeStatusEventArgs("Barcode scanner not initialized."));
-                return null;
+                return;
             }
-
-            _scanTcs = new TaskCompletionSource<string?>(TaskCreationOptions.RunContinuationsAsynchronously);
-
-            token.Register(() => _scanTcs.TrySetCanceled());
 
             try
             {
-                _isWaitingForScan = true;
-
                 // Ensure port is open
-                if (!_port.IsOpen) _port.Open();
+                lock (_syncRoot)
+                {
+                    if (!_port.IsOpen) _port.Open();
+                    _port.DiscardInBuffer();
+                    _port.DiscardOutBuffer();
+                }
 
-                // Trigger scanner ON
-                await _port.BaseStream.WriteAsync(TRIGGER_ON, 0, TRIGGER_ON.Length);
-                await Task.Delay(100); // wait for trigger activation
-                await _port.BaseStream.WriteAsync(TRIGGER_OFF, 0, TRIGGER_OFF.Length);
+                lock (_syncRoot)
+                {
+                    _port.BaseStream.Write(TRIGGER_ON, 0, TRIGGER_ON.Length);
+                }
+
+                await Task.Delay(100);
+
+                lock (_syncRoot)
+                {
+                    _port.BaseStream.Write(TRIGGER_OFF, 0, TRIGGER_OFF.Length);
+                }
 
                 BarcodeStatusChanged?.Invoke(this, new BarcodeStatusEventArgs("Scan triggered successfully."));
 
 
                 _ = Task.Run(async () =>
                 {
-                    await Task.Delay(10000); // 10-second timeout
-                    if (_isWaitingForScan)
+                    await Task.Delay(10000);
+
+                    lock (_scanLock)
                     {
+                        if (!_isWaitingForScan)
+                            return;
+
                         _isWaitingForScan = false;
-                        BarcodeStatusChanged?.Invoke(this,
-                            new BarcodeStatusEventArgs("Scan timeout."));
                     }
+
+                    BarcodeStatusChanged?.Invoke(this,
+                        new BarcodeStatusEventArgs("Scan timeout."));
                 });
-                return await _scanTcs.Task;
             }
             catch (Exception ex)
             {
+                lock (_scanLock)
+                {
+                    _isWaitingForScan = false;
+                }
+
                 Console.Error.WriteLine($"Failed to trigger scan: {ex.Message}");
                 BarcodeStatusChanged?.Invoke(this, new BarcodeStatusEventArgs($"Failed to trigger scan: {ex.Message}"));
                 _isWaitingForScan = false; // reset flag on error
-                return null;
             }
         }
         //
