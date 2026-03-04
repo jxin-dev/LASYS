@@ -443,19 +443,6 @@ namespace LASYS.Infrastructure.Camera
 
                 ReleaseCamera();
             }
-            //_cts.Cancel();
-
-            //if (_streamingTask != null)
-            //    await _streamingTask;
-
-            //ReleaseCamera();
-
-            //_cts.Dispose();
-            //_cts = new CancellationTokenSource();
-
-            //_streamingTask = null;
-            //_hasReportedEmptyFrame = false;
-            //_isCameraConnected = false;
         }
 
 
