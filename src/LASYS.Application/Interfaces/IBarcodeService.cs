@@ -16,7 +16,7 @@ namespace LASYS.Application.Interfaces
         event EventHandler<BarcodeScannedEventArgs> BarcodeScanned;
 
         Task InitializeAsync();
-        Task<string?> ScanAsync(CancellationToken token);
+        Task ScanAsync();
         Task SetManualModeAsync();
 
     }
