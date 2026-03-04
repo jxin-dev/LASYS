@@ -20,6 +20,8 @@ namespace LASYS.DesktopApp.Views.UserControls
         private TextBox? _txtImgWidth;
         private TextBox? _txtImgHeight;
 
+        private RichTextBox? _richTextOCRResult;
+
         private Label? _lblCameraStatus;
         private Button? _btnReconnectCamera;
 
@@ -416,43 +418,84 @@ namespace LASYS.DesktopApp.Views.UserControls
 
             _resizablePanel.AddTab("Calibration Setup", container);
 
-            // Title at the top
             var titleLabel = new Label
             {
                 Text = "OCR Calibration Setup",
                 Font = new Font("Segoe UI", 14, FontStyle.Bold),
                 Dock = DockStyle.Top,
                 Height = 40,
-                TextAlign = ContentAlignment.MiddleLeft
+                TextAlign = ContentAlignment.MiddleLeft,
+                //BorderStyle = BorderStyle.FixedSingle
             };
 
-
-            // Main layout under title
             var layout = new TableLayoutPanel
             {
                 Dock = DockStyle.Top,
                 AutoSize = true,
-                ColumnCount = 1,
-                Padding = new Padding(0, 5, 0, 0)
+                ColumnCount = 2,
+                RowCount = 2,
+                Padding = new Padding(0, 5, 0, 0),
+                //CellBorderStyle = TableLayoutPanelCellBorderStyle.Single
             };
             container.Controls.Add(layout);
 
             container.Controls.Add(titleLabel);
-            // Coordinates grid (includes Item Code at top)
+
+
+            _richTextOCRResult = new RichTextBox
+            {
+                ReadOnly = true,
+                BorderStyle = BorderStyle.FixedSingle,
+                BackColor = container.BackColor,
+                Dock = DockStyle.Fill
+            };
+            layout.Controls.Add(_richTextOCRResult, 1, 0);
+            layout.SetRowSpan(_richTextOCRResult, 3);
+
+            var labelInfoLayout = new TableLayoutPanel
+            {
+                ColumnCount = 2,
+                RowCount = 1,
+                AutoSize = true,
+                Dock = DockStyle.Top,
+                //CellBorderStyle = TableLayoutPanelCellBorderStyle.Single
+            };
+            layout.Controls.Add(labelInfoLayout, 0, 0);
+
+            var itemCodeLabel = new Label
+            {
+                Text = "Item Code:",
+                AutoSize = true,
+                Anchor = AnchorStyles.Left,
+                Margin = new Padding(0, 5, 5, 5)
+            };
+
+            labelInfoLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 90));
+            labelInfoLayout.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+
+            labelInfoLayout.Controls.Add(itemCodeLabel, 0, 0);
+
+            _txtItemCode = new TextBox
+            {
+                Width = 250,
+                Margin = new Padding(0, 5, 15, 5),
+            };
+            labelInfoLayout.Controls.Add(_txtItemCode, 1, 0);
+
             var coordGrid = new TableLayoutPanel
             {
                 ColumnCount = 4,
+                RowCount = 4,
                 AutoSize = true,
-                Dock = DockStyle.Top
+                Dock = DockStyle.Top,
+                //CellBorderStyle = TableLayoutPanelCellBorderStyle.Single
             };
 
             for (int i = 0; i < 4; i++)
-                coordGrid.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+                coordGrid.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 90));
 
-            layout.Controls.Add(coordGrid);
+            layout.Controls.Add(coordGrid, 0, 1);
 
-
-            // Coordinates title
             var coordLabel = new Label
             {
                 Text = "Coordinates",
@@ -495,40 +538,16 @@ namespace LASYS.DesktopApp.Views.UserControls
             _txtImgHeight = CreateCoordField("Image Height", 2, 4);
 
 
-            // Item Code Label
-            var itemCodeLabel = new Label
-            {
-                Text = "Item Code:",
-                AutoSize = true,
-                Anchor = AnchorStyles.Left,
-                Margin = new Padding(0, 5, 5, 5)
-            };
-            coordGrid.Controls.Add(itemCodeLabel, 0, 0);
-
-            // Item Code TextBox spans columns 1 → 2 (same width as X + Y fields)
-            _txtItemCode = new TextBox
-            {
-                Anchor = AnchorStyles.Left,
-                Margin = new Padding(0, 5, 15, 5),
-                Width = _txtX.Width + _txtY.Width + 25
-            };
-            coordGrid.Controls.Add(_txtItemCode, 1, 0);
-            coordGrid.SetColumnSpan(_txtItemCode, 3); // span columns 1,2,3
-
             var buttonPanel = new TableLayoutPanel
             {
                 ColumnCount = 2,
+                RowCount = 1,
                 AutoSize = true,
-                Dock = DockStyle.Left,
-                Margin = new Padding(0, 20, 0, 0)
+                Dock = DockStyle.Top,
+                Margin = new Padding(0, 5, 0, 0),
+                //CellBorderStyle = TableLayoutPanelCellBorderStyle.Single
             };
-
-            buttonPanel.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
-            buttonPanel.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
-
-            // Add panel to grid
-            coordGrid.Controls.Add(buttonPanel, 0, 5);
-            coordGrid.SetColumnSpan(buttonPanel, 4);
+            layout.Controls.Add(buttonPanel, 0, 2);
 
             // Save button
             var btnSave = new Button
@@ -536,7 +555,6 @@ namespace LASYS.DesktopApp.Views.UserControls
                 Text = "Save Calibration",
                 Width = 160,
                 Height = 35,
-                Margin = new Padding(0, 0, 10, 0)
             };
             buttonPanel.Controls.Add(btnSave, 0, 0);
 
@@ -546,7 +564,6 @@ namespace LASYS.DesktopApp.Views.UserControls
                 Text = "OCR Read",
                 Width = 120,
                 Height = 35,
-                Margin = new Padding(0, 0, 10, 0)
             };
             buttonPanel.Controls.Add(btnTestOcr, 1, 0);
 
@@ -720,6 +737,12 @@ namespace LASYS.DesktopApp.Views.UserControls
         {
             _lblScannerStatus!.ForeColor = isError ? Color.Crimson : Color.ForestGreen;
             _lblScannerStatus!.Text = message;
+        }
+
+        public void DisplayOCRResult(string result)
+        {
+            _richTextOCRResult!.AppendText(result + Environment.NewLine);
+            _richTextOCRResult.ScrollToCaret();
         }
     }
 }

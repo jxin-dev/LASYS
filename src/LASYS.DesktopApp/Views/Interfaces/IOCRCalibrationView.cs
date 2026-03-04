@@ -24,6 +24,8 @@ namespace LASYS.DesktopApp.Views.Interfaces
 
         void ShowOCRResult(string result, string msg, bool isSuccess = true);
 
+        void DisplayOCRResult(string result);
+
         void DisplayFrame(Bitmap bitmap);
 
 

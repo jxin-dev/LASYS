@@ -142,44 +142,60 @@ namespace LASYS.DesktopApp.Presenters
 
         }
 
-
+        private readonly SemaphoreSlim _ocrLock = new(1, 1);
         private async void OnOCRTriggered(object? sender, OCRCoordinatesEventArgs e)
         {
-            ConcurrentBag<string> ocrResults = new();
-            int ocrCounter = 0;
-
-
-            var tasks = new List<Task>();
-
-            for (int i = 0; i < 50; i++)
+            if (!await _ocrLock.WaitAsync(0))
             {
-                var snapshot = _cameraService.GetSnapshot();
-                if (snapshot == null)
-                    continue;
-
-                tasks.Add(Task.Run(async () =>
-                {
-                    var result = await _ocrService.ReadTextAsync(
-                        snapshot,
-                        _view.PictureBoxSize,
-                        e.X, e.Y, e.Width, e.Height,
-                        e.ImageWidth, e.ImageHeight);
-
-                    if (!string.IsNullOrWhiteSpace(result))
-                    {
-                        ocrResults.Add(result);
-                        var count = Interlocked.Increment(ref ocrCounter);
-                        Debug.WriteLine($"[{count}] {result}");
-                    }
-                }));
-
-                await Task.Delay(1000); // 👈 delay between triggers
+                _view.InvokeOnUI(() => _view.DisplayOCRResult("OCR is already running. Please wait..."));
+                return;
             }
 
-            await Task.WhenAll(tasks);
-            Debug.WriteLine($"Parallel stress complete. Count: {ocrResults.Count}");
+            try
+            {
+                ConcurrentBag<string> ocrResults = new();
+                int ocrCounter = 0;
 
 
+                var tasks = new List<Task>();
+
+                for (int i = 0; i < 50; i++)
+                {
+                    var snapshot = _cameraService.GetSnapshot();
+                    if (snapshot == null)
+                        continue;
+
+                    tasks.Add(Task.Run(async () =>
+                    {
+                        var result = await _ocrService.ReadTextAsync(
+                            snapshot,
+                            _view.PictureBoxSize,
+                            e.X, e.Y, e.Width, e.Height,
+                            e.ImageWidth, e.ImageHeight);
+
+                        var count = Interlocked.Increment(ref ocrCounter);
+                        if (!string.IsNullOrWhiteSpace(result))
+                        {
+                            ocrResults.Add(result);
+                            _view.InvokeOnUI(() => _view.DisplayOCRResult($"[{count}] {result}"));
+                        }
+                        else
+                        {
+                            _view.InvokeOnUI(() => _view.DisplayOCRResult($"[{count}] No text detected"));
+                        }
+                    }));
+
+                    await Task.Delay(1000);
+                }
+
+                await Task.WhenAll(tasks);
+                _view.InvokeOnUI(() => _view.DisplayOCRResult($"Parallel stress complete. Count: {ocrResults.Count}"));
+
+            }
+            finally
+            {
+                _ocrLock.Release();
+            }
             //var tasks = Enumerable.Range(0, 50).Select(async _ =>
             //{
             //    var snapshot = _cameraService.GetSnapshot();
