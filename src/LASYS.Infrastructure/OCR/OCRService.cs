@@ -58,7 +58,7 @@ namespace LASYS.Infrastructure.OCR
 
             return Rectangle.Round(viewerRect);
         }
-        public async Task<string?> ReadTextAsync(Mat mat, DrawingSize viewerSize, int x, int y, int width, int height, int imageWidth, int imageHeight)
+        public async Task<string> ReadTextAsync(Mat mat, DrawingSize viewerSize, int x, int y, int width, int height, int imageWidth, int imageHeight)
         {
 
             if (mat == null || mat.Empty())
