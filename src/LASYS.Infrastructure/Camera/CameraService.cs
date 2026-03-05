@@ -100,20 +100,28 @@ namespace LASYS.Infrastructure.Camera
                     }
                     var cameraIndex = cameraInfo.Index;
 
-                    var capture = new VideoCapture(cameraIndex);
-                    //var capture = new VideoCapture(cameraIndex, VideoCaptureAPIs.DSHOW);
+                    //var capture = new VideoCapture(cameraIndex);
+                    var capture = new VideoCapture(cameraIndex, VideoCaptureAPIs.DSHOW);
+
 
                     if (!capture.IsOpened())
                     {
                         return; // hot-plug safe
                     }
+
                     capture.Set(VideoCaptureProperties.FrameWidth, config.FrameWidth);
                     capture.Set(VideoCaptureProperties.FrameHeight, config.FrameHeight);
+                    capture.Set(VideoCaptureProperties.AutoFocus, 0);
                     capture.Set(VideoCaptureProperties.Fps, config.FrameRate);
+                    capture.Set(VideoCaptureProperties.Fps, config.Focus);
+
+
+                    double actualWidth = capture.Get(VideoCaptureProperties.FrameWidth);
+                    double actualHeight = capture.Get(VideoCaptureProperties.FrameHeight);
+
+                    Debug.WriteLine($"Camera Resolution: {actualWidth}x{actualHeight}");
+
                     _capture = capture;
-                    //capture.Set(VideoCaptureProperties.FrameWidth, 640);
-                    //capture.Set(VideoCaptureProperties.FrameHeight, 480);
-                    //capture.Set(VideoCaptureProperties.Fps, 10);
 
                 }, timeoutCts.Token);
 

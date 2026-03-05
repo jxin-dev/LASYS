@@ -69,6 +69,13 @@ namespace LASYS.Infrastructure.Camera
                     AspectRatio = "16:9",
                     Notes = "Most webcams, monitors, streaming"
                 },
+                ["2K / 1440p"] = new Resolution
+                {
+                    Width = 2560,
+                    Height = 1440,
+                    AspectRatio = "16:9",
+                    Notes = "High detail, heavier processing"
+                },
                 ["4K UHD / 2160p"] = new Resolution
                 {
                     Width = 3840,
