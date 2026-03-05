@@ -29,7 +29,7 @@ namespace LASYS.DesktopApp.Views.Interfaces
         void DisplayFrame(Bitmap bitmap);
 
 
-
+        event EventHandler<int> FocusValueChanged;
         event EventHandler<CalibrationEventArgs> SaveCalibrationClicked;
         event EventHandler<ImageRegionEventArgs> ComputeImageRegionRequested;
         void FinishCalibration(string message, bool isError = false);

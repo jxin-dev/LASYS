@@ -20,7 +20,7 @@ namespace LASYS.Application.Interfaces
         Task StartStreamingAsync(Action<Mat, Bitmap> onFrameCaptured, Func<DrawingSize> getTargetResolution);
         void ReleaseCamera();
         bool IsCameraReady();
-
+        void SetFocus(int focusValue);
         bool IsStreaming { get; }
 
     }

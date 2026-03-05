@@ -1,8 +1,10 @@
 ﻿using System.Diagnostics;
 using System.Drawing;
+using System.Text.RegularExpressions;
 using LASYS.Application.Contracts;
 using LASYS.Application.Events;
 using LASYS.Application.Interfaces;
+using Newtonsoft.Json.Linq;
 using OpenCvSharp;
 using OpenCvSharp.Extensions;
 using DrawingSize = System.Drawing.Size;
@@ -111,10 +113,16 @@ namespace LASYS.Infrastructure.Camera
 
                     capture.Set(VideoCaptureProperties.FrameWidth, config.FrameWidth);
                     capture.Set(VideoCaptureProperties.FrameHeight, config.FrameHeight);
-                    capture.Set(VideoCaptureProperties.AutoFocus, 0);
                     capture.Set(VideoCaptureProperties.Fps, config.FrameRate);
+                    //capture.Set(VideoCaptureProperties.AutoExposure, 0);
+                    //capture.Set(VideoCaptureProperties.Exposure, -5);
+                    //capture.Set(VideoCaptureProperties.AutoWB, 0);
+                    //capture.Set(VideoCaptureProperties.WBTemperature, 5500);
+                    capture.Set(VideoCaptureProperties.AutoFocus, 0);
                     capture.Set(VideoCaptureProperties.Fps, config.Focus);
 
+                    var focus = capture.Get(VideoCaptureProperties.Focus);
+                    Console.WriteLine($"Focus: {focus}");
 
                     double actualWidth = capture.Get(VideoCaptureProperties.FrameWidth);
                     double actualHeight = capture.Get(VideoCaptureProperties.FrameHeight);
@@ -233,6 +241,9 @@ namespace LASYS.Infrastructure.Camera
                         else
                         {
                             resized.CopyTo(LastCapturedFrame);
+
+                            var focus = _capture?.Get(VideoCaptureProperties.Focus);
+                            Debug.WriteLine($"Focus: {focus}");
                         }
                     }
 
@@ -473,6 +484,13 @@ namespace LASYS.Infrastructure.Camera
 
                 return LastCapturedFrame.Clone();  // safe snapshot
             }
+        }
+
+        public void SetFocus(int focusValue)
+        {
+            if (_capture == null || !_capture.IsOpened() || _capture.IsDisposed) return;
+
+            _capture?.Set(VideoCaptureProperties.Focus, focusValue);
         }
     }
 }

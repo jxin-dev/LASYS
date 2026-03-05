@@ -52,6 +52,7 @@ namespace LASYS.DesktopApp.Views.UserControls
         public event EventHandler? LoadRegisteredOcrItemsRequested;
         public event EventHandler? InitializeRequested;
         public event EventHandler<OCRCoordinatesEventArgs>? OCRTriggered;
+        public event EventHandler<int>? FocusValueChanged;
 
         private Rectangle _roi;
         private Point _startPoint;
@@ -450,7 +451,7 @@ namespace LASYS.DesktopApp.Views.UserControls
             _focusSlider = new TrackBar
             {
                 Minimum = 0,
-                Maximum = 255,
+                Maximum = 1000,
                 TickStyle = TickStyle.None,
                 Dock = DockStyle.Fill,
                 Value = 120
@@ -473,8 +474,12 @@ namespace LASYS.DesktopApp.Views.UserControls
 
             _focusSlider.Scroll += (s, e) =>
             {
-                _focusValueLabel.Text = _focusSlider.Value.ToString();
-                _focusLevelLabel!.Text = _focusSlider.Value.ToString();
+                int value = _focusSlider.Value;
+                _focusValueLabel.Text = value.ToString();
+                FocusValueChanged?.Invoke(this, value);
+
+                _focusValueLabel.Text = value.ToString();
+                _focusLevelLabel!.Text = value.ToString();
 
             };
             sliderContainer.Controls.Add(_focusSlider);

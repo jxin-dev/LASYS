@@ -1,5 +1,6 @@
 ﻿using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Text.RegularExpressions;
 using LASYS.Application.Events;
 using LASYS.Application.Interfaces;
 using LASYS.DesktopApp.Events;
@@ -52,6 +53,14 @@ namespace LASYS.DesktopApp.Presenters
             _printerService.PrinterStateChanged += OnPrinterStateChanged;
             _barcodeService.BarcodeStatusChanged += OnBarcodeStatusChanged;
 
+
+            _view.FocusValueChanged += OnFocuseValueChanged;
+
+        }
+
+        private void OnFocuseValueChanged(object? sender, int e)
+        {
+            _cameraService.SetFocus(e);
         }
 
         private void OnBarcodeStatusChanged(object? sender, BarcodeStatusEventArgs e)
