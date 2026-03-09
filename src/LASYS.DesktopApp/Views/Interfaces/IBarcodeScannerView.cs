@@ -1,6 +1,6 @@
 ﻿namespace LASYS.DesktopApp.Views.Interfaces
 {
-    public interface IBarcodeDeviceSetupView
+    public interface IBarcodeScannerView
     {
         void InvokeOnUI(Action action);
 

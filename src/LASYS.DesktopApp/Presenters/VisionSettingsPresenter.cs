@@ -1,6 +1,6 @@
 ﻿using System.Collections.Concurrent;
 using System.Diagnostics;
-using System.Text.RegularExpressions;
+using LASYS.Application.Contracts;
 using LASYS.Application.Events;
 using LASYS.Application.Interfaces;
 using LASYS.DesktopApp.Events;
@@ -10,17 +10,15 @@ using DrawingSize = System.Drawing.Size;
 
 namespace LASYS.DesktopApp.Presenters
 {
-    public class OCRCalibrationPresenter
+    public class VisionSettingsPresenter
     {
         public UserControl View { get; }
-        private readonly IOCRCalibrationView _view;
+        private readonly IVisionSettingsView _view;
         private readonly IOCRService _ocrService;
         private readonly ICalibrationService _calibrationService;
         private readonly ICameraService _cameraService;
-        private readonly IPrinterService _printerService;
-        private readonly IBarcodeService _barcodeService;
 
-        public OCRCalibrationPresenter(IOCRCalibrationView view, ICameraService cameraService, IOCRService ocrService, ICalibrationService calibrationService, IPrinterService printerService, IBarcodeService barcodeService)
+        public VisionSettingsPresenter(IVisionSettingsView view, ICameraService cameraService, IOCRService ocrService, ICalibrationService calibrationService)
         {
             _view = view;
             View = (UserControl)view;
@@ -28,11 +26,8 @@ namespace LASYS.DesktopApp.Presenters
             _cameraService = cameraService;
             _ocrService = ocrService;
             _calibrationService = calibrationService;
-            _printerService = printerService;
-            _barcodeService = barcodeService;
 
 
-            _view.ReconnectCameraRequested += OnReconnectCameraRequested;
             _view.InitializeRequested += OnInitializeRequested;
 
             _view.ComputeImageRegionRequested += OnComputeImageRegionRequested;
@@ -42,53 +37,133 @@ namespace LASYS.DesktopApp.Presenters
 
 
             _view.OCRTriggered += OnOCRTriggered;
+            _view.OCRCalibrationPreview += OnOCRCalibraionPreview;
 
-            _cameraService.CameraDisconnected += OnCameraDeviceDisconnected;
-            _cameraService.CameraConnected += OnCameraDeviceConnected;
-            _cameraService.CameraStatusChanged += OnCameraStatusChanged;
+            _cameraService.CameraNotification += OnCameraNotification;
 
             _ocrService.OCRRegionDetected += OnOCRRegionDetected;
-            _ocrService.OCRCompleted += OnOCRCompleted;
-
-            _printerService.PrinterStateChanged += OnPrinterStateChanged;
-            _barcodeService.BarcodeStatusChanged += OnBarcodeStatusChanged;
-
+            _ocrService.OCRRegionPreview += OnOCRRegionPreview;
 
             _view.FocusValueChanged += OnFocuseValueChanged;
+            _view.LoadCamerasRequested += OnLoadCamerasRequested;
+            _view.CameraResolutionSelected += OnCameraResolutionSelected;
+            _view.CameraPreviewStateChanged += OnCameraPreviewStateChanged;
+            _view.CameraConfigurationSaved += OnCameraConfigurationSaved;
 
         }
+
+        private void OnOCRRegionPreview(object? sender, OCRRegionEventArgs e)
+        {
+            var region = e.Region;
+            _view?.InvokeOnUI(() => _view.PreviewOCRRegion(region));
+        }
+
+        private void OnOCRCalibraionPreview(object? sender, OCRCoordinatesEventArgs e)
+        {
+            _ocrService.PreviewRegion(_view.PictureBoxSize, e.X, e.Y, e.Width, e.Height, e.ImageWidth, e.ImageHeight);
+
+        }
+
+        private void OnCameraResolutionSelected(object? sender, string e)
+        {
+            _cameraService.SetResolution(e);
+        }
+
+        private void OnCameraNotification(object? sender, CameraNotificationEventArgs e)
+        {
+            _view.ShowCameraNotification(e.Message, e.Caption, e.IsError);
+        }
+
+        private void OnCameraConfigurationSaved(object? sender, CameraSavedEventArgs e)
+        {
+            var cameraIndex = e.CameraIndex;
+            var cameraName = e.CameraName;
+            var resolutionKey = e.Resolution;
+            var focusValue = e.Focus;
+
+            var cameraResolutions = _cameraService.GetCameraResolutions();
+
+            if (cameraResolutions.TryGetValue(resolutionKey, out var resolution))
+            {
+                int width = resolution.Width;
+                int height = resolution.Height;
+
+                Debug.WriteLine($"Selected Camera: {cameraName} (Index {cameraIndex})");
+                Debug.WriteLine($"Resolution: {e.Resolution} => {width}x{height}");
+
+                var config = new CameraConfig
+                {
+                    Index = cameraIndex,
+                    Name = cameraName,
+                    Resolution = resolutionKey,
+                    Focus = focusValue
+                };
+
+                _cameraService.SaveCameraConfigAsync(config);
+
+            }
+        }
+
+        private async void OnCameraPreviewStateChanged(object? sender, CameraSelectedEventArgs e)
+        {
+            try
+            {
+                await _cameraService.PreviewCameraAsync(e.CameraName);
+                // Start streaming in background safely
+                _ = _cameraService.StartStreamingAsync(
+                    HandleFrame,
+                    GetSafePictureBoxSize)
+                    .ContinueWith(t =>
+                    {
+                        if (t.Exception != null)
+                            Debug.WriteLine(t.Exception.Flatten());
+                    }, TaskContinuationOptions.OnlyOnFaulted);
+            }
+            catch (OperationCanceledException)
+            {
+                // expected on shutdown
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine(ex);
+            }
+        }
+
+        private async void OnLoadCamerasRequested(object? sender, EventArgs e)
+        {
+            var config = await _cameraService.LoadCameraConfigAsync();
+            var cameras = _cameraService.GetCameras();
+            _view.InvokeOnUI(() =>
+            {
+                if (cameras != null && cameras.Any())
+                {
+                    var cameraResolution = _cameraService.GetCameraResolutions().Keys.ToList();
+                    _view.SetCameraList(cameras);
+                    _view.SetCameraResolutions(cameraResolution);
+
+                    if (config != null)
+                    {
+                        _view.SelectCamera(config.Name, config.Resolution, config.Focus);
+                    }
+                }
+                else
+                {
+                    _view.SetCameraResolutions(null);
+                    _view.SetCameraList(null);
+                }
+            });
+        }
+
 
         private void OnFocuseValueChanged(object? sender, int e)
         {
             _cameraService.SetFocus(e);
         }
-
-        private void OnBarcodeStatusChanged(object? sender, BarcodeStatusEventArgs e)
-        {
-            _view.InvokeOnUI(() => _view.ShowBarcodeStatus(e.Message, e.IsError));
-        }
-
-        private void OnPrinterStateChanged(object? sender, PrinterStateChangedEventArgs e)
-        {
-            _view.InvokeOnUI(() => _view.ShowPrinterStatus(e.Message));
-        }
-
-        private void OnOCRCompleted(object? sender, OCRCompletedEventArgs e)
-        {
-            _view.InvokeOnUI(() => _view.ShowOCRResult(e.Result, e.Message, e.Success));
-        }
-
         private void OnOCRRegionDetected(object? sender, OCRRegionEventArgs e)
         {
             var region = e.Region;
             _view?.InvokeOnUI(() => _view.ShowOCRRegion(region));
         }
-
-        private void OnCameraStatusChanged(object? sender, CameraStatusEventArgs e)
-        {
-            _view.InvokeOnUI(() => _view.ShowCameraStatus(e.StatusMessage, e.IsError));
-        }
-
         private async void OnSaveCalibrationClicked(object? sender, CalibrationEventArgs e)
         {
             if (e.ImageSize.IsEmpty)
@@ -198,57 +273,20 @@ namespace LASYS.DesktopApp.Presenters
                 }
 
                 await Task.WhenAll(tasks);
-                _view.InvokeOnUI(() => _view.DisplayOCRResult($"Parallel stress complete. Count: {ocrResults.Count}"));
+                _view.InvokeOnUI(() => _view.DisplayOCRResult($"Stress test completed. Text detected: {ocrResults.Count}"));
 
             }
             finally
             {
                 _ocrLock.Release();
             }
-            //var tasks = Enumerable.Range(0, 50).Select(async _ =>
-            //{
-            //    var snapshot = _cameraService.GetSnapshot();
-            //    if (snapshot == null) return;
-
-            //   var result = await _ocrService.ReadTextAsync(snapshot, _view.PictureBoxSize, e.X, e.Y, e.Width, e.Height, e.ImageWidth, e.ImageHeight);
-            //    if (!string.IsNullOrWhiteSpace(result))
-            //    {
-            //        _ocrResults.Add(result);
-            //        var count = Interlocked.Increment(ref _ocrCounter);
-
-            //        Debug.WriteLine(
-            //            $"[{count}] {DateTime.Now:HH:mm:ss.fff} | OCR: {result}");
-            //        await Task.Delay(500);
-            //    }
-            //});
-            //await Task.WhenAll(tasks);
-            //Debug.WriteLine($"Parallel stress complete. Count: {ocrResults.Count}");
-
-
-            //var snapshot = _cameraService.GetSnapshot();
-            //if (snapshot == null) return;
-
-            //await _ocrService.ReadTextAsync(snapshot, _view.PictureBoxSize, e.X, e.Y, e.Width, e.Height, e.ImageWidth, e.ImageHeight);
+         
         }
 
         private async void OnLoadRegisteredOcrItemsRequested(object? sender, EventArgs e)
         {
             var config = await _calibrationService.LoadAsync();
             _view?.InvokeOnUI(() => _view.DisplayRegisteredOcrItems(config));
-        }
-        private void OnCameraDeviceConnected(object? sender, EventArgs e)
-        {
-            _view?.InvokeOnUI(() =>
-            {
-                _view.SetReconnectCameraButtonVisibility(false);
-            });
-        }
-        private void OnCameraDeviceDisconnected(object? sender, EventArgs e)
-        {
-            _view?.InvokeOnUI(() =>
-            {
-                _view.SetReconnectCameraButtonVisibility(true);
-            });
         }
 
         private DrawingSize GetSafePictureBoxSize()
@@ -268,7 +306,7 @@ namespace LASYS.DesktopApp.Presenters
             bitmap.Dispose(); // free temporary bitmap
 
         }
-        private async void OnInitializeRequested(object? sender, EventArgs e)
+        private void OnInitializeRequested(object? sender, EventArgs e)
         {
             try
             {
@@ -282,9 +320,6 @@ namespace LASYS.DesktopApp.Presenters
                             Debug.WriteLine(t.Exception.Flatten());
                     }, TaskContinuationOptions.OnlyOnFaulted);
 
-
-                await _printerService.InitializeAsync();
-                await _barcodeService.InitializeAsync();
             }
             catch (OperationCanceledException)
             {
@@ -295,30 +330,6 @@ namespace LASYS.DesktopApp.Presenters
                 Debug.WriteLine(ex);
             }
         }
-        private async void OnReconnectCameraRequested(object? sender, EventArgs e)
-        {
-            try
-            {
-                await _cameraService.InitializeAsync();
-                // Start streaming in background safely
-                _ = _cameraService.StartStreamingAsync(
-                    HandleFrame,
-                    GetSafePictureBoxSize)
-                    .ContinueWith(t =>
-                    {
-                        if (t.Exception != null)
-                            Debug.WriteLine(t.Exception.Flatten());
-                    }, TaskContinuationOptions.OnlyOnFaulted);
-            }
-            catch (OperationCanceledException)
-            {
-                // expected on shutdown
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine(ex);
-            }
-
-        }
+        
     }
 }

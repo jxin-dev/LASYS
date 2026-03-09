@@ -61,11 +61,17 @@ namespace LASYS.DesktopApp.Presenters
             try
             {
                 var config = await _cameraConfig.LoadAsync();
-                var camera = _cameraService.ResolveCamera(config);
+                var cameraIndex = _cameraService.GetCameraIndex(config.Name);
+                //var camera = _cameraService.ResolveCamera(config);
 
                 await _cameraService.InitializeAsync();
-                if (camera != null)
-                    _view?.UpdateProgress(15, $"Camera \"{camera.Name}\" connected successfully.");
+                //if (camera != null)
+                //    _view?.UpdateProgress(15, $"Camera \"{camera.Name}\" connected successfully.");
+
+                if (cameraIndex >= 0) 
+                {
+                    _view?.UpdateProgress(15, $"Camera \"{config.Name}\" connected successfully.");
+                }
                 await Task.Delay(2000);
             }
             catch (Exception ex)

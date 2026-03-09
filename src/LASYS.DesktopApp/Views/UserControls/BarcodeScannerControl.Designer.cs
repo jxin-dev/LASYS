@@ -1,6 +1,6 @@
 ﻿namespace LASYS.DesktopApp.Views.UserControls
 {
-    partial class BarcodeDeviceSetupControl
+    partial class BarcodeScannerControl
     {
         /// <summary> 
         /// Required designer variable.

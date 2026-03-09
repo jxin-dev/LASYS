@@ -4,30 +4,15 @@ using DrawingSize = System.Drawing.Size;
 
 namespace LASYS.DesktopApp.Views.Interfaces
 {
-    public interface IOCRCalibrationView
+    public interface IVisionSettingsView
     {
-
-        event EventHandler ReconnectCameraRequested;
         event EventHandler InitializeRequested;
-
-
-        void SetReconnectCameraButtonVisibility(bool isVisible);
-
         DrawingSize PictureBoxSize { get; }
         void InvokeOnUI(Action action);
-        void ShowCameraStatus(string message, bool isError = false);
-        void ShowPrinterStatus(string message);
-        void ShowBarcodeStatus(string message, bool isError = false);
-
-
         void ShowOCRRegion(Rectangle viewerRegion);
-
-        void ShowOCRResult(string result, string msg, bool isSuccess = true);
-
+        void PreviewOCRRegion(Rectangle viewerRegion);
         void DisplayOCRResult(string result);
-
         void DisplayFrame(Bitmap bitmap);
-
 
         event EventHandler<int> FocusValueChanged;
         event EventHandler<CalibrationEventArgs> SaveCalibrationClicked;
@@ -36,10 +21,21 @@ namespace LASYS.DesktopApp.Views.Interfaces
 
         event EventHandler<OCRCoordinatesEventArgs> OCRTriggered;
 
+        event EventHandler<OCRCoordinatesEventArgs> OCRCalibrationPreview;
+
         event EventHandler LoadRegisteredOcrItemsRequested;
         void DisplayRegisteredOcrItems(OCRConfig config);
         void UpdateCoordinateFields(Rectangle imageRegion, DrawingSize imageSize);
+        bool AskRestartConfirmation(string message, string title = "Restart Required");
+        void SetCameraList(IEnumerable<string>? cameras);
+        void SetCameraResolutions(IEnumerable<string>? resolution);
+        CameraInfo? SelectedCamera { get; }
+        event EventHandler<CameraSelectedEventArgs> CameraPreviewStateChanged;
+        event EventHandler<CameraSavedEventArgs> CameraConfigurationSaved;
+        event EventHandler LoadCamerasRequested;
+        event EventHandler<string> CameraResolutionSelected;
 
-
+        void SelectCamera(string cameraName, string resolution, int focus);
+        void ShowCameraNotification(string message, string caption, bool isError = false);
     }
 }

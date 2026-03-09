@@ -2,11 +2,11 @@
 {
     public class CameraSelectedEventArgs : EventArgs
     {
-        public int CameraIndex { get; }
+        public string CameraName { get; }
 
-        public CameraSelectedEventArgs(int cameraIndex)
+        public CameraSelectedEventArgs(string cameraName)
         {
-            CameraIndex = cameraIndex;
+            CameraName = cameraName;
         }
     }
 

@@ -1,14 +1,12 @@
-﻿using System.Drawing.Drawing2D;
-using System.Reflection;
+﻿using System.Reflection;
 using LASYS.Application.Contracts;
 using LASYS.DesktopApp.Events;
 using LASYS.DesktopApp.Views.Interfaces;
 using LASYS.UIControls.Controls;
-using OpenCvSharp.Internal.Vectors;
 
 namespace LASYS.DesktopApp.Views.UserControls
 {
-    public partial class OCRCalibrationControl : UserControl, IOCRCalibrationView
+    public partial class VisionSettingsControl : UserControl, IVisionSettingsView
     {
         private readonly DraggableResizerPanel _resizablePanel;
 
@@ -24,13 +22,6 @@ namespace LASYS.DesktopApp.Views.UserControls
 
         private RichTextBox? _richTextOCRResult;
 
-        private Label? _lblCameraStatus;
-        private Button? _btnReconnectCamera;
-
-        private Label? _lblScannerStatus;
-        private Label? _lblPrinterStatus;
-        private Label? _lblOcrStatus;
-
         private CheckBox? _focusCheckBox;
         private Label? _focusLevelLabel;
 
@@ -39,8 +30,14 @@ namespace LASYS.DesktopApp.Views.UserControls
         private Label? _focusValueLabel;
 
 
+        private ComboBox? _cameraSelectionComboBox;
+        private ComboBox? _cameraResolutionComboBox;
+
+
         private Bitmap? _currentFrame;
         public Size PictureBoxSize => picCameraPreview.Size;
+
+        public CameraInfo? SelectedCamera => _cameraSelectionComboBox?.SelectedItem as CameraInfo;
 
         //Calibration region
         public event EventHandler<ImageRegionEventArgs>? ComputeImageRegionRequested;
@@ -48,22 +45,28 @@ namespace LASYS.DesktopApp.Views.UserControls
 
 
         // Events
-        public event EventHandler? ReconnectCameraRequested;
         public event EventHandler? LoadRegisteredOcrItemsRequested;
         public event EventHandler? InitializeRequested;
         public event EventHandler<OCRCoordinatesEventArgs>? OCRTriggered;
         public event EventHandler<int>? FocusValueChanged;
+
+        public event EventHandler<CameraSelectedEventArgs>? CameraPreviewStateChanged;
+        public event EventHandler<CameraSavedEventArgs>? CameraConfigurationSaved;
+        public event EventHandler? LoadCamerasRequested;
+        public event EventHandler<string>? CameraResolutionSelected;
+        public event EventHandler<OCRCoordinatesEventArgs>? OCRCalibrationPreview;
 
         private Rectangle _roi;
         private Point _startPoint;
         private bool _drawing = false;
         private bool _canDraw = true;
         private Rectangle? _ocrViewerRegion;
+        private Rectangle? _ocrPreviewRegion;
 
         private NormalizedRect? _normalizedRegion;
         private Button btnSaveCalibration = new();
         private Button btnCancelCalibration = new();
-        public OCRCalibrationControl()
+        public VisionSettingsControl()
         {
             InitializeComponent();
             DoubleBuffered = true;
@@ -87,18 +90,16 @@ namespace LASYS.DesktopApp.Views.UserControls
 
             LoadRegisteredItem();
 
-            CalibrationSetup();
+            OCRRegionCalibration();
 
-            SystemDevices();
+            //SystemDevices();
 
             Load += delegate
             {
                 BeginInvoke(() =>
                 {
-                    _resizablePanel.ShowTab("System Devices");
+                    _resizablePanel.ShowTab("Camera Settings");
                     InitializeRequested?.Invoke(this, EventArgs.Empty); // start streaming immediately on load
-
-
                 });
             };
 
@@ -106,6 +107,9 @@ namespace LASYS.DesktopApp.Views.UserControls
             picCameraPreview.MouseDown += (sender, e) =>
             {
                 if (!_canDraw) return;
+
+                _ocrPreviewRegion = null;
+                picCameraPreview.Invalidate();
 
                 _drawing = true;
                 _startPoint = e.Location;
@@ -116,13 +120,22 @@ namespace LASYS.DesktopApp.Views.UserControls
             {
                 if (_drawing && _canDraw)
                 {
-                    int x = Math.Min(e.X, _startPoint.X);
-                    int y = Math.Min(e.Y, _startPoint.Y);
-                    int width = Math.Abs(e.X - _startPoint.X);
-                    int height = Math.Abs(e.Y - _startPoint.Y);
+                    int maxX = picCameraPreview.Width - 1;
+                    int maxY = picCameraPreview.Height - 1;
+
+                    int mouseX = Math.Max(0, Math.Min(e.X, maxX));
+                    int mouseY = Math.Max(0, Math.Min(e.Y, maxY));
+
+                    int x = Math.Min(mouseX, _startPoint.X);
+                    int y = Math.Min(mouseY, _startPoint.Y);
+                    int width = Math.Abs(mouseX - _startPoint.X);
+                    int height = Math.Abs(mouseY - _startPoint.Y);
+
                     _roi = new Rectangle(x, y, width, height);
+
                     _normalizedRegion = NormalizedRect.FromAbsolute(_roi, picCameraPreview.Size);
-                    picCameraPreview.Invalidate(); // Triggers Paint event to redraw
+
+                    picCameraPreview.Invalidate();
                 }
             };
             picCameraPreview.MouseUp += (sender, e) =>
@@ -143,7 +156,8 @@ namespace LASYS.DesktopApp.Views.UserControls
                         Font = new Font("Segoe UI", 7, FontStyle.Regular),
                         TextAlign = ContentAlignment.MiddleCenter,
                         BackColor = Color.ForestGreen,
-                        ForeColor = Color.WhiteSmoke
+                        ForeColor = Color.WhiteSmoke,
+                        Cursor = Cursors.Hand
                     };
                     btnSaveCalibration.FlatAppearance.BorderSize = 0;
 
@@ -161,7 +175,8 @@ namespace LASYS.DesktopApp.Views.UserControls
                         TextAlign = ContentAlignment.MiddleCenter,
                         FlatStyle = FlatStyle.Flat,
                         BackColor = Color.DarkRed,
-                        ForeColor = Color.WhiteSmoke
+                        ForeColor = Color.WhiteSmoke,
+                        Cursor = Cursors.Hand
                     };
                     btnCancelCalibration.FlatAppearance.BorderSize = 0;
 
@@ -177,19 +192,22 @@ namespace LASYS.DesktopApp.Views.UserControls
                         _normalizedRegion = null;
                     };
 
+                    // ---- POSITION BUTTONS ----
+                    int offset = 21;
 
+                    int buttonY = (_roi.Top - offset < 0)
+                        ? _roi.Bottom + 2     // place below ROI if near top
+                        : _roi.Top - offset;  // place above ROI
 
-                    Point regionScreen = picCameraPreview.PointToScreen(new Point(_roi.Left, _roi.Top));
-                    Point regionPictureBox = picCameraPreview.PointToClient(regionScreen);
-                    btnSaveCalibration.Location = new Point(regionPictureBox.X, regionPictureBox.Y - 21);
-                    btnCancelCalibration.Location = new Point(regionPictureBox.X + 21, regionPictureBox.Y - 21);
-
+                    btnSaveCalibration.Location = new Point(_roi.Left, buttonY);
+                    btnCancelCalibration.Location = new Point(_roi.Left + 21, buttonY);
 
                     picCameraPreview.Controls.Add(btnSaveCalibration);
                     picCameraPreview.Controls.Add(btnCancelCalibration);
 
                     btnSaveCalibration.BringToFront();
                     btnCancelCalibration.BringToFront();
+
                 }
             };
             picCameraPreview.Paint += (sender, e) =>
@@ -199,6 +217,13 @@ namespace LASYS.DesktopApp.Views.UserControls
                     using var pen = new Pen(Color.LimeGreen, 2);
                     e.Graphics.DrawRectangle(pen, _ocrViewerRegion.Value);
                 }
+
+                if (_ocrPreviewRegion.HasValue)
+                {
+                    using var pen = new Pen(SystemColors.HotTrack, 2);
+                    e.Graphics.DrawRectangle(pen, _ocrPreviewRegion.Value);
+                }
+                
 
                 if (_normalizedRegion != null)
                 {
@@ -259,9 +284,7 @@ namespace LASYS.DesktopApp.Views.UserControls
             {
                 if (e is Product data)
                 {
-                    //MessageBox.Show($"Item Code: {data.ItemCode}");
-
-                    OCRTriggered?.Invoke(this, new OCRCoordinatesEventArgs(data.Coordinates.X,
+                    OCRCalibrationPreview?.Invoke(this, new OCRCoordinatesEventArgs(data.Coordinates.X,
                                                                       data.Coordinates.Y,
                                                                       data.Coordinates.Width,
                                                                       data.Coordinates.Height,
@@ -272,9 +295,6 @@ namespace LASYS.DesktopApp.Views.UserControls
 
             container.Controls.Add(_gridWithPagination);
 
-            // Initial load
-            //await ReloadRegisteredItemsAsync();
-
         }
 
         public void RaiseLoadRegisteredOcrItemsRequested()
@@ -282,7 +302,11 @@ namespace LASYS.DesktopApp.Views.UserControls
             LoadRegisteredOcrItemsRequested?.Invoke(this, EventArgs.Empty);
         }
 
-
+        protected override void OnLoad(EventArgs e)
+        {
+            base.OnLoad(e);
+            LoadCamerasRequested?.Invoke(this, EventArgs.Empty);
+        }
 
         private void CameraSettings()
         {
@@ -319,7 +343,7 @@ namespace LASYS.DesktopApp.Views.UserControls
 
             var instructionLabel = new Label
             {
-                Text = "Select your preferred camera from the list below, choose the desired resolution,\r\nand click 'Save' to store your configuration.\r\n",
+                Text = "Select your camera from the list, choose the desired resolution, adjust the focus if needed, \nthen click Save Configuration to apply the settings.",
                 Font = new Font("Segoe UI", 9, FontStyle.Regular),
                 Dock = DockStyle.Fill,
                 AutoSize = true,
@@ -330,13 +354,14 @@ namespace LASYS.DesktopApp.Views.UserControls
 
             var cameraSettingPanel = new TableLayoutPanel
             {
-                ColumnCount = 2,
+                ColumnCount = 3,
                 RowCount = 4,
                 AutoSize = true,
                 Dock = DockStyle.Top,
                 //CellBorderStyle = TableLayoutPanelCellBorderStyle.Single
             };
-            cameraSettingPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 140));
+            cameraSettingPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 100));
+            cameraSettingPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 255));
             cameraSettingPanel.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
 
             layout.Controls.Add(cameraSettingPanel, 0, 2);
@@ -350,14 +375,39 @@ namespace LASYS.DesktopApp.Views.UserControls
             };
             cameraSettingPanel.Controls.Add(cameraSelectionLabel, 0, 0);
 
-            var cameraSelectionComboBox = new ComboBox
+            _cameraSelectionComboBox = new ComboBox
             {
                 AutoSize = true,
                 Width = 250,
                 DropDownStyle = ComboBoxStyle.DropDownList
             };
-            cameraSettingPanel.Controls.Add(cameraSelectionComboBox, 1, 0);
 
+            _cameraSelectionComboBox.SelectionChangeCommitted += (sender, e) =>
+            {
+                if (_cameraSelectionComboBox.SelectedItem is string cameraName)
+                {
+                    CameraPreviewStateChanged?.Invoke(this, new CameraSelectedEventArgs(cameraName));
+                }
+            };
+
+            cameraSettingPanel.Controls.Add(_cameraSelectionComboBox, 1, 0);
+
+            var refreshButton = new Button
+            {
+                FlatStyle = FlatStyle.Flat,
+                Width = 25,
+                Height = 24,
+                BackColor = Color.DarkSlateGray,
+                FlatAppearance = { BorderSize = 0 },
+                ImageAlign = ContentAlignment.MiddleCenter,
+                Image = Properties.Resources.refresh_24
+            };
+            refreshButton.Click += (sender, e) =>
+            {
+                LoadCamerasRequested?.Invoke(this, EventArgs.Empty);
+            };
+
+            cameraSettingPanel.Controls.Add(refreshButton, 2, 0);
 
             var cameraResolutionLabel = new Label
             {
@@ -368,17 +418,23 @@ namespace LASYS.DesktopApp.Views.UserControls
             };
             cameraSettingPanel.Controls.Add(cameraResolutionLabel, 0, 1);
 
-            var cameraResolutionComboBox = new ComboBox
+            _cameraResolutionComboBox = new ComboBox
             {
                 AutoSize = true,
                 Width = 250,
                 DropDownStyle = ComboBoxStyle.DropDownList
             };
-            cameraSettingPanel.Controls.Add(cameraResolutionComboBox, 1, 1);
+
+            _cameraResolutionComboBox.SelectedIndexChanged += (sender, e) => 
+            {
+                CameraResolutionSelected?.Invoke(this, _cameraResolutionComboBox.Text);
+            };
+
+            cameraSettingPanel.Controls.Add(_cameraResolutionComboBox, 1, 1);
 
             _focusCheckBox = new CheckBox
             {
-                Text = "Manual Focus:",
+                Text = "Focus:",
                 AutoSize = true,
                 Checked = true,
                 CheckAlign = ContentAlignment.MiddleRight,
@@ -391,7 +447,7 @@ namespace LASYS.DesktopApp.Views.UserControls
                 Text = "0",
                 AutoSize = true,
                 Font = new Font("Segoe UI", 12, FontStyle.Bold),
-                Margin = new Padding(5, 0, 0, 0)
+                Margin = new Padding(0, 0, 0, 0)
             };
             cameraSettingPanel.Controls.Add(_focusLevelLabel, 1, 2);
 
@@ -401,27 +457,60 @@ namespace LASYS.DesktopApp.Views.UserControls
                 Font = new Font("Segoe UI Semibold,", 9),
                 FlatStyle = FlatStyle.Flat,
                 AutoSize = true,
-                Dock = DockStyle.Fill,
                 Height = 36,
+                Width = 160,
                 ForeColor = Color.White,
                 BackColor = SystemColors.HotTrack,
                 Margin = new Padding(0, 5, 0, 0)
             };
 
+            saveButton.Click += (sender, e) =>
+            {
+                if (_cameraResolutionComboBox.SelectedItem == null)
+                {
+                    MessageBox.Show(
+                        "Please select a camera.",
+                        "Camera Selection",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Exclamation);
+                    return;
+                }
+                if (_cameraResolutionComboBox.SelectedItem == null)
+                {
+                    MessageBox.Show("Please select a resolution.", "Camera Configuration", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+                    return;
+                }
+                if (_cameraSelectionComboBox.SelectedItem is string cameraName)
+                {
+                    CameraConfigurationSaved?.Invoke(this, new CameraSavedEventArgs(_cameraResolutionComboBox.SelectedIndex, cameraName, _cameraResolutionComboBox.Text, _focusCheckBox.Checked ? _focusSlider!.Value : 0));
+                }
+            };
+
             cameraSettingPanel.Controls.Add(saveButton, 0, 3);
+            cameraSettingPanel.SetColumnSpan(saveButton, 2);
+
 
             InitializeFocusOverlay();
 
 
             _focusCheckBox.CheckedChanged += (s, e) =>
             {
-                _focusOverlay!.Visible = _focusCheckBox.Checked;
-                if (!_focusCheckBox.Checked)
-                    _focusLevelLabel.Text = "0";
-                else
-                    _focusLevelLabel.Text = _focusSlider?.Value.ToString();
+                bool manual = _focusCheckBox.Checked;
 
+                _focusSlider!.Enabled = manual;
+                _focusOverlay!.Visible = manual;
+
+                if (manual)
+                {
+                    UpdateFocusUI(_focusSlider.Value == 0 ? 1 : _focusSlider.Value);
+                }
+                else
+                {
+                    _focusLevelLabel!.Text = "Auto";
+                    FocusValueChanged?.Invoke(this, 0); // 0 = auto focus
+                }
             };
+
         }
         private void InitializeFocusOverlay()
         {
@@ -430,7 +519,8 @@ namespace LASYS.DesktopApp.Views.UserControls
             {
                 Width = 280,
                 Height = 44,
-                BackColor = Color.FromArgb(160, 25, 25, 25)
+                BackColor = Color.FromArgb(160, 25, 25, 25),
+                Visible = false
             };
 
             _focusOverlay.DoubleBuffered(true);
@@ -457,7 +547,7 @@ namespace LASYS.DesktopApp.Views.UserControls
                 Value = 120
             };
 
-          
+
             // Value badge
             _focusValueLabel = new Label
             {
@@ -474,12 +564,7 @@ namespace LASYS.DesktopApp.Views.UserControls
 
             _focusSlider.Scroll += (s, e) =>
             {
-                int value = _focusSlider.Value;
-                _focusValueLabel.Text = value.ToString();
-                FocusValueChanged?.Invoke(this, value);
-
-                _focusValueLabel.Text = value.ToString();
-                _focusLevelLabel!.Text = value.ToString();
+                UpdateFocusUI(_focusSlider.Value);
 
             };
             sliderContainer.Controls.Add(_focusSlider);
@@ -503,7 +588,7 @@ namespace LASYS.DesktopApp.Views.UserControls
 
             picCameraPreview.Resize += (s, e) => CenterOverlay();
 
-            
+
         }
 
         private void CenterOverlay()
@@ -516,7 +601,7 @@ namespace LASYS.DesktopApp.Views.UserControls
             _focusOverlay.Top = 10;
         }
 
-        private void CalibrationSetup()
+        private void OCRRegionCalibration()
         {
             var container = new Panel
             {
@@ -525,11 +610,11 @@ namespace LASYS.DesktopApp.Views.UserControls
                 Padding = new Padding(15)
             };
 
-            _resizablePanel.AddTab("Calibration Setup", container);
+            _resizablePanel.AddTab("OCR Region Calibration", container);
 
             var titleLabel = new Label
             {
-                Text = "OCR Calibration Setup",
+                Text = "OCR Region Calibration",
                 Font = new Font("Segoe UI", 14, FontStyle.Bold),
                 Dock = DockStyle.Top,
                 Height = 40,
@@ -659,25 +744,36 @@ namespace LASYS.DesktopApp.Views.UserControls
             layout.Controls.Add(buttonPanel, 0, 2);
 
             // Save button
-            var btnSave = new Button
+            var btnSaveRegion = new Button
             {
-                Text = "Save Calibration",
-                Width = 160,
+                Text = "Save Region",
+                Width = 120,
                 Height = 35,
+                Font = new Font("Segoe UI Semibold,", 9),
+                FlatStyle = FlatStyle.Flat,
+                AutoSize = true,
+                ForeColor = Color.White,
+                BackColor = SystemColors.HotTrack
+
             };
-            buttonPanel.Controls.Add(btnSave, 0, 0);
+            buttonPanel.Controls.Add(btnSaveRegion, 0, 0);
 
             // OCR Read button
             var btnTestOcr = new Button
             {
-                Text = "OCR Read",
+                Text = "Test OCR",
                 Width = 120,
                 Height = 35,
+                Font = new Font("Segoe UI Semibold,", 9),
+                FlatStyle = FlatStyle.Flat,
+                AutoSize = true,
+                ForeColor = Color.White,
+                BackColor = SystemColors.HotTrack
             };
             buttonPanel.Controls.Add(btnTestOcr, 1, 0);
 
 
-            btnSave.Click += delegate
+            btnSaveRegion.Click += delegate
             {
                 SaveCalibrationClicked?.Invoke(this, new CalibrationEventArgs(_roi, picCameraPreview.Size, picCameraPreview.Image?.Size ?? Size.Empty, _txtItemCode.Text.Trim()));
             };
@@ -697,144 +793,6 @@ namespace LASYS.DesktopApp.Views.UserControls
             };
         }
 
-        private void SystemDevices()
-        {
-            var container = new Panel
-            {
-                Dock = DockStyle.Fill,
-                AutoSize = true,
-                Padding = new Padding(15)
-            };
-            _resizablePanel.AddTab("System Devices", container);
-
-            var titleLabel = new Label
-            {
-                Text = "System Devices",
-                Font = new Font("Segoe UI", 14, FontStyle.Bold),
-                Dock = DockStyle.Top,
-                Height = 40,
-                TextAlign = ContentAlignment.MiddleLeft
-            };
-
-
-            var table = new TableLayoutPanel
-            {
-                Dock = DockStyle.Top,
-                AutoSize = true,
-                ColumnCount = 3,
-                RowCount = 4,
-                //CellBorderStyle = TableLayoutPanelCellBorderStyle.Inset
-            };
-
-            table.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
-            table.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
-            table.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-
-            // --- Camera ---
-            var lblCameraTitle = new Label
-            {
-                Text = "Camera:",
-                AutoSize = true,
-                Font = new Font("Segoe UI", 9F, FontStyle.Bold),
-                Padding = new Padding(0, 12, 6, 12),
-                Dock = DockStyle.Fill,
-                TextAlign = ContentAlignment.MiddleLeft
-            };
-
-            _lblCameraStatus = new Label
-            {
-                Text = "Not connected",
-                AutoSize = true,
-                ForeColor = Color.Gray,
-                Dock = DockStyle.Fill,
-                TextAlign = ContentAlignment.MiddleLeft,
-                Padding = new Padding(0, 12, 0, 12)
-            };
-
-            _btnReconnectCamera = new Button
-            {
-                Text = "Reconnect",
-                AutoSize = true,
-                Padding = new Padding(6, 3, 6, 3),
-                Visible = false
-            };
-
-            _btnReconnectCamera.Click += delegate
-            {
-                SetReconnectCameraButtonVisibility(false);
-                ReconnectCameraRequested?.Invoke(this, EventArgs.Empty);
-            };
-
-
-            // --- Scanner ---
-            var lblScannerTitle = new Label
-            {
-                Text = "Scanner:",
-                AutoSize = true,
-                Font = new Font("Segoe UI", 9F, FontStyle.Bold),
-                Padding = new Padding(0, 12, 6, 12),
-            };
-
-            _lblScannerStatus = new Label
-            {
-                Text = "Not detected",
-                AutoSize = true,
-                ForeColor = Color.Gray,
-                Padding = new Padding(0, 12, 0, 12)
-            };
-
-            // --- Printer ---
-            var lblPrinterTitle = new Label
-            {
-                Text = "Printer:",
-                AutoSize = true,
-                Font = new Font("Segoe UI", 9F, FontStyle.Bold),
-                Padding = new Padding(0, 12, 6, 12),
-            };
-
-            _lblPrinterStatus = new Label
-            {
-                Text = "Not detected",
-                AutoSize = true,
-                ForeColor = Color.Gray,
-                Padding = new Padding(0, 12, 0, 12)
-            };
-
-            // --- OCR ---
-            var lblOcrTitle = new Label
-            {
-                Text = "OCR:",
-                AutoSize = true,
-                Font = new Font("Segoe UI", 9F, FontStyle.Bold),
-                Padding = new Padding(0, 12, 6, 12),
-            };
-
-            _lblOcrStatus = new Label
-            {
-                Text = "Not ready",
-                AutoSize = true,
-                ForeColor = Color.Gray,
-                Padding = new Padding(0, 12, 0, 12),
-            };
-
-            // Add controls to table
-            table.Controls.Add(lblCameraTitle, 0, 0);
-            table.Controls.Add(_lblCameraStatus, 1, 0);
-            table.Controls.Add(_btnReconnectCamera, 2, 0);
-
-
-            table.Controls.Add(lblScannerTitle, 0, 1);
-            table.Controls.Add(_lblScannerStatus, 1, 1);
-
-            table.Controls.Add(lblPrinterTitle, 0, 2);
-            table.Controls.Add(_lblPrinterStatus, 1, 2);
-
-            table.Controls.Add(lblOcrTitle, 0, 3);
-            table.Controls.Add(_lblOcrStatus, 1, 3);
-
-            container.Controls.Add(table);
-            container.Controls.Add(titleLabel);
-        }
         public void UpdateCoordinateFields(Rectangle imageRegion, Size imageSize)
         {
             _normalizedRegion = null;
@@ -852,7 +810,7 @@ namespace LASYS.DesktopApp.Views.UserControls
             _txtHeight!.Text = imageRegion.Height.ToString();
             _txtImgWidth!.Text = imageSize.Width.ToString();
             _txtImgHeight!.Text = imageSize.Height.ToString();
-            _resizablePanel.ShowTab("Calibration Setup");
+            _resizablePanel.ShowTab("OCR Region Calibration");
 
             _txtItemCode?.Focus();
         }
@@ -876,19 +834,14 @@ namespace LASYS.DesktopApp.Views.UserControls
             else
                 action();
         }
-        public void ShowCameraStatus(string message, bool isError = false)
-        {
-            if (isError)
-                _lblCameraStatus!.ForeColor = Color.Crimson;
-            else
-                _lblCameraStatus!.ForeColor = Color.ForestGreen;
-
-            _lblCameraStatus!.Text = message;
-        }
-
         public void ShowOCRRegion(Rectangle viewerRegion)
         {
             _ocrViewerRegion = viewerRegion;
+        }
+
+        public void PreviewOCRRegion(Rectangle viewerRegion)
+        {
+            _ocrPreviewRegion = viewerRegion;
         }
 
         public void DisplayFrame(Bitmap bitmap)
@@ -912,10 +865,10 @@ namespace LASYS.DesktopApp.Views.UserControls
             picCameraPreview.Image = _currentFrame;
         }
 
-        public void SetReconnectCameraButtonVisibility(bool isVisible)
-        {
-            _btnReconnectCamera!.Visible = isVisible;
-        }
+        //public void SetReconnectCameraButtonVisibility(bool isVisible)
+        //{
+        //    _btnReconnectCamera!.Visible = isVisible;
+        //}
 
         public void FinishCalibration(string message, bool isError = false)
         {
@@ -959,41 +912,79 @@ namespace LASYS.DesktopApp.Views.UserControls
             ]);
         }
 
-        public void ShowOCRResult(string result, string msg, bool isSuccess = true)
-        {
-            if (isSuccess)
-                _lblOcrStatus!.ForeColor = Color.ForestGreen;
-            else
-                _lblOcrStatus!.ForeColor = Color.Crimson;
-
-            _lblOcrStatus!.Text = msg;
-
-            //if (string.IsNullOrEmpty(result))
-            //    MessageBox.Show("No text detected", "OCR Result", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-            //else
-            //    MessageBox.Show($"Detected: {result}", "OCR Result", MessageBoxButtons.OK, MessageBoxIcon.Information);
-
-            _ocrViewerRegion = null;
-            picCameraPreview.Invalidate();
-        }
-
-        public void ShowPrinterStatus(string message)
-        {
-            _lblPrinterStatus!.ForeColor = Color.ForestGreen;
-            _lblPrinterStatus!.Text = message;
-        }
-
-        public void ShowBarcodeStatus(string message, bool isError = false)
-        {
-            _lblScannerStatus!.ForeColor = isError ? Color.Crimson : Color.ForestGreen;
-            _lblScannerStatus!.Text = message;
-        }
-
         public void DisplayOCRResult(string result)
         {
             _richTextOCRResult!.AppendText(result + Environment.NewLine);
             _richTextOCRResult.ScrollToCaret();
         }
+
+        public bool AskRestartConfirmation(string message, string title = "Restart Required")
+        {
+            throw new NotImplementedException();
+        }
+
+        public void SetCameraList(IEnumerable<string>? cameras)
+        {
+            _cameraSelectionComboBox!.Items.Clear();
+
+            if (cameras == null || !cameras.Any())
+                return;
+            _cameraSelectionComboBox?.Items.AddRange(cameras.ToArray());
+        }
+
+        public void SetCameraResolutions(IEnumerable<string>? resolution)
+        {
+            _cameraResolutionComboBox?.Items.Clear();
+
+            if (resolution == null || !resolution.Any()) return;
+            _cameraResolutionComboBox?.Items.AddRange(resolution.ToArray());
+        }
+
+        public void SelectCamera(string cameraName, string resolution, int focus)
+        {
+            // Camera selection
+            var index = _cameraSelectionComboBox!.FindStringExact(cameraName);
+            if (index >= 0)
+                _cameraSelectionComboBox.SelectedIndex = index;
+
+
+            // Resolution selection (this one is OK because it uses Items)
+            var resIndex = _cameraResolutionComboBox!.FindStringExact(resolution);
+            if (resIndex >= 0)
+                _cameraResolutionComboBox.SelectedIndex = resIndex;
+
+            UpdateFocusUI(focus);
+
+        }
+
+        private void UpdateFocusUI(int value)
+        {
+            _focusCheckBox!.Checked = value != 0;
+
+            value = Math.Max(_focusSlider!.Minimum,
+                    Math.Min(_focusSlider.Maximum, value));
+
+            _focusSlider.Value = value;
+
+            _focusValueLabel!.Text = value.ToString();
+
+            if (value == 0)
+                _focusLevelLabel!.Text = "Auto";
+            else
+                _focusLevelLabel!.Text = value.ToString();
+
+            FocusValueChanged?.Invoke(this, value);
+        }
+
+        public void ShowCameraNotification(string message, string caption, bool isError = false)
+        {
+            if(isError)
+                MessageBox.Show(message, caption, MessageBoxButtons.OK, MessageBoxIcon.Error);
+            else
+                MessageBox.Show(message, caption, MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+
+     
     }
 }
 public static class ControlExtensions

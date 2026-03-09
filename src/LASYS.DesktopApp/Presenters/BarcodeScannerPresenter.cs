@@ -6,13 +6,13 @@ using LASYS.DesktopApp.Views.Interfaces;
 
 namespace LASYS.DesktopApp.Presenters
 {
-    public class BarcodeDeviceSetupPresenter
+    public class BarcodeScannerPresenter
     {
         public UserControl View { get; }
-        private readonly IBarcodeDeviceSetupView _view;
+        private readonly IBarcodeScannerView _view;
         private readonly IBarcodeService _barcodeService;
 
-        public BarcodeDeviceSetupPresenter(IBarcodeDeviceSetupView view, IBarcodeService barcodeService)
+        public BarcodeScannerPresenter(IBarcodeScannerView view, IBarcodeService barcodeService)
         {
             _view = view;
             View = (UserControl)view;

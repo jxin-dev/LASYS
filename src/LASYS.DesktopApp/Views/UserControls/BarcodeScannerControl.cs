@@ -2,7 +2,7 @@
 
 namespace LASYS.DesktopApp.Views.UserControls
 {
-    public partial class BarcodeDeviceSetupControl : UserControl, IBarcodeDeviceSetupView
+    public partial class BarcodeScannerControl : UserControl, IBarcodeScannerView
     {
         public string USBPort => cbxPort.SelectedItem?.ToString() ?? string.Empty;
 
@@ -10,7 +10,7 @@ namespace LASYS.DesktopApp.Views.UserControls
         public event EventHandler? SaveClicked;
         public event EventHandler? SetManualModeClicked;
 
-        public BarcodeDeviceSetupControl()
+        public BarcodeScannerControl()
         {
             InitializeComponent();
             Load += delegate { LoadRequested?.Invoke(this, EventArgs.Empty); };

@@ -58,20 +58,14 @@ namespace LASYS.DesktopApp.Extensions
             services.AddTransient<ILabelPrintingView, LabelPrintingControl>();
             services.AddTransient<LabelPrintingPresenter>();
 
-            services.AddTransient<IWebCameraView, WebCameraControl>();
-            services.AddTransient<WebCameraPresenter>();
-
-            services.AddSingleton<IOCRCalibrationView, OCRCalibrationControl>();
-            services.AddSingleton<OCRCalibrationPresenter>();
+            services.AddSingleton<IVisionSettingsView, VisionSettingsControl>();
+            services.AddSingleton<VisionSettingsPresenter>();
 
             services.AddSingleton<IPrinterManagementView, PrinterManagementControl>();
             services.AddSingleton<PrinterManagementPresenter>();
 
-            services.AddSingleton<IBarcodeDeviceSetupView, BarcodeDeviceSetupControl>();
-            services.AddSingleton<BarcodeDeviceSetupPresenter>();
-
-            services.AddSingleton<IEndToEndTestView, EndToEndTestControl>();
-            services.AddSingleton<IEndToEndTestPresenter>();
+            services.AddSingleton<IBarcodeScannerView, BarcodeScannerControl>();
+            services.AddSingleton<BarcodeScannerPresenter>();
 
             // Services
 

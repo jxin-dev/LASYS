@@ -1,6 +1,6 @@
 ﻿namespace LASYS.DesktopApp.Views.UserControls
 {
-    partial class OCRCalibrationControl
+    partial class VisionSettingsControl
     {
         /// <summary> 
         /// Required designer variable.
@@ -54,9 +54,9 @@
             label1.ForeColor = Color.FromArgb(240, 84, 84);
             label1.Location = new Point(12, 8);
             label1.Name = "label1";
-            label1.Size = new Size(170, 30);
+            label1.Size = new Size(160, 30);
             label1.TabIndex = 0;
-            label1.Text = "OCR Calibration";
+            label1.Text = "Vision Settings";
             // 
             // pnlContent
             // 

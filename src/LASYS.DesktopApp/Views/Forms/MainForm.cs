@@ -10,11 +10,9 @@ namespace LASYS.DesktopApp.Views.Forms
         private readonly DoubleBufferedPanel _contentPanel;
 
         public event EventHandler? WorkOrderRequested;
-        public event EventHandler? WebCameraConfigurationRequested;
-        public event EventHandler? OCRCalibrationRequested;
+        public event EventHandler? VisionSettingsRequested;
         public event EventHandler? PrinterManagementRequested;
         public event EventHandler? BarcodeDeviceSetupRequested;
-        public event EventHandler? EndToEndTestRequested;
 
         public MainForm()
         {
@@ -52,42 +50,29 @@ namespace LASYS.DesktopApp.Views.Forms
         {
             // Define main menu items
             var workOrders = new NavItem { Text = "Work Orders" };
-            var deviceSetup = new NavItem { Text = "Settings" };
-            var endToEndTest = new NavItem { Text = "End-to-End Test" };
+            var deviceSetup = new NavItem { Text = "Device Settings" };
             var logOut = new NavItem { Text = "Log Out" };
             // Define sub-items
-            deviceSetup.SubItems.Add(new NavItem { Text = "Camera Configuration" });
-            deviceSetup.SubItems.Add(new NavItem { Text = "OCR Calibration" });
+            deviceSetup.SubItems.Add(new NavItem { Text = "Vision Settings" });
             deviceSetup.SubItems.Add(new NavItem { Text = "Printer Management" });
-            deviceSetup.SubItems.Add(new NavItem { Text = "Barcode Device Setup" });
+            deviceSetup.SubItems.Add(new NavItem { Text = "Barcode Scanner" });
             // Add to navigation
             _sideNav.AddItem(workOrders);
             _sideNav.AddItem(deviceSetup);
-            _sideNav.AddItem(endToEndTest);
+            //_sideNav.AddItem(endToEndTest);
             _sideNav.AddItem(logOut);
 
 
             workOrders.Clicked += delegate { WorkOrderRequested?.Invoke(this, EventArgs.Empty); };
 
-            deviceSetup.SubItems[0].Clicked += delegate { WebCameraConfigurationRequested?.Invoke(this, EventArgs.Empty); };
+            deviceSetup.SubItems[0].Clicked += delegate { VisionSettingsRequested?.Invoke(this, EventArgs.Empty); };
 
-            deviceSetup.SubItems[1].Clicked += delegate { OCRCalibrationRequested?.Invoke(this, EventArgs.Empty); };
+            deviceSetup.SubItems[1].Clicked += delegate { PrinterManagementRequested?.Invoke(this, EventArgs.Empty); };
 
-            deviceSetup.SubItems[2].Clicked += delegate { PrinterManagementRequested?.Invoke(this, EventArgs.Empty); };
+            deviceSetup.SubItems[2].Clicked += delegate { BarcodeDeviceSetupRequested?.Invoke(this, EventArgs.Empty); };
 
-            deviceSetup.SubItems[3].Clicked += delegate { BarcodeDeviceSetupRequested?.Invoke(this, EventArgs.Empty); };
-
-            endToEndTest.Clicked += delegate { EndToEndTestRequested?.Invoke(this, EventArgs.Empty); };
 
         }
-
-
-        private void ShowMessage(string message)
-        {
-            MessageBox.Show(message, "Navigation", MessageBoxButtons.OK, MessageBoxIcon.Information);
-        }
-
-
 
         protected override void OnLoad(EventArgs e)
         {
@@ -124,21 +109,6 @@ namespace LASYS.DesktopApp.Views.Forms
             _contentPanel.ResumeLayout();
             _contentPanel.Refresh();
 
-
-            //foreach (Control c in _contentPanel.Controls)
-            //{
-            //    if (c.GetType() == control.GetType())
-            //    {
-            //        // Already showing, do nothing
-            //        return;
-            //    }
-            //}
-            //_contentPanel.SuspendLayout();
-            //_contentPanel.Controls.Clear();
-            //control.Dock = DockStyle.Fill;
-            //_contentPanel.Controls.Add(control);
-            //_contentPanel.ResumeLayout();
-            //_contentPanel.Refresh();
         }
     }
 }

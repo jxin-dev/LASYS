@@ -14,7 +14,6 @@ namespace LASYS.Application.Interfaces
         event EventHandler CameraDisconnected;
         event EventHandler CameraConnected;
 
-        CameraInfo? ResolveCamera(CameraConfig config);
         Task InitializeAsync();
         Task StopAsync();
         Task StartStreamingAsync(Action<Mat, Bitmap> onFrameCaptured, Func<DrawingSize> getTargetResolution);
@@ -22,6 +21,22 @@ namespace LASYS.Application.Interfaces
         bool IsCameraReady();
         void SetFocus(int focusValue);
         bool IsStreaming { get; }
+
+        //
+        IReadOnlyList<string> GetCameras();
+        int GetCameraIndex(string cameraName);
+
+        // Configuration management
+        event EventHandler<CameraConfigEventArgs> CameraConfigIssue;
+        Task<CameraConfig> LoadCameraConfigAsync();
+        Task SaveCameraConfigAsync(CameraConfig config);
+        Dictionary<string, Resolution> GetCameraResolutions();
+        event EventHandler<CameraNotificationEventArgs> CameraNotification;
+        void RestartApplication();
+        void SetResolution(string resolution);
+
+        Task PreviewCameraAsync(string cameraName);
+
 
     }
 }

@@ -1,10 +1,11 @@
 ﻿using System.Diagnostics;
 using System.Drawing;
 using System.Text.RegularExpressions;
+using DirectShowLib;
 using LASYS.Application.Contracts;
 using LASYS.Application.Events;
 using LASYS.Application.Interfaces;
-using Newtonsoft.Json.Linq;
+using Newtonsoft.Json;
 using OpenCvSharp;
 using OpenCvSharp.Extensions;
 using DrawingSize = System.Drawing.Size;
@@ -13,12 +14,15 @@ namespace LASYS.Infrastructure.Camera
 {
     public class CameraService : ICameraService
     {
+        private readonly string _configPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "camera.config.json");
+        public event EventHandler<CameraConfigEventArgs>? CameraConfigIssue;
+
         public event EventHandler<CameraStatusEventArgs>? CameraStatusChanged;
         public event EventHandler? CameraDisconnected;
         public event EventHandler? CameraConnected;
+        public event EventHandler<CameraNotificationEventArgs>? CameraNotification;
 
         private readonly ICameraConfig _cameraConfig;
-        private readonly ICameraEnumerator _cameraEnumerator;
 
         private VideoCapture? _capture;
         private CameraConfig? _activeConfig;
@@ -40,11 +44,10 @@ namespace LASYS.Infrastructure.Camera
         private bool _isStreaming = false;
         public bool IsStreaming => _isStreaming;
 
-        public CameraService(ICameraConfig cameraConfig, ICameraEnumerator cameraEnumerator)
+        public CameraService(ICameraConfig cameraConfig)
         {
 
             _cameraConfig = cameraConfig;
-            _cameraEnumerator = cameraEnumerator;
 
             _cameraConfig.CameraConfigIssue += (s, e) =>
             {
@@ -62,23 +65,23 @@ namespace LASYS.Infrastructure.Camera
               new CameraStatusEventArgs("Initializing camera, please wait..."));
 
             await StopAsync();
-            _activeConfig = await _cameraConfig.LoadAsync();
+            _activeConfig = await LoadCameraConfigAsync();
             await OpenCameraAsync(_activeConfig);
         }
 
         // ----------------------------------------------------
         // Camera resolution
         // ----------------------------------------------------
-        public CameraInfo? ResolveCamera(CameraConfig config)
-        {
-            var cameras = _cameraEnumerator.GetCameras();
+        //public CameraInfo? ResolveCamera(CameraConfig config)
+        //{
+        //    var cameras = GetCameras();
 
-            return cameras.FirstOrDefault(c =>
-                       c.Index == config.Index &&
-                       string.Equals(c.Name, config.Name, StringComparison.OrdinalIgnoreCase))
-                   ?? cameras.FirstOrDefault(c =>
-                       string.Equals(c.Name, config.Name, StringComparison.OrdinalIgnoreCase));
-        }
+        //    return cameras.FirstOrDefault(c =>
+        //               c.Index == config.Index &&
+        //               string.Equals(c.Name, config.Name, StringComparison.OrdinalIgnoreCase))
+        //           ?? cameras.FirstOrDefault(c =>
+        //               string.Equals(c.Name, config.Name, StringComparison.OrdinalIgnoreCase));
+        //}
 
 
         private async Task OpenCameraAsync(CameraConfig config)
@@ -87,20 +90,29 @@ namespace LASYS.Infrastructure.Camera
 
             using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(_cts.Token);
             timeoutCts.CancelAfter(TimeSpan.FromSeconds(5));
-
+            var resolutions = GetCameraResolutions();
             try
             {
                 await Task.Run(() =>
                 {
-                    var cameraInfo = ResolveCamera(config);
-                    if (cameraInfo == null)
+                    var cameraIndex = GetCameraIndex(config.Name);
+                    if (cameraIndex == -1)
                     {
                         CameraStatusChanged?.Invoke(this, new CameraStatusEventArgs(
-                                $"Device unavailable ({config.Name})", true));
+                                $"Camera not found ({config.Name})", true));
                         CameraDisconnected?.Invoke(this, EventArgs.Empty);
                         return;
                     }
-                    var cameraIndex = cameraInfo.Index;
+
+                    //var cameraInfo = ResolveCamera(config);
+                    //if (cameraInfo == null)
+                    //{
+                    //    CameraStatusChanged?.Invoke(this, new CameraStatusEventArgs(
+                    //            $"Device unavailable ({config.Name})", true));
+                    //    CameraDisconnected?.Invoke(this, EventArgs.Empty);
+                    //    return;
+                    //}
+                    //var cameraIndex = cameraInfo.Index;
 
                     //var capture = new VideoCapture(cameraIndex);
                     var capture = new VideoCapture(cameraIndex, VideoCaptureAPIs.DSHOW);
@@ -111,23 +123,28 @@ namespace LASYS.Infrastructure.Camera
                         return; // hot-plug safe
                     }
 
-                    capture.Set(VideoCaptureProperties.FrameWidth, config.FrameWidth);
-                    capture.Set(VideoCaptureProperties.FrameHeight, config.FrameHeight);
-                    capture.Set(VideoCaptureProperties.Fps, config.FrameRate);
-                    //capture.Set(VideoCaptureProperties.AutoExposure, 0);
-                    //capture.Set(VideoCaptureProperties.Exposure, -5);
-                    //capture.Set(VideoCaptureProperties.AutoWB, 0);
-                    //capture.Set(VideoCaptureProperties.WBTemperature, 5500);
-                    capture.Set(VideoCaptureProperties.AutoFocus, 0);
-                    capture.Set(VideoCaptureProperties.Fps, config.Focus);
+                    if (resolutions.TryGetValue(config.Resolution, out var resolution))
+                    {
+                        capture.Set(VideoCaptureProperties.FrameWidth, resolution.Width);
+                        capture.Set(VideoCaptureProperties.FrameHeight, resolution.Height);
+                    }
+                    capture.Set(VideoCaptureProperties.Fps, 10);
+
+                    if (config.Focus > 0)
+                    {
+                        //capture.Set(VideoCaptureProperties.AutoExposure, 0);
+                        //capture.Set(VideoCaptureProperties.Exposure, -5);
+                        //capture.Set(VideoCaptureProperties.AutoWB, 0);
+                        //capture.Set(VideoCaptureProperties.WBTemperature, 5500);
+                        capture.Set(VideoCaptureProperties.AutoFocus, 0);
+                        capture.Set(VideoCaptureProperties.Focus, config.Focus);
+                    }
+                    else
+                    {
+                        capture.Set(VideoCaptureProperties.AutoFocus, 1);
+                    }
 
                     var focus = capture.Get(VideoCaptureProperties.Focus);
-                    Console.WriteLine($"Focus: {focus}");
-
-                    double actualWidth = capture.Get(VideoCaptureProperties.FrameWidth);
-                    double actualHeight = capture.Get(VideoCaptureProperties.FrameHeight);
-
-                    Debug.WriteLine($"Camera Resolution: {actualWidth}x{actualHeight}");
 
                     _capture = capture;
 
@@ -242,8 +259,12 @@ namespace LASYS.Infrastructure.Camera
                         {
                             resized.CopyTo(LastCapturedFrame);
 
-                            var focus = _capture?.Get(VideoCaptureProperties.Focus);
-                            Debug.WriteLine($"Focus: {focus}");
+                            //var focus = _capture?.Get(VideoCaptureProperties.Focus);
+                            //Debug.WriteLine($"Focus: {focus}");
+
+                            //double actualWidth = _capture.Get(VideoCaptureProperties.FrameWidth);
+                            //double actualHeight = _capture.Get(VideoCaptureProperties.FrameHeight);
+                            //Debug.WriteLine($"Camera Resolution: {actualWidth}x{actualHeight}");
                         }
                     }
 
@@ -490,8 +511,178 @@ namespace LASYS.Infrastructure.Camera
         {
             if (_capture == null || !_capture.IsOpened() || _capture.IsDisposed) return;
 
-            _capture?.Set(VideoCaptureProperties.Focus, focusValue);
+            if (focusValue == 0)
+            {
+                _capture.Set(VideoCaptureProperties.AutoFocus, 1);
+            }
+            else
+            {
+                _capture.Set(VideoCaptureProperties.AutoFocus, 0);
+                _capture.Set(VideoCaptureProperties.Focus, focusValue);
+            }
+
+            var focus = _capture?.Get(VideoCaptureProperties.Focus);
+            Debug.WriteLine($"Focus: {focus}");
         }
+
+        public int GetCameraIndex(string cameraName)
+        {
+            var devices = DsDevice.GetDevicesOfCat(FilterCategory.VideoInputDevice);
+
+            for (int i = 0; i < devices.Length; i++)
+            {
+                if (string.Equals(devices[i].Name, cameraName, StringComparison.OrdinalIgnoreCase))
+                {
+                    return i;
+                }
+            }
+
+            return -1; // camera not found
+        }
+
+        public IReadOnlyList<string> GetCameras()
+        {
+            return DsDevice.GetDevicesOfCat(FilterCategory.VideoInputDevice).Select(d => d.Name).ToList();
+            //var devices = DsDevice.GetDevicesOfCat(FilterCategory.VideoInputDevice);
+
+            //var cameras = new List<CameraInfo>();
+
+            //for (int i = 0; i < devices.Length; i++)
+            //{
+            //    cameras.Add(new CameraInfo
+            //    {
+            //        Index = i,
+            //        Name = devices[i].Name
+            //    });
+            //}
+
+            //return cameras;
+        }
+
+        public async Task<CameraConfig> LoadCameraConfigAsync()
+        {
+            try
+            {
+                if (!File.Exists(_configPath))
+                {
+                    CameraConfigIssue?.Invoke(this, new CameraConfigEventArgs("Camera configuration file not found."));
+                    await Task.Delay(1000);
+                    return new CameraConfig();
+                }
+
+                var json = await File.ReadAllTextAsync(_configPath);
+                return JsonConvert.DeserializeObject<CameraConfig>(json)
+                       ?? new CameraConfig();
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Failed to load camera.config.json: {ex.Message}");
+                CameraConfigIssue?.Invoke(this, new CameraConfigEventArgs("Failed to load camera.config.json"));
+                await Task.Delay(1000);
+                return new CameraConfig();
+            }
+        }
+
+        public async Task SaveCameraConfigAsync(CameraConfig config)
+        {
+            try
+            {
+                var json = JsonConvert.SerializeObject(config, Formatting.Indented);
+                await File.WriteAllTextAsync(_configPath, json);
+                CameraNotification?.Invoke(this, new CameraNotificationEventArgs("Camera configuration saved successfully.", "Configuration"));
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Failed to save config: {ex.Message}");
+                CameraNotification?.Invoke(this, new CameraNotificationEventArgs("Failed to save camera.config.json", "Configuration", true));
+                throw;
+            }
+        }
+
+        public Dictionary<string, Resolution> GetCameraResolutions()
+        {
+            return new Dictionary<string, Resolution>
+            {
+                ["HD / 720p"] = new Resolution
+                {
+                    Width = 1280,
+                    Height = 720,
+                    AspectRatio = "16:9",
+                    Notes = "Standard high definition"
+                },
+                ["Full HD / 1080p"] = new Resolution
+                {
+                    Width = 1920,
+                    Height = 1080,
+                    AspectRatio = "16:9",
+                    Notes = "Most webcams, monitors, streaming"
+                },
+                ["2K / 1440p"] = new Resolution
+                {
+                    Width = 2560,
+                    Height = 1440,
+                    AspectRatio = "16:9",
+                    Notes = "High detail, heavier processing"
+                },
+                ["4K UHD / 2160p"] = new Resolution
+                {
+                    Width = 3840,
+                    Height = 2160,
+                    AspectRatio = "16:9",
+                    Notes = "Ultra HD"
+                }
+            };
+        }
+
+        public void RestartApplication()
+        {
+            string exePath = Process.GetCurrentProcess().MainModule?.FileName ?? string.Empty;
+            if (string.IsNullOrEmpty(exePath))
+            {
+                Console.Error.WriteLine("Unable to determine executable path for restart.");
+                return;
+            }
+            try
+            {
+                Process.Start(exePath);
+                Environment.Exit(0);
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Failed to restart application: {ex.Message}");
+                CameraConfigIssue?.Invoke(this, new CameraConfigEventArgs("Failed to restart application"));
+            }
+        }
+
+        public void SetResolution(string resolutionKey)
+        {
+            if (_capture == null || !_capture.IsOpened() || _capture.IsDisposed) return;
+
+            var resolutions = GetCameraResolutions();
+            if (resolutions.TryGetValue(resolutionKey, out var resolution))
+            {
+                _capture.Set(VideoCaptureProperties.FrameWidth, resolution.Width);
+                _capture.Set(VideoCaptureProperties.FrameHeight, resolution.Height);
+            }
+
+            double actualWidth = _capture.Get(VideoCaptureProperties.FrameWidth);
+            double actualHeight = _capture.Get(VideoCaptureProperties.FrameHeight);
+
+            Debug.WriteLine($"Camera Resolution: {actualWidth}x{actualHeight}");
+        }
+
+        public async Task PreviewCameraAsync(string cameraName)
+        {
+            CameraStatusChanged?.Invoke(this,
+            new CameraStatusEventArgs("Initializing camera, please wait..."));
+
+            await StopAsync();
+            var config = _activeConfig ?? new CameraConfig();
+            config.Name = cameraName;
+
+            await OpenCameraAsync(config);
+        }
+
     }
 }
 

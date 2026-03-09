@@ -23,6 +23,7 @@ namespace LASYS.Infrastructure.OCR
         public event EventHandler<OCRCompletedEventArgs>? OCRCompleted;
         public event EventHandler<OCRRegionEventArgs>? OCRRegionDetected;
         public event EventHandler<OCRReadingEventArgs>? OCRReading;
+        public event EventHandler<OCRRegionEventArgs>? OCRRegionPreview;
 
         public OCRService()
         {
@@ -172,6 +173,18 @@ namespace LASYS.Infrastructure.OCR
         {
             _engine?.Dispose();
             _ocrSemaphore.Dispose();
+        }
+
+        public void PreviewRegion(DrawingSize viewerSize, int x, int y, int width, int height, int imageWidth, int imageHeight)
+        {
+            var rect = new CvRect(x, y, width, height);
+
+            var viewerRegion = ComputeViewerRegion(
+                rect,
+                viewerSize,
+                new DrawingSize(imageWidth, imageHeight));
+
+            OCRRegionPreview?.Invoke(this, new OCRRegionEventArgs(viewerRegion));
         }
     }
 }
