@@ -1,4 +1,7 @@
 ﻿using System;
+using System.Windows.Forms;
+using DirectShowLib;
+using LASYS.Application.Common.Enums;
 using LASYS.DesktopApp.DTOs;
 using LASYS.DesktopApp.Enums;
 using LASYS.DesktopApp.Events;
@@ -10,7 +13,7 @@ namespace LASYS.DesktopApp.Views.UserControls
 {
     public partial class LabelPrintingControl : UserControl, ILabelPrintingView
     {
-        private readonly CustomProgressBar _progressBar;
+        //private readonly CustomProgressBar _progressBar;
 
         public event EventHandler? BackToWorkOrdersRequested;
         public event EventHandler? PrintRequested;
@@ -26,24 +29,54 @@ namespace LASYS.DesktopApp.Views.UserControls
         public event EventHandler<LabelOperationFailedEventArgs>? LabelOperationFailed;
 
         private readonly Random _random = new Random();
+
+        private readonly DraggableResizerPanel _resizablePanel;
+
+        private ListView? _logListView;
+
+        private Label? _cameraStatus;
+        private Label? _cameraDetails;
+
+        private Label? _printerStatus;
+        private Label? _printerDetails;
+
+        private Label? _barcodeStatus;
+        private Label? _barcodeDetails;
         public LabelPrintingControl()
         {
             InitializeComponent();
 
-            _progressBar = new CustomProgressBar
+            DoubleBuffered = true;
+            SetStyle(ControlStyles.OptimizedDoubleBuffer |
+                     ControlStyles.ResizeRedraw |
+                     ControlStyles.AllPaintingInWmPaint, true);
+            UpdateStyles();
+
+            _resizablePanel = new DraggableResizerPanel
             {
-                Dock = DockStyle.Bottom,
-                ProgressColor = Color.FromArgb(255, 220, 20, 60),
-                ProgressBackgroundColor = Color.LightGray,
-                ShowPercentage = false
+                HeightPercentage = 0.7,
+                MinimumPanelHeight = 350,
+                DefaultPanelHeight = 400
             };
 
-            pnlLoadingContainer.Controls.Add(_progressBar);
-            UpdateProgress(50, "Printing Progress");
+            pnlContent.Controls.Add(_resizablePanel);
+
+
+            ActivityLogs();
+            HardwareStatus();
+            //_progressBar = new CustomProgressBar
+            //{
+            //    Dock = DockStyle.Bottom,
+            //    ProgressColor = Color.FromArgb(255, 220, 20, 60),
+            //    ProgressBackgroundColor = Color.LightGray,
+            //    ShowPercentage = false
+            //};
+
+            //pnlLoadingContainer.Controls.Add(_progressBar);
+            //UpdateProgress(50, "Printing Progress");
 
 
             btnBack.Click += (_, _) => BackToWorkOrdersRequested?.Invoke(this, EventArgs.Empty);
-            //btnPrint.Click += (_, _) => LabelOperationFailed?.Invoke(this, new LabelOperationFailedEventArgs(LabelOperationType.Printing,sequenceNo: 1));
 
             //Testing random error generation for demonstration purposes
             btnPrint.Click += (_, _) =>
@@ -62,6 +95,243 @@ namespace LASYS.DesktopApp.Views.UserControls
                 );
             };
 
+            RegisterHideEvent(pnlContent);
+
+            btnPauseResume.Click += (_, _) =>
+            {
+                //if (btnPauseResume.Text == "Pause")
+                //{
+                //    PausePrintingRequested?.Invoke(this, EventArgs.Empty);
+                //    btnPauseResume.Text = "Resume";
+                //}
+                //else
+                //{
+                //    ResumePrintingRequested?.Invoke(this, EventArgs.Empty);
+                //    btnPauseResume.Text = "Pause";
+                //}
+                AddLog("Printer connection lost.", MessageType.Error);
+            };
+
+            AddLog("Label printing started.", MessageType.Info);
+            AddLog("Printer connection lost.", MessageType.Error);
+            AddLog("Printer is low on labels.", MessageType.Warning);
+
+
+        }
+
+        private void RegisterHideEvent(Control parent)
+        {
+            parent.MouseDown += HidePanelHandler;
+
+            foreach (Control child in parent.Controls)
+            {
+                RegisterHideEvent(child);
+            }
+
+            parent.ControlAdded += (s, e) =>
+            {
+                RegisterHideEvent(e.Control!);
+            };
+        }
+        private void HidePanelHandler(object? sender, MouseEventArgs e)
+        {
+            if (e.Button != MouseButtons.Left)
+                return;
+
+            if (sender is Control ctrl)
+            {
+                Point p = pnlContent.PointToClient(ctrl.PointToScreen(e.Location));
+
+                if (!_resizablePanel.Bounds.Contains(p))
+                {
+                    _resizablePanel.HidePanel();
+                }
+            }
+        }
+
+        private void ActivityLogs()
+        {
+            var container = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                ColumnCount = 1,
+                RowCount = 3,
+                Padding = new Padding(8), // margin around content
+                BackColor = Color.White
+            };
+
+            container.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+            container.RowStyles.Add(new RowStyle(SizeType.AutoSize));      // Title
+            container.RowStyles.Add(new RowStyle(SizeType.AutoSize));      // Description
+            container.RowStyles.Add(new RowStyle(SizeType.Percent, 100));  // Logs
+
+            var title = new Label
+            {
+                Text = "Activity Logs",
+                Font = new Font("Segoe UI", 14, FontStyle.Bold),
+                Dock = DockStyle.Fill,
+                Padding = new Padding(5, 0, 5, 5),
+                AutoSize = true
+            };
+
+            var description = new Label
+            {
+                Text = "Provides a detailed record of system activities and messages related to the label printing process, \nhelping users monitor the printing operation.",
+                Font = new Font("Segoe UI", 9),
+                Dock = DockStyle.Fill,
+                Padding = new Padding(5, 0, 5, 5),
+                AutoSize = true
+            };
+
+            var logPanel = new Panel
+            {
+                Dock = DockStyle.Fill,
+                Padding = new Padding(8, 1, 1, 5) // margin around the ListView
+            };
+
+            _logListView = new ListView
+            {
+                Dock = DockStyle.Fill,
+                View = View.Details,
+                FullRowSelect = true,
+                GridLines = true,
+                HeaderStyle = ColumnHeaderStyle.Nonclickable,
+                Font = new Font("Segoe UI", 9),
+                BackColor = Color.White,
+                ForeColor = Color.Black,
+                BorderStyle = BorderStyle.None,
+                HideSelection = true
+            };
+
+            _logListView.ItemSelectionChanged += (s, e) =>
+            {
+                e.Item!.Selected = false;
+            };
+
+            _logListView.Columns.Add("Date", 120);
+            _logListView.Columns.Add("Time", 100);
+            _logListView.Columns.Add("Message", 500);
+
+            logPanel.Controls.Add(_logListView);
+
+            container.Controls.Add(title, 0, 0);
+            container.Controls.Add(description, 0, 1);
+            container.Controls.Add(logPanel, 0, 2);
+
+            _resizablePanel.AddTab("Activity Logs", container);
+        }
+
+        private Color GetStatusColor(string status)
+        {
+            return status switch
+            {
+                "Connected" => Color.Green,
+                "Ready" => Color.Green,
+                "Disconnected" => Color.Red,
+                _ => Color.Black
+            };
+        }
+        private void HardwareStatus()
+        {
+            Label CreateHeader(string text)
+            {
+                return new Label
+                {
+                    Text = text,
+                    Font = new Font("Segoe UI", 10, FontStyle.Bold),
+                    Dock = DockStyle.Fill,
+                    Padding = new Padding(5),
+                    TextAlign = ContentAlignment.MiddleLeft,
+                    AutoSize = true
+                };
+            }
+
+            Label CreateCell(string text)
+            {
+                return new Label
+                {
+                    Text = text,
+                    Dock = DockStyle.Fill,
+                    Padding = new Padding(5),
+                    Font = new Font("Segoe UI", 9),
+                    TextAlign = ContentAlignment.MiddleLeft
+                };
+            }
+
+            var container = new Panel
+            {
+                Dock = DockStyle.Fill,
+                AutoSize = true,
+                Padding = new Padding(8),
+                BackColor = Color.White
+            };
+
+            var title = new Label
+            {
+                Text = "Hardware Status",
+                Font = new Font("Segoe UI", 14, FontStyle.Bold),
+                Dock = DockStyle.Top,
+                Padding = new Padding(5, 0, 5, 10),
+                AutoSize = true
+            };
+
+            var table = new TableLayoutPanel
+            {
+                Dock = DockStyle.Top,
+                ColumnCount = 4,
+                RowCount = 4,
+                AutoSize = true,
+                //CellBorderStyle = TableLayoutPanelCellBorderStyle.Single
+            };
+
+
+            table.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 130));
+            table.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 25));
+            table.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+            table.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+
+            table.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+
+
+            // Header
+            table.Controls.Add(CreateHeader("Device"), 0, 0);
+            table.Controls.Add(CreateHeader(""), 1, 0);
+            table.Controls.Add(CreateHeader("Status"), 2, 0);
+            table.Controls.Add(CreateHeader("Details"), 3, 0);
+
+            //Camera
+            _cameraStatus = CreateCell("Disconnected");
+            _cameraDetails = CreateCell("Camera not detected");
+            table.Controls.Add(CreateCell("Camera"), 0, 1);
+            table.Controls.Add(CreateCell(":"), 1, 1);
+            table.Controls.Add(_cameraStatus, 2, 1);
+            table.Controls.Add(_cameraDetails, 3, 1);
+
+            //Printer
+            _printerStatus = CreateCell("Disconnected");
+            _printerDetails = CreateCell("Printer not detected");
+            table.Controls.Add(CreateCell("Printer"), 0, 2);
+            table.Controls.Add(CreateCell(":"), 1, 2);
+            table.Controls.Add(_printerStatus, 2, 2);
+            table.Controls.Add(_printerDetails, 3, 2);
+
+            //Barcode
+            _barcodeStatus = CreateCell("Disconnected");
+            _barcodeDetails = CreateCell("Scanner not detected");
+            table.Controls.Add(CreateCell("Barcode Scanner"), 0, 3);
+            table.Controls.Add(CreateCell(":"), 1, 3);
+            table.Controls.Add(_barcodeStatus, 2, 3);
+            table.Controls.Add(_barcodeDetails, 3, 3);
+
+            _cameraStatus.ForeColor = GetStatusColor(_cameraStatus.Text);
+
+            _printerStatus.ForeColor = GetStatusColor(_printerStatus.Text);
+
+            _barcodeStatus.ForeColor = GetStatusColor(_barcodeStatus.Text);
+
+            container.Controls.Add(table);
+            container.Controls.Add(title);
+            _resizablePanel.AddTab("Hardware Status", container);
         }
 
 
@@ -168,11 +438,40 @@ namespace LASYS.DesktopApp.Views.UserControls
             lblTotalFailed.Text = printingResult.TotalFailed.ToString();
         }
 
-        public void UpdateProgress(int percent, string message)
+        public void AddLog(string message, MessageType type)
         {
-            _progressBar.Value = percent;
-            _progressBar.UpdateStatus(message);
+            var now = DateTime.Now;
+
+            var item = new ListViewItem(now.ToString("yyyy-MM-dd"));
+            item.SubItems.Add(now.ToString("HH:mm:ss"));
+            item.SubItems.Add(message);
+
+            item.ForeColor = GetColor(type);
+
+            _logListView!.Items.Add(item);
+            _logListView.EnsureVisible(_logListView.Items.Count - 1);
+
+            if (type == MessageType.Error || type == MessageType.Warning)
+            {
+                _resizablePanel.ShowTab("Activity Logs");
+            }
         }
+        private Color GetColor(MessageType type)
+        {
+            return type switch
+            {
+                MessageType.Info => Color.Black,
+                MessageType.Warning => Color.DarkOrange,
+                MessageType.Error => Color.Red,
+                _ => Color.Black
+            };
+        }
+
+        //public void UpdateProgress(int percent, string message)
+        //{
+        //    _progressBar.Value = percent;
+        //    _progressBar.UpdateStatus(message);
+        //}
 
     }
 }

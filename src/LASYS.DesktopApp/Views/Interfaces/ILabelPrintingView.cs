@@ -1,4 +1,5 @@
-﻿using LASYS.DesktopApp.DTOs;
+﻿using LASYS.Application.Common.Enums;
+using LASYS.DesktopApp.DTOs;
 using LASYS.DesktopApp.Events;
 using LASYS.DesktopApp.Views.Forms;
 
@@ -15,8 +16,10 @@ namespace LASYS.DesktopApp.Views.Interfaces
         event EventHandler<LabelOperationFailedEventArgs> LabelOperationFailed;
         void ShowError(ErrorForm errorForm);
 
+        void AddLog(string message, MessageType type);
+
         void UpdateWorkOrderData(WorkOrderDto workOrderDto);
-        void UpdateProgress(int percent, string message);
+        //void UpdateProgress(int percent, string message);
         void HideError();
     }
 

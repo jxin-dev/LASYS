@@ -29,9 +29,8 @@
         private void InitializeComponent()
         {
             pnlContent = new Panel();
-            pnlLoadingContainer = new Panel();
             btnPrint = new Button();
-            button1 = new Button();
+            btnPauseResume = new Button();
             groupBox4 = new GroupBox();
             lblLabelSample = new Label();
             label30 = new Label();
@@ -83,9 +82,8 @@
             // 
             pnlContent.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             pnlContent.BackColor = Color.White;
-            pnlContent.Controls.Add(pnlLoadingContainer);
             pnlContent.Controls.Add(btnPrint);
-            pnlContent.Controls.Add(button1);
+            pnlContent.Controls.Add(btnPauseResume);
             pnlContent.Controls.Add(groupBox4);
             pnlContent.Controls.Add(groupBox3);
             pnlContent.Controls.Add(groupBox2);
@@ -94,14 +92,6 @@
             pnlContent.Name = "pnlContent";
             pnlContent.Size = new Size(1235, 515);
             pnlContent.TabIndex = 4;
-            // 
-            // pnlLoadingContainer
-            // 
-            pnlLoadingContainer.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-            pnlLoadingContainer.Location = new Point(3, 452);
-            pnlLoadingContainer.Name = "pnlLoadingContainer";
-            pnlLoadingContainer.Size = new Size(1229, 60);
-            pnlLoadingContainer.TabIndex = 6;
             // 
             // btnPrint
             // 
@@ -120,21 +110,21 @@
             btnPrint.TextImageRelation = TextImageRelation.ImageBeforeText;
             btnPrint.UseVisualStyleBackColor = false;
             // 
-            // button1
+            // btnPauseResume
             // 
-            button1.Anchor = AnchorStyles.None;
-            button1.BackColor = Color.DarkOrange;
-            button1.FlatAppearance.BorderSize = 0;
-            button1.FlatStyle = FlatStyle.Flat;
-            button1.Font = new Font("Segoe UI Semibold", 11.25F, FontStyle.Bold);
-            button1.Image = Properties.Resources.pause24;
-            button1.Location = new Point(893, 312);
-            button1.Name = "button1";
-            button1.Size = new Size(94, 37);
-            button1.TabIndex = 4;
-            button1.Text = "Pause";
-            button1.TextImageRelation = TextImageRelation.ImageBeforeText;
-            button1.UseVisualStyleBackColor = false;
+            btnPauseResume.Anchor = AnchorStyles.None;
+            btnPauseResume.BackColor = Color.DarkOrange;
+            btnPauseResume.FlatAppearance.BorderSize = 0;
+            btnPauseResume.FlatStyle = FlatStyle.Flat;
+            btnPauseResume.Font = new Font("Segoe UI Semibold", 11.25F, FontStyle.Bold);
+            btnPauseResume.Image = Properties.Resources.pause24;
+            btnPauseResume.Location = new Point(893, 312);
+            btnPauseResume.Name = "btnPauseResume";
+            btnPauseResume.Size = new Size(94, 37);
+            btnPauseResume.TabIndex = 4;
+            btnPauseResume.Text = "Pause";
+            btnPauseResume.TextImageRelation = TextImageRelation.ImageBeforeText;
+            btnPauseResume.UseVisualStyleBackColor = false;
             // 
             // groupBox4
             // 
@@ -626,8 +616,7 @@
         private Label lblRemaining;
         private Label lblTotalPrinted;
         private Label label24;
-        private Button button1;
+        private Button btnPauseResume;
         private Button btnPrint;
-        private Panel pnlLoadingContainer;
     }
 }
