@@ -1,10 +1,6 @@
-﻿using System;
-using System.Windows.Forms;
-using DirectShowLib;
-using LASYS.Application.Common.Enums;
+﻿using LASYS.Application.Common.Enums;
+using LASYS.Application.Common.Messaging;
 using LASYS.DesktopApp.DTOs;
-using LASYS.DesktopApp.Enums;
-using LASYS.DesktopApp.Events;
 using LASYS.DesktopApp.Views.Forms;
 using LASYS.DesktopApp.Views.Interfaces;
 using LASYS.UIControls.Controls;
@@ -14,6 +10,10 @@ namespace LASYS.DesktopApp.Views.UserControls
     public partial class LabelPrintingControl : UserControl, ILabelPrintingView
     {
         //private readonly CustomProgressBar _progressBar;
+        private readonly Image _pauseIcon = Properties.Resources.pause24;
+        private readonly Image _resumeIcon = Properties.Resources.resume24;
+        private readonly Image _stopIcon = Properties.Resources.stopbatch24;
+        private readonly Image _startIcon = Properties.Resources.play24;
 
         public event EventHandler? BackToWorkOrdersRequested;
         public event EventHandler? PrintRequested;
@@ -21,14 +21,7 @@ namespace LASYS.DesktopApp.Views.UserControls
         public event EventHandler? ResumePrintingRequested;
         public event EventHandler? StopPrintingRequested;
 
-        //Error Events
-
-        public event EventHandler? RetryRequested;
-        public event EventHandler? SkipRequested;
-        public event EventHandler? StopBatchRequested;
-        public event EventHandler<LabelOperationFailedEventArgs>? LabelOperationFailed;
-
-        private readonly Random _random = new Random();
+        private PrintingState _currentState = PrintingState.Idle;
 
         private readonly DraggableResizerPanel _resizablePanel;
 
@@ -76,46 +69,34 @@ namespace LASYS.DesktopApp.Views.UserControls
             //UpdateProgress(50, "Printing Progress");
 
 
+            RegisterHideEvent(pnlContent);
+
             btnBack.Click += (_, _) => BackToWorkOrdersRequested?.Invoke(this, EventArgs.Empty);
 
-            //Testing random error generation for demonstration purposes
             btnPrint.Click += (_, _) =>
             {
-                var values = Enum.GetValues(typeof(LabelOperationType));
-                var randomOperation = (LabelOperationType)values.GetValue(_random.Next(values.Length))!;
-
-                LabelOperationFailed?.Invoke(
-                    this,
-                    new LabelOperationFailedEventArgs(
-                        randomOperation,
-                        sequenceNo: 1,
-                        barcodeResult: "ABC123",
-                        ocrResult: "00002"
-                    )
-                );
+                if (_currentState == PrintingState.Idle)
+                {
+                    PrintRequested?.Invoke(this, EventArgs.Empty);
+                }
+                else
+                {
+                    StopPrintingRequested?.Invoke(this, EventArgs.Empty);
+                }
             };
 
-            RegisterHideEvent(pnlContent);
 
             btnPauseResume.Click += (_, _) =>
             {
-                //if (btnPauseResume.Text == "Pause")
-                //{
-                //    PausePrintingRequested?.Invoke(this, EventArgs.Empty);
-                //    btnPauseResume.Text = "Resume";
-                //}
-                //else
-                //{
-                //    ResumePrintingRequested?.Invoke(this, EventArgs.Empty);
-                //    btnPauseResume.Text = "Pause";
-                //}
-                AddLog("Printer connection lost.", MessageType.Error);
+                if (_currentState == PrintingState.Printing)
+                {
+                    PausePrintingRequested?.Invoke(this, EventArgs.Empty);
+                }
+                else if (_currentState == PrintingState.Paused)
+                {
+                    ResumePrintingRequested?.Invoke(this, EventArgs.Empty);
+                }
             };
-
-            AddLog("Label printing started.", MessageType.Info);
-            AddLog("Printer connection lost.", MessageType.Error);
-            AddLog("Printer is low on labels.", MessageType.Warning);
-
 
         }
 
@@ -194,19 +175,49 @@ namespace LASYS.DesktopApp.Views.UserControls
                 Dock = DockStyle.Fill,
                 View = View.Details,
                 FullRowSelect = true,
-                GridLines = true,
+                GridLines = false,
                 HeaderStyle = ColumnHeaderStyle.Nonclickable,
                 Font = new Font("Segoe UI", 9),
                 BackColor = Color.White,
                 ForeColor = Color.Black,
                 BorderStyle = BorderStyle.None,
-                HideSelection = true
+                HideSelection = true,
             };
 
             _logListView.ItemSelectionChanged += (s, e) =>
             {
                 e.Item!.Selected = false;
             };
+
+            _logListView.OwnerDraw = true;
+
+            _logListView.DrawColumnHeader += (s, e) =>
+            {
+                using var font = new Font("Segoe UI", 9, FontStyle.Bold);
+                e.Graphics.FillRectangle(Brushes.WhiteSmoke, e.Bounds);
+                TextRenderer.DrawText(
+                    e.Graphics,
+                    e.Header!.Text,
+                    font,
+                    e.Bounds,
+                    Color.Black,
+                    TextFormatFlags.Left | TextFormatFlags.VerticalCenter);
+            };
+
+            _logListView.DrawItem += (s, e) => e.DrawDefault = true;
+            _logListView.DrawSubItem += (s, e) => e.DrawDefault = true;
+
+            _logListView.Resize += (s, e) =>
+            {
+                int otherColumnsWidth =
+                    _logListView.Columns[0].Width +
+                    _logListView.Columns[1].Width;
+
+                _logListView.Columns[2].Width =
+                    _logListView.ClientSize.Width - otherColumnsWidth;
+            };
+
+
 
             _logListView.Columns.Add("Date", 120);
             _logListView.Columns.Add("Time", 100);
@@ -334,7 +345,25 @@ namespace LASYS.DesktopApp.Views.UserControls
             _resizablePanel.AddTab("Hardware Status", container);
         }
 
+        public void UpdateCameraStatus(string status, string details)
+        {
+            _cameraStatus!.Text = status;
+            _cameraStatus.ForeColor = GetStatusColor(status);
+            _cameraDetails!.Text = details;
+        }
 
+        public void UpdatePrinterStatus(string status, string details)
+        {
+            _printerStatus!.Text = status;
+            _printerStatus.ForeColor = GetStatusColor(status);
+            _printerDetails!.Text = details;
+        }
+        public void UpdateBarcodeStatus(string status, string details)
+        {
+            _barcodeStatus!.Text = status;
+            _barcodeStatus.ForeColor = GetStatusColor(status);
+            _barcodeDetails!.Text = details;
+        }
 
         public void HideError()
         {
@@ -366,43 +395,16 @@ namespace LASYS.DesktopApp.Views.UserControls
             errorForm.StartPosition = FormStartPosition.Manual;
             errorForm.Location = new Point(x, y);
             errorForm.ControlBox = false;// Removes the close button (Alt+F4 still works unless handled)
-            errorForm.ShowDialog(modalBackground); // Make it modal over the overlay
-
-            modalBackground.Dispose();
-
-
-            //// Show the error form
-            //using (var errorForm = new ErrorForm())
-            //{
-            //    errorForm.StartPosition = FormStartPosition.CenterParent;
-            //    errorForm.Text = "Error";
-            //    //errorForm.Owner = modalBackground; // set owner to the main form
-            //    errorForm.TopMost = true;
-            //    errorForm.ShowInTaskbar = false;
-            //    errorForm.FormBorderStyle = FormBorderStyle.None;
-
-            //    errorForm.ShowDialog(modalBackground);
-
-            //}
-            //modalBackground.Dispose();
-            //pnlContent.Enabled = true;
-            //var modalBackground = new Form
-            //{
-            //    StartPosition = FormStartPosition.Manual,
-            //    FormBorderStyle = FormBorderStyle.None,
-            //    Opacity = 50d,
-            //    BackColor = Color.Black,
-            //    Size = pnlContent.Size,
-            //    Location = pnlContent.Location,
-            //    ShowInTaskbar = false
-            //};
-            //Controls.Add(modalBackground);
-            //modalBackground.Show();
-            //var errorForm = new ErrorForm();
-            //errorForm.Owner = modalBackground;
-
-            //errorForm.ShowDialog();
-            //modalBackground.Dispose();
+            //errorForm.TopMost = true;
+            //errorForm.BringToFront();
+            try
+            {
+                errorForm.ShowDialog(modalBackground);// Make it modal over the overlay
+            }
+            finally
+            {
+                modalBackground.Dispose();
+            }
         }
 
         public void UpdateWorkOrderData(WorkOrderDto workOrderDto)
@@ -438,24 +440,6 @@ namespace LASYS.DesktopApp.Views.UserControls
             lblTotalFailed.Text = printingResult.TotalFailed.ToString();
         }
 
-        public void AddLog(string message, MessageType type)
-        {
-            var now = DateTime.Now;
-
-            var item = new ListViewItem(now.ToString("yyyy-MM-dd"));
-            item.SubItems.Add(now.ToString("HH:mm:ss"));
-            item.SubItems.Add(message);
-
-            item.ForeColor = GetColor(type);
-
-            _logListView!.Items.Add(item);
-            _logListView.EnsureVisible(_logListView.Items.Count - 1);
-
-            if (type == MessageType.Error || type == MessageType.Warning)
-            {
-                _resizablePanel.ShowTab("Activity Logs");
-            }
-        }
         private Color GetColor(MessageType type)
         {
             return type switch
@@ -466,6 +450,84 @@ namespace LASYS.DesktopApp.Views.UserControls
                 _ => Color.Black
             };
         }
+
+        public void SetPrintingState(PrintingState state)
+        {
+            _currentState = state;
+            switch (state)
+            {
+                case PrintingState.Idle:
+                case PrintingState.Stopped:
+                case PrintingState.Completed:
+                    btnPauseResume.Visible = false;
+                    btnPrint.Visible = true;
+                    btnPrint.Text = "Start Print";
+                    btnPrint.Image = _startIcon;
+                    btnPrint.ForeColor = Color.Black;
+                    btnPrint.BackColor = Color.SeaGreen;
+                    break;
+
+                case PrintingState.Printing:
+                    btnPauseResume.Visible = true;
+                    btnPauseResume.Text = "Pause";
+                    btnPauseResume.Image = _pauseIcon;
+                    btnPauseResume.BackColor = Color.DarkOrange;
+
+                    btnPrint.Visible = true;
+                    btnPrint.Text = "Stop Print";
+                    btnPrint.Image = _stopIcon;
+                    btnPrint.ForeColor = Color.White;
+                    btnPrint.BackColor = Color.Crimson;
+                    break;
+
+                case PrintingState.Paused:
+                    btnPauseResume.Visible = true;
+                    btnPauseResume.Text = "Resume";
+                    btnPauseResume.Image = _resumeIcon;
+                    btnPauseResume.BackColor = Color.SeaGreen;
+                    break;
+                case PrintingState.Resumed:
+                    btnPauseResume.Visible = true;
+                    btnPauseResume.Text = "Pause";
+                    btnPauseResume.Image = _pauseIcon;
+                    btnPauseResume.BackColor = Color.DarkOrange;
+                    break;
+                case PrintingState.Disabled:
+                    btnPrint.Visible = false;
+                    btnPauseResume.Visible = false;
+                    break;
+            }
+        }
+
+        public void AddLog(MessageType type, DateTime timeStamp, string message)
+        {
+            var item = new ListViewItem(timeStamp.ToString("yyyy-MM-dd"));
+            item.SubItems.Add(timeStamp.ToString("HH:mm:ss"));
+            item.SubItems.Add(message);
+
+            item.ForeColor = GetColor(type);
+            _logListView!.Items.Add(item);
+
+            if (type == MessageType.Error || type == MessageType.Warning)
+            {
+                _resizablePanel.ShowTab("Activity Logs", false);
+            }
+
+            if (_logListView.Items.Count > 0)
+                _logListView.TopItem = _logListView.Items[^1];
+        }
+
+        public void InvokeOnUI(Action action)
+        {
+            if (IsDisposed)
+                return;
+
+            if (InvokeRequired)
+                BeginInvoke(action);
+            else
+                action();
+        }
+
 
         //public void UpdateProgress(int percent, string message)
         //{

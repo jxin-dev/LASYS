@@ -1,4 +1,4 @@
-﻿namespace LASYS.Application.Common.Enums
+﻿namespace LASYS.Application.Common.Messaging
 {
     public enum MessageType
     {

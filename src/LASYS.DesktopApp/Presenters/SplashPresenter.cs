@@ -23,17 +23,15 @@ namespace LASYS.DesktopApp.Presenters
             _barcodeService = barcodeService;
 
             _cameraConfig.CameraConfigIssue += OnCameraConfigIssue;
-            _printerService.PrinterStateChanged += OnPrinterStateChanged;
+            _printerService.PrinterStatusChanged += OnPrinterStatusChanged;
             _barcodeService.BarcodeStatusChanged += OnBarcodeStatusChanged;
         }
 
-
-        
         private void OnBarcodeStatusChanged(object? sender, BarcodeStatusEventArgs e)
         {
            _view.UpdateProgress(70, e.Message);
         }
-        private void OnPrinterStateChanged(object? sender, PrinterStateChangedEventArgs e)
+        private void OnPrinterStatusChanged(object? sender, PrinterStatusEventArgs e)
         {
             _view.UpdateProgress(50, e.Message);
         }

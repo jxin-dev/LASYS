@@ -260,14 +260,15 @@
             }
         }
 
-        public void ShowTab(string title)
+        public void ShowTab(string title, bool allowToggle = true)
         {
             if (!tabContents.TryGetValue(title, out var contentControl))
                 return; // tab not found
 
             if (activeContent == contentControl)
             {
-                TogglePanel(); // Hide if already active
+                if (allowToggle)
+                    TogglePanel();   // Only toggle if allowed
             }
             else
             {

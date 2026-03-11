@@ -1,4 +1,5 @@
-﻿using LASYS.Application.Interfaces;
+﻿using LASYS.Application.Features.LabelProcessing.Abstractions;
+using LASYS.Application.Interfaces;
 using LASYS.DesktopApp.Presenters;
 using LASYS.DesktopApp.Views.Forms;
 using LASYS.DesktopApp.Views.Interfaces;
@@ -11,13 +12,13 @@ namespace LASYS.DesktopApp.Extensions
     {
         public static IServiceCollection AddMvp(this IServiceCollection services)
         {
-            
+
             services.AddTransient<SplashForm>(sp =>
             {
                 var view = new SplashForm();
                 var cameraConfig = sp.GetRequiredService<ICameraConfig>();
                 var cameraService = sp.GetRequiredService<ICameraService>();
-                var printerService = sp.GetRequiredService<IPrinterService>();  
+                var printerService = sp.GetRequiredService<IPrinterService>();
                 var barcodeService = sp.GetRequiredService<IBarcodeService>();
 
                 new SplashPresenter(view, cameraConfig, cameraService, printerService, barcodeService);
@@ -42,14 +43,18 @@ namespace LASYS.DesktopApp.Extensions
             });
 
 
-            services.AddTransient<ErrorForm>(sp =>
-            {
-                var view = new ErrorForm();
-                new ErrorPresenter(view);
-                return view;
-            });
+            //services.AddTransient<ErrorForm>(sp =>
+            //{
+            //    var labelProcessingService = sp.GetRequiredService<ILabelProcessingService>();
+            //    var view = new ErrorForm();
+            //    new ErrorPresenter(view, labelProcessingService);
+            //    return view;
+            //});
 
-            services.AddTransient<IErrorView>(sp => sp.GetRequiredService<ErrorForm>());
+            //services.AddTransient<IErrorView>(sp => sp.GetRequiredService<ErrorForm>());
+
+            services.AddTransient<IErrorView, ErrorForm>();
+            services.AddTransient<ErrorPresenter>();
 
 
             services.AddTransient<IWorkOrdersView, WorkOrdersControl>();

@@ -1,5 +1,5 @@
-﻿using System.Windows.Forms;
-using LASYS.Application.Common.Enums;
+﻿using LASYS.Application.Common.Enums;
+using LASYS.Application.Common.Messaging;
 using LASYS.Application.Contracts;
 using LASYS.Application.Events;
 using LASYS.Application.Interfaces;
@@ -26,12 +26,34 @@ namespace LASYS.DesktopApp.Presenters
 
             // Unsubscribe first to avoid multiple subscriptions if the presenter is re-initialized
             _printerService.PrinterNotification -= OnPrinterNotification;
-            _printerService.PrinterStateChanged -= OnPrinterStateChanged;
+            _printerService.PrinterStatusChanged-= OnPrinterStatusChanged;
             // Subscribe to printer events
             _printerService.PrinterNotification += OnPrinterNotification;
-            _printerService.PrinterStateChanged += OnPrinterStateChanged;
+            _printerService.PrinterStatusChanged += OnPrinterStatusChanged;
         }
-   
+
+        private void OnPrinterStatusChanged(object? sender, PrinterStatusEventArgs e)
+        {
+            switch (e.Status)
+            {
+                case PrinterStatus.PrinterConnected:
+                    _view.InvokeOnUI(() => _view.UpdateTestPrintButtonState(true));
+                    break;
+                case PrinterStatus.PrinterOffline:
+                case PrinterStatus.PrinterNotDetected:
+                case PrinterStatus.PrinterDisconnected:
+                case PrinterStatus.PrinterNotConfigured:
+                case PrinterStatus.PrintFailed:
+                case PrinterStatus.PrinterError:
+                    _view.InvokeOnUI(() => _view.UpdateTestPrintButtonState(false));
+                    _view.InvokeOnUI(() => _view.ReportPrinterState(e.Description, true));
+                    break;
+                default:
+                    _view.InvokeOnUI(() => _view.ReportPrinterState(e.Description, false));
+                    break;
+            }
+        }
+
         private async void OnLoadConfigRequest(object? sender, EventArgs e)
         {
             var config = await _printerService.LoadAsync(); // your LoadAsync call
@@ -57,18 +79,6 @@ namespace LASYS.DesktopApp.Presenters
         private void OnTestPrintClicked(object? sender, EventArgs e)
         {
             _printerService.TestPrint();
-        }
-
-        private void OnPrinterStateChanged(object? sender, PrinterStateChangedEventArgs e)
-        {
-            bool enableTestPrint = e.Status == PrinterStatus.Ready;
-            if (enableTestPrint)
-                _view.InvokeOnUI(() => _view.UpdateTestPrintButtonState(true));
-            else
-                _view.InvokeOnUI(() => _view.UpdateTestPrintButtonState(false));
-
-            _view.InvokeOnUI(() => _view.ReportPrinterState(e.Message, e.Status == PrinterStatus.Error));
-
         }
 
         private void OnPrinterNotification(object? sender, PrinterNotificationEventArgs e)
@@ -136,6 +146,6 @@ namespace LASYS.DesktopApp.Presenters
             }
         }
 
-       
+
     }
 }

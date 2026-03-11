@@ -4,6 +4,8 @@ using System.Runtime.InteropServices;
 using System.Text.Json;
 using Interop.LabelGalleryPlus3WR;
 using LASYS.Application.Common.Enums;
+using LASYS.Application.Common.Extensions;
+using LASYS.Application.Common.Messaging;
 using LASYS.Application.Contracts;
 using LASYS.Application.Events;
 using LASYS.Application.Interfaces;
@@ -24,12 +26,11 @@ namespace LASYS.Infrastructure.SatoLabelPrinter
         private string _prnFilePath = string.Empty;
         private bool _isByteAvailableSubscribed;
 
-        public event EventHandler<LabelPrintEventArgs>? LabelPrintProgress;
-        public event EventHandler<PrinterStateChangedEventArgs>? PrinterStateChanged;
         public event EventHandler<PrinterNotificationEventArgs>? PrinterNotification;
 
+        public event EventHandler<PrinterStatusEventArgs>? PrinterStatusChanged;
+        public event EventHandler<LabelEventArgs>? LabelStatusChanged;
 
-        #region Printer Data Receiving & Processing
         private void EnsureByteAvailableSubscription()
         {
             if (_printer == null || _isByteAvailableSubscribed)
@@ -40,11 +41,20 @@ namespace LASYS.Infrastructure.SatoLabelPrinter
         }
         private readonly Dictionary<char, PrinterStatus> _printerControlStatusMap = new()
         {
-            { '\x11', PrinterStatus.Printing },  // DC1
-            { '\x13', PrinterStatus.Paused },    // DC3
+            { '\x11', PrinterStatus.PrintStarted },  // DC1
+            { '\x13', PrinterStatus.PrinterPaused },    // DC3
             // You can add more single-char mappings here
         };
+        private void AppendSendText(byte[] data)
+        {
+            string smsg = ControlCharConvert(Utils.ByteArrayToString(data));
 
+            PrinterStatusChanged?.Invoke(this,
+                new PrinterStatusEventArgs(
+                    PrinterStatus.PrinterDataSent,
+                    $"{DateTime.Now:HH:mm:ss.fff} | TX {data.Length} bytes | {smsg}"
+                ));
+        }
         private void AsynDataIn(object? sender, Printer.ByteAvailableEventArgs e)
         {
             AppendRecvText(e.Data, false);
@@ -54,7 +64,7 @@ namespace LASYS.Infrastructure.SatoLabelPrinter
                 if (_printerControlStatusMap.TryGetValue(ch, out var status))
                 {
                     // Raise event with default message
-                    PrinterStateChanged?.Invoke(this, new PrinterStateChangedEventArgs(status));
+                    PrinterStatusChanged?.Invoke(this, new PrinterStatusEventArgs(status));
                 }
             }
             // Check multi-byte sequence: ESC+@ (0x1B, 0x40) for Offline
@@ -62,7 +72,7 @@ namespace LASYS.Infrastructure.SatoLabelPrinter
             {
                 if (e.Data[i] == 0x1B && e.Data[i + 1] == 0x40)
                 {
-                    PrinterStateChanged?.Invoke(this, new PrinterStateChangedEventArgs(PrinterStatus.Offline));
+                    PrinterStatusChanged?.Invoke(this, new PrinterStatusEventArgs(PrinterStatus.PrinterOffline));
                 }
             }
 
@@ -72,8 +82,7 @@ namespace LASYS.Infrastructure.SatoLabelPrinter
         {
             // Convert bytes to string
             string smsg = ControlCharConvert(Utils.ByteArrayToString(data));
-            LabelPrintProgress?.Invoke(this, new LabelPrintEventArgs($"{DateTime.Now:yyyy-MM-dd HH:mm:ss:fff} | Received {data.Length} bytes | {smsg}"));
-
+            PrinterStatusChanged?.Invoke(this, new PrinterStatusEventArgs(PrinterStatus.PrinterDataReceived, $"{DateTime.Now:HH:mm:ss.fff} | RX {data.Length} bytes | {smsg}"));
         }
 
         private static readonly Dictionary<char, string> _controlCharMap = ControlCharList().ToDictionary(x => x.Value, x => x.Key);
@@ -124,9 +133,6 @@ namespace LASYS.Infrastructure.SatoLabelPrinter
             ctr.Add("[DEL]", '\u007F');
             return ctr;
         }
-        #endregion
-
-        #region Cleanup resources
         public void Dispose()
         {
             Dispose(true);
@@ -176,9 +182,7 @@ namespace LASYS.Infrastructure.SatoLabelPrinter
         }
 
         ~PrinterService() => Dispose(false);
-        #endregion
 
-        #region Configuration Loading & Printer Initialization
         public async Task<PrinterConfig?> LoadAsync()
         {
             try
@@ -196,13 +200,13 @@ namespace LASYS.Infrastructure.SatoLabelPrinter
 
                 if (config?.SatoPrinter is SerialPrinterConnection serial)
                 {
-                    PrinterStateChanged?.Invoke(this, new PrinterStateChangedEventArgs(PrinterStatus.Info, $"Loaded printer config: Serial Port {serial.ComPort}"));
+                    PrinterStatusChanged?.Invoke(this, new PrinterStatusEventArgs(PrinterStatus.PrinterConfigurationLoaded, $"Printer configuration loaded successfully.\nCommunication will use serial interface on port {serial.ComPort} with settings {serial.Parameters} at {serial.BaudRate} baud."));
                 }
                 else if (config?.SatoPrinter is UsbPrinterConnection usb)
                 {
-                    PrinterStateChanged?.Invoke(this, new PrinterStateChangedEventArgs(PrinterStatus.Info, $"Loaded printer config: USB ID {usb.UsbId}"));
+                    PrinterStatusChanged?.Invoke(this, new PrinterStatusEventArgs(PrinterStatus.PrinterConfigurationLoaded, $"Printer configuration loaded successfully.\nCommunication will use the USB interface with device ID {usb.UsbId.Ellipsis(18)}"));
                 }
-                await Task.Delay(1000);
+                await Task.Delay(3000);
                 return config;
 
             }
@@ -242,7 +246,7 @@ namespace LASYS.Infrastructure.SatoLabelPrinter
             var config = await LoadAsync();
             if (config == null)
             {
-                PrinterStateChanged?.Invoke(this, new PrinterStateChangedEventArgs(PrinterStatus.Error, "No printer configuration found. Please set up your printer."));
+                PrinterStatusChanged?.Invoke(this, new PrinterStatusEventArgs(PrinterStatus.PrinterNotConfigured));
                 return;
             }
 
@@ -263,14 +267,14 @@ namespace LASYS.Infrastructure.SatoLabelPrinter
                 _printerName = GetPrinterNameByComPort(_printer.COMPort);
                 if (_printerName == null)
                 {
-                    PrinterStateChanged?.Invoke(this, new PrinterStateChangedEventArgs(PrinterStatus.Error, $"No printer detected on COM port {_printer.COMPort}. Please check the connection and try again."));
+                    PrinterStatusChanged?.Invoke(this, new PrinterStatusEventArgs(PrinterStatus.PrinterNotDetected, $"No printer detected on COM port {_printer.COMPort}."));
                     return;
                 }
 
                 try
                 {
                     _printer.Connect();
-                    PrinterStateChanged?.Invoke(this, new PrinterStateChangedEventArgs(PrinterStatus.Ready, $"Serial COM printer connected: {_printerName} (Port: {serial.ComPort})"));
+                    PrinterStatusChanged?.Invoke(this, new PrinterStatusEventArgs(PrinterStatus.PrinterConnected, $"Serial COM printer connected: {_printerName} (Port: {serial.ComPort})"));
                 }
                 catch (IOException ex)
                 {
@@ -288,11 +292,11 @@ namespace LASYS.Infrastructure.SatoLabelPrinter
                 {
                     _printerName = usbPrinter.Name; // Get the friendly name
                     _printer.Connect();
-                    PrinterStateChanged?.Invoke(this, new PrinterStateChangedEventArgs(PrinterStatus.Ready, $"USB printer connected: {_printerName}"));
+                    PrinterStatusChanged?.Invoke(this, new PrinterStatusEventArgs(PrinterStatus.PrinterConnected, $"USB printer connected: {_printerName}"));
                 }
                 else
                 {
-                    PrinterStateChanged?.Invoke(this, new PrinterStateChangedEventArgs(PrinterStatus.Error, $"USB printer {usb.UsbId} not connected."));
+                    PrinterStatusChanged?.Invoke(this, new PrinterStatusEventArgs(PrinterStatus.PrinterDisconnected, $"USB printer {usb.UsbId} not connected."));
                     return;
                 }
             }
@@ -361,7 +365,7 @@ namespace LASYS.Infrastructure.SatoLabelPrinter
         {
             if (_printer is null)
             {
-                PrinterStateChanged?.Invoke(this, new PrinterStateChangedEventArgs(PrinterStatus.Error, "Printer not initialized. Please initialize the printer before testing."));
+                PrinterStatusChanged?.Invoke(this, new PrinterStatusEventArgs(PrinterStatus.PrinterNotConfigured, "Printer not initialized."));
                 return;
             }
             try
@@ -370,25 +374,22 @@ namespace LASYS.Infrastructure.SatoLabelPrinter
             }
             catch (Exception ex)
             {
-                PrinterStateChanged?.Invoke(this, 
-                    new PrinterStateChangedEventArgs(PrinterStatus.Error,
+                PrinterStatusChanged?.Invoke(this,
+                    new PrinterStatusEventArgs(PrinterStatus.PrinterError,
                     ex.Message));
             }
         }
-        #endregion
-
-        #region Printing Label Process
         public void LoadLabelTemplate(string templatePath) //First step of printing is to load the label template, then fill data and print
         {
             if (!File.Exists(templatePath))
             {
-                //throw new FileNotFoundException("Label template not found", templatePath);
-                LabelPrintProgress?.Invoke(this, new LabelPrintEventArgs($"Label template not found: {templatePath}", true));
+                LabelStatusChanged?.Invoke(this, new LabelEventArgs(LabelStatus.TemplateLoadFailed, $"Label template not found: {templatePath}"));
                 return;
             }
 
-            _app = new LGApp();
+            _app ??= new LGApp();
             _label = _app.LabelOpenEx(templatePath);
+            LabelStatusChanged?.Invoke(this, new LabelEventArgs(LabelStatus.TemplateLoaded, $"Label template loaded: {Path.GetFileName(templatePath)}"));
         }
         public void SetLabelVariables(Dictionary<string, string> data)
         {
@@ -426,12 +427,12 @@ namespace LASYS.Infrastructure.SatoLabelPrinter
 
                 if (_label == null)
                 {
-                    LabelPrintProgress?.Invoke(this, new LabelPrintEventArgs("Label template is not loaded. Please load a label template before printing.", true));
+                    LabelStatusChanged?.Invoke(this, new LabelEventArgs(LabelStatus.TemplateLoadFailed));
                     return false;
                 }
                 if (string.IsNullOrWhiteSpace(_printerName))
                 {
-                    LabelPrintProgress?.Invoke(this, new LabelPrintEventArgs("Printer name is not set. Please check your printer connection and configuration.", true));
+                    PrinterStatusChanged?.Invoke(this, new PrinterStatusEventArgs(PrinterStatus.PrinterNotConfigured));
                     return false;
                 }
 
@@ -448,7 +449,7 @@ namespace LASYS.Infrastructure.SatoLabelPrinter
             }
             catch (Exception ex)
             {
-                LabelPrintProgress?.Invoke(this, new LabelPrintEventArgs($"Error during print process: {ex.Message}", true));
+                PrinterStatusChanged?.Invoke(this, new PrinterStatusEventArgs(PrinterStatus.PrinterError, $"Error during print process: {ex.Message}"));
                 return false;
             }
         }
@@ -456,13 +457,13 @@ namespace LASYS.Infrastructure.SatoLabelPrinter
         {
             if (!File.Exists(_prnFilePath))
             {
-                LabelPrintProgress?.Invoke(this, new LabelPrintEventArgs($"PRN file not found: {_prnFilePath}", true));
+                PrinterStatusChanged?.Invoke(this, new PrinterStatusEventArgs(PrinterStatus.PrinterError, $"PRN file not found: {_prnFilePath}."));
                 return;
             }
 
             if (_printer is null)
             {
-                LabelPrintProgress?.Invoke(this, new LabelPrintEventArgs("Printer not initialized. Please initialize the printer before printing.", true));
+                PrinterStatusChanged?.Invoke(this, new PrinterStatusEventArgs(PrinterStatus.PrinterNotConfigured, "Printer not initialized. Please initialize the printer before printing."));
                 return;
             }
 
@@ -470,28 +471,28 @@ namespace LASYS.Infrastructure.SatoLabelPrinter
             {
                 byte[] prnData = File.ReadAllBytes(_prnFilePath);
                 _printWaitHandle.Reset(); // reset before sending
+                AppendSendText(prnData);   // TX log
                 _printer.Send(prnData);
 
-                LabelPrintProgress?.Invoke(this, new LabelPrintEventArgs($"PRN file sent to printer: {_printerName}. Waiting for response..."));
+                PrinterStatusChanged?.Invoke(this, new PrinterStatusEventArgs(PrinterStatus.PrintStarted, $"PRN file sent to printer: {_printerName}. Waiting for response..."));
 
                 bool signaled = _printWaitHandle.Wait(TimeSpan.FromSeconds(timeoutSeconds));
 
                 if (!signaled)
                 {
-                    LabelPrintProgress?.Invoke(this, new LabelPrintEventArgs($"Printer did not respond within {timeoutSeconds} seconds.", true));
+                    PrinterStatusChanged?.Invoke(this, new PrinterStatusEventArgs(PrinterStatus.PrintFailed, $"Printer did not respond within {timeoutSeconds} seconds."));
                     throw new TimeoutException("Printer did not respond in time.");
                 }
 
-                Console.WriteLine("Printer responded successfully.");
+                PrinterStatusChanged?.Invoke(this, new PrinterStatusEventArgs(PrinterStatus.PrintCompleted));
 
             }
             catch (Exception ex)
             {
-                LabelPrintProgress?.Invoke(this, new LabelPrintEventArgs($"Error during printing: {ex.Message}", true));
+                PrinterStatusChanged?.Invoke(this, new PrinterStatusEventArgs(PrinterStatus.PrinterError, $"Error during printing: {ex.Message}"));
                 throw;
             }
         }
-        #endregion
 
     }
 

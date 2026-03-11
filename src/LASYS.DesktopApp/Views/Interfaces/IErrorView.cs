@@ -1,12 +1,12 @@
-﻿namespace LASYS.DesktopApp.Views.Interfaces
+﻿using LASYS.Application.Common.Enums;
+
+namespace LASYS.DesktopApp.Views.Interfaces
 {
     public interface IErrorView
     {
-        //Events for Error Message
-        event EventHandler RetryRequested;
-        event EventHandler SkipRequested;
-        event EventHandler StopBatchRequested;
-
+        void InvokeOnUI(Action action);
         void CloseError();
+        event EventHandler<OperatorDecision> DecisionRequested;
+
     }
 }

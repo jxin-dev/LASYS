@@ -2,7 +2,7 @@
 using System.Management;
 using System.Runtime.InteropServices;
 using System.Text;
-using LASYS.Application.Common.Enums;
+using LASYS.Application.Common.Messaging;
 using LASYS.Application.Contracts;
 using LASYS.Application.Events;
 using LASYS.Application.Interfaces;

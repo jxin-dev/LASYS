@@ -90,6 +90,10 @@ namespace LASYS.DesktopApp.Views.UserControls
             }
         }
 
+        public void ShowNotification(string message, string caption, MessageBoxIcon icon)
+        {
+            MessageBox.Show(message, caption, MessageBoxButtons.OK, icon);
+        }
     }
 
     public record SampleData(

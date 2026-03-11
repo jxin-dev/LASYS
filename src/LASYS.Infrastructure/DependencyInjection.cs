@@ -1,6 +1,7 @@
 ﻿using LASYS.Application.Interfaces;
 using LASYS.Infrastructure.Barcode;
 using LASYS.Infrastructure.Camera;
+using LASYS.Infrastructure.Logging;
 using LASYS.Infrastructure.OCR;
 using LASYS.Infrastructure.Repositories;
 using LASYS.Infrastructure.SatoLabelPrinter;
@@ -17,12 +18,23 @@ public static class DependencyInjection
         services.AddCameraServices();
         services.AddOCRServices();
         services.AddSatoLabelPrinterServices();
+
+        services.AddLoggingServices();
+
+        return services;
+    }
+
+    public static IServiceCollection AddLoggingServices(this IServiceCollection services)
+    {
+        services.AddSingleton<ILogService, FileLogService>();
+
         return services;
     }
 
     private static IServiceCollection AddRepositoryServices(this IServiceCollection services)
     {
         services.AddTransient<IUserRepository, UserRepository>();
+        services.AddTransient<IWorkOrderRepository, WorkOrderRepository>();
         return services;
     }
 

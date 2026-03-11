@@ -1,4 +1,5 @@
-﻿using LASYS.DesktopApp.Views.Interfaces;
+﻿using LASYS.Application.Common.Enums;
+using LASYS.DesktopApp.Views.Interfaces;
 
 namespace LASYS.DesktopApp.Views.Forms
 {
@@ -6,9 +7,8 @@ namespace LASYS.DesktopApp.Views.Forms
     {
         private bool allowClose = false;
 
-        public event EventHandler? RetryRequested;
-        public event EventHandler? SkipRequested;
-        public event EventHandler? StopBatchRequested;
+        public event EventHandler<OperatorDecision>? DecisionRequested;
+
         public string MessageText
         {
             get => lblMessage.Text;
@@ -17,9 +17,12 @@ namespace LASYS.DesktopApp.Views.Forms
         public ErrorForm()
         {
             InitializeComponent();
-            btnRetry.Click += (s, e) => RetryRequested?.Invoke(this, EventArgs.Empty);
-            btnSkip.Click += (s, e) => SkipRequested?.Invoke(this, EventArgs.Empty);
-            btnStopBatch.Click += (s, e) => StopBatchRequested?.Invoke(this, EventArgs.Empty);
+
+            btnRetry.Click += (s, e) => DecisionRequested?.Invoke(this, OperatorDecision.Retry);
+
+            btnSkip.Click += (s, e) => DecisionRequested?.Invoke(this, OperatorDecision.Skip);
+
+            btnStopBatch.Click += (s, e) => DecisionRequested?.Invoke(this, OperatorDecision.Stop);
         }
 
         public void CloseError()
@@ -34,6 +37,15 @@ namespace LASYS.DesktopApp.Views.Forms
             {
                 e.Cancel = true; // Block Alt+F4, X button, etc.
             }
+        }
+
+        public void InvokeOnUI(Action action)
+        {
+            if (this.InvokeRequired)
+                this.Invoke(action);
+            else
+                action();
+
         }
     }
 }

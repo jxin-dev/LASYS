@@ -1,6 +1,6 @@
 ﻿using LASYS.Application.Common.Enums;
+using LASYS.Application.Common.Messaging;
 using LASYS.DesktopApp.DTOs;
-using LASYS.DesktopApp.Events;
 using LASYS.DesktopApp.Views.Forms;
 
 namespace LASYS.DesktopApp.Views.Interfaces
@@ -12,12 +12,12 @@ namespace LASYS.DesktopApp.Views.Interfaces
         event EventHandler PausePrintingRequested;
         event EventHandler ResumePrintingRequested;
         event EventHandler StopPrintingRequested;
-
-        event EventHandler<LabelOperationFailedEventArgs> LabelOperationFailed;
         void ShowError(ErrorForm errorForm);
+        //void AddLog(StatusMessage message);
+        void InvokeOnUI(Action action);
+        void AddLog(MessageType type, DateTime timeStamp, string message);
 
-        void AddLog(string message, MessageType type);
-
+        void SetPrintingState(PrintingState state);
         void UpdateWorkOrderData(WorkOrderDto workOrderDto);
         //void UpdateProgress(int percent, string message);
         void HideError();

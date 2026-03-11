@@ -1,6 +1,6 @@
-﻿using System.Diagnostics;
-using System.Drawing;
+﻿using System.Drawing;
 using LASYS.Application.Common.Enums;
+using LASYS.Application.Common.Messaging;
 using LASYS.Application.Events;
 using LASYS.Application.Features.LabelProcessing.Abstractions;
 using LASYS.Application.Features.LabelProcessing.Contracts;
@@ -22,11 +22,15 @@ namespace LASYS.Application.Features.LabelProcessing.Services
         private readonly SemaphoreSlim _lock = new(1, 1);
         private const int MaxRetryPerStep = 3;
         private readonly List<OperatorDecisionLog> _decisionHistory = new();
-        public event Action<LabelProcessingStatus>? StatusChanged;
-        private void OnStatusChanged(LabelProcessingStatus status)
-        {
-            StatusChanged?.Invoke(status);
-        }
+        public event EventHandler<OperatorDecisionRequiredEventArgs>? DecisionRequired;
+
+        public event EventHandler<LogEventArgs>? LogGenerated;
+        public event EventHandler<PrintingState>? PrintControlsStateChanged;
+
+        private volatile bool _isPaused;
+        private TaskCompletionSource<bool>? _pauseTcs;
+
+        private CancellationTokenSource? _printingCts;
 
         public LabelProcessingService(ILogger<LabelProcessingService> logger,
                                       ICameraService cameraService,
@@ -41,19 +45,113 @@ namespace LASYS.Application.Features.LabelProcessing.Services
             _calibrationService = calibrationService;
             _barcodeService = barcodeService;
             _printerService = printerService;
+
+            _printerService.LabelStatusChanged += OnLabelStatusChanged;
+            _printerService.PrinterStatusChanged += OnPrinterStatusChanged;
+
         }
 
-        public async Task StartJobAsync(Size viewerSize, StartLabelJobRequest request, CancellationToken token)
+        private void OnPrinterStatusChanged(object? sender, PrinterStatusEventArgs e)
         {
+            switch (e.Status)
+            {
+                case PrinterStatus.PrinterConfigurationLoaded:
+                    break;
+                case PrinterStatus.PrintStarted:
+                    break;
+                case PrinterStatus.PrinterOffline:
+                    break;
+                case PrinterStatus.PrinterPaused:
+                    break;
+                case PrinterStatus.PrinterResuming:
+                    break;
+                case PrinterStatus.PrinterDataSent:
+                    break;
+                case PrinterStatus.PrinterDataReceived:
+                    break;
+                case PrinterStatus.PrinterConnecting:
+                    break;
+                case PrinterStatus.PrinterConnected:
+                    break;
+                case PrinterStatus.PrinterNotDetected:
+                    break;
+                case PrinterStatus.PrinterDisconnected:
+                    break;
+                case PrinterStatus.PrinterNotConfigured:
+                    break;
+                case PrinterStatus.PrintCompleted:
+                    break;
+                case PrinterStatus.PrintFailed:
+                    break;
+                case PrinterStatus.PrinterError:
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        private void OnLabelStatusChanged(object? sender, LabelEventArgs e)
+        {
+            switch (e.Status)
+            {
+                case LabelStatus.TemplateLoaded:
+                    PrintControlsStateChanged?.Invoke(this, PrintingState.Idle);
+                    LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Info, e.Description));
+                    break;
+                case LabelStatus.TemplateLoadFailed:
+                    PrintControlsStateChanged?.Invoke(this, PrintingState.Disabled);
+                    LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Error, e.Description));
+                    break;
+                default:
+                    LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Info, e.Description));
+                    break;
+            }
+        }
+
+        public void LoadLabelTemplateAsync(string templatePath)
+        {
+            try
+            {
+                _printerService.LoadLabelTemplate(templatePath);
+            }
+            catch (Exception ex)
+            {
+                LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Error, ex.Message));
+            }
+            PrintControlsStateChanged?.Invoke(this, PrintingState.Idle); //temporary - for testing only
+        }
+        private async Task WaitIfPausedAsync(CancellationToken token)
+        {
+            if (!_isPaused)
+                return;
+
+            var tcs = _pauseTcs;
+
+            if (tcs != null)
+                await tcs.Task.WaitAsync(token);
+        }
+        public async Task StartJobAsync(Size viewerSize, StartLabelJobRequest request)
+        {
+            //DecisionRequired?.Invoke(this, new OperatorDecisionRequiredEventArgs(
+            //                      ValidationFailure.BarcodeMismatch,
+            //                      sequenceNo: 1,
+            //                      barcodeResult: "test"));
+
             if (!await _lock.WaitAsync(0))
             {
                 _logger.LogWarning("Attempted to start job while another job is running.");
-                OnStatusChanged(LabelProcessingStatus.Busy);
+                LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Warning, "A label processing job is already in progress."));
                 return; // Exit if already running
             }
 
+            _printingCts?.Cancel();
+            _printingCts = new CancellationTokenSource();
+            var token = _printingCts.Token;
+
             int printedCount = 0;
             int currentSequence = request.StartSequence;
+
+            LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Info, "Preparing print job"));
 
             try
             {
@@ -61,7 +159,7 @@ namespace LASYS.Application.Features.LabelProcessing.Services
                 if (calibrationResult.Products == null || calibrationResult.Products.Count == 0)
                 {
                     _logger.LogWarning("No calibration data found.");
-                    OnStatusChanged(LabelProcessingStatus.CalibrationNotFound);
+                    LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Error, "No calibration data available."));
                     return;
                 }
 
@@ -69,7 +167,7 @@ namespace LASYS.Application.Features.LabelProcessing.Services
                 if (product == null)
                 {
                     _logger.LogWarning("ItemCode {ItemCode} not found in calibration.", request.ItemCode);
-                    OnStatusChanged(LabelProcessingStatus.ProductNotConfigured);
+                    LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Error, "Selected item is not configured in calibration data."));
                     return;
                 }
 
@@ -78,17 +176,21 @@ namespace LASYS.Application.Features.LabelProcessing.Services
                 while (printedCount < request.Quantity)
                 {
                     token.ThrowIfCancellationRequested();
+
+                    await WaitIfPausedAsync(token); // Check for pause between labels
                     // Print label
-                    OnStatusChanged(LabelProcessingStatus.Printing);
+                    LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Info, "Printing label"));
+
                     var labelData = new Dictionary<string, string>(request.LabelData);
                     labelData[request.SequenceVariableName] = currentSequence.ToString();
 
                     bool generated = _printerService.PrintLabelWithPreview($"LBL_{currentSequence}");
                     if (!generated)
                     {
-                        OnStatusChanged(LabelProcessingStatus.Error);
                         return;
                     }
+
+                    PrintControlsStateChanged?.Invoke(this, PrintingState.Printing);
                     _printerService.Print();
                     await Task.Delay(150, token);
 
@@ -98,7 +200,7 @@ namespace LASYS.Application.Features.LabelProcessing.Services
                     {
                         token.ThrowIfCancellationRequested();
 
-                        OnStatusChanged(LabelProcessingStatus.ScanningBarcode);
+                        await WaitIfPausedAsync(token); // Check for pause between retries
 
                         var scannedBarcode = await WaitForBarcodeAsync(token);
                         var expectedBarcode = labelData[request.BarcodeVariableName];
@@ -110,26 +212,32 @@ namespace LASYS.Application.Features.LabelProcessing.Services
 
                         barcodeRetry++;
 
-                        _logger.LogWarning("Barcode mismatch. Attempt {Attempt}/{Max}. Expected {Expected}, Got {Actual}",
-                            barcodeRetry, MaxRetryPerStep, expectedBarcode, scannedBarcode);
+                        LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Warning,
+                            $"Barcode mismatch. Attempt {barcodeRetry}/{MaxRetryPerStep}. Expected {expectedBarcode}, Got {scannedBarcode}"));
+
 
                         if (barcodeRetry >= MaxRetryPerStep)
                         {
-                            _logger.LogError("Max barcode retries reached.");
+                            LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Error, "Max barcode retries reached."));
+                            await Task.Delay(200);
+                            LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Info, "Awaiting operator action..."));
 
-                            OnStatusChanged(LabelProcessingStatus.WaitingForOperator);
-
-                            var decision = await WaitForOperatorDecisionAsync(token);
+                            var decision = await WaitForOperatorDecisionAsync(
+                                new OperatorDecisionRequiredEventArgs(
+                                    ValidationFailure.BarcodeMismatch,
+                                    sequenceNo: currentSequence,
+                                    barcodeResult: scannedBarcode),
+                                token);
 
                             _decisionHistory.Add(new OperatorDecisionLog(currentSequence, "Barcode Validation", decision, DateTime.UtcNow));
 
-                            if (decision == LabelProcessingAction.Retry)
+                            if (decision == OperatorDecision.Retry)
                                 continue;
 
-                            if (decision == LabelProcessingAction.Stop)
+                            if (decision == OperatorDecision.Stop)
                                 throw new OperationCanceledException();
 
-                            if (decision == LabelProcessingAction.Ignore)
+                            if (decision == OperatorDecision.Skip)
                                 break; // skip the validation and move to next step
                         }
                     }
@@ -141,34 +249,34 @@ namespace LASYS.Application.Features.LabelProcessing.Services
                     {
                         token.ThrowIfCancellationRequested();
 
-                        OnStatusChanged(LabelProcessingStatus.Capturing);
+                        await WaitIfPausedAsync(token); // Check for pause between retries
+
+                        LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Info, "Capturing image from camera..."));
 
                         var snapshot = _cameraService.GetSnapshot();
                         if (snapshot == null)
                         {
                             cameraRetry++;
-                            _logger.LogWarning("Camera snapshot failed. Attempt {Attempt}/{Max}.", cameraRetry, MaxRetryPerStep);
+                            LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Warning, $"Camera snapshot failed. Attempt {cameraRetry}/{MaxRetryPerStep}."));
 
                             if (cameraRetry >= MaxRetryPerStep)
                             {
-                                _logger.LogError("Camera unavailable after multiple attempts.");
-                                OnStatusChanged(LabelProcessingStatus.CameraUnavailable);
+                                LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Error, "Camera unavailable after multiple attempts."));
+
                                 try
                                 {
                                     const int cameraRecoveryDelayMs = 3000;
-                                    _logger.LogInformation("Waiting before camera reinitialization...");
+                                    LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Info, "Waiting before camera reinitialization..."));
                                     await Task.Delay(cameraRecoveryDelayMs, token);
 
-                                    
                                 }
                                 catch (OperationCanceledException)
                                 {
-                                    _logger.LogInformation("Camera initialization cancelled.");
+                                    LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Error, "Camera initialization cancelled."));
                                 }
                                 catch (Exception ex)
                                 {
-                                    _logger.LogError(ex, "Camera reinitialization failed.");
-                                    OnStatusChanged(LabelProcessingStatus.Error);
+                                    LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Error, ex.Message));
                                 }
                             }
                             await Task.Delay(100, token);
@@ -177,7 +285,7 @@ namespace LASYS.Application.Features.LabelProcessing.Services
 
                         using (snapshot)
                         {
-                            OnStatusChanged(LabelProcessingStatus.ReadingOcr);
+                            LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Info, "Processing text recognition..."));
                             var ocrResult = await _ocrService.ReadTextAsync(
                                    snapshot,
                                    viewerSize,
@@ -195,26 +303,31 @@ namespace LASYS.Application.Features.LabelProcessing.Services
                             }
 
                             ocrRetry++;
-                            _logger.LogWarning("OCR mismatch. Attempt {Attempt}/{Max}. Expected {Expected}, Got {Actual}",
-                                ocrRetry, MaxRetryPerStep, expectedSequence, ocrResult);
+
+                            LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Warning, $"OCR mismatch. Attempt {ocrRetry}/{MaxRetryPerStep}. Expected {expectedSequence}, Got {ocrResult}"));
 
                             if (ocrRetry >= MaxRetryPerStep)
                             {
-                                _logger.LogError("Max OCR retries reached for sequence {Sequence}.", currentSequence);
+                                LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Error, $"Max OCR retries reached for sequence {currentSequence}."));
+                                await Task.Delay(200);
+                                LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Info, "Awaiting operator action..."));
 
-                                OnStatusChanged(LabelProcessingStatus.WaitingForOperator);
-
-                                var decision = await WaitForOperatorDecisionAsync(token);
+                                var decision = await WaitForOperatorDecisionAsync(
+                                    new OperatorDecisionRequiredEventArgs(
+                                        ValidationFailure.OcrMismatch,
+                                        sequenceNo: currentSequence,
+                                        ocrResult: ocrResult),
+                                    token);
 
                                 _decisionHistory.Add(new OperatorDecisionLog(currentSequence, "OCR Validation", decision, DateTime.UtcNow));
 
-                                if (decision == LabelProcessingAction.Retry)
+                                if (decision == OperatorDecision.Retry)
                                     continue;
 
-                                if (decision == LabelProcessingAction.Stop)
+                                if (decision == OperatorDecision.Stop)
                                     throw new OperationCanceledException();
 
-                                if (decision == LabelProcessingAction.Ignore)
+                                if (decision == OperatorDecision.Skip)
                                     break; // skip the validation and move to next step
                             }
                         }
@@ -225,23 +338,27 @@ namespace LASYS.Application.Features.LabelProcessing.Services
                     // Success -> Next label
                     printedCount++;
                     currentSequence++;
-                    OnStatusChanged(LabelProcessingStatus.Completed);
                 }
-                OnStatusChanged(LabelProcessingStatus.Ready);
+                LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Info, "Print completed successfully."));
+                PrintControlsStateChanged?.Invoke(this, PrintingState.Completed);
             }
             catch (OperationCanceledException)
             {
-                OnStatusChanged(LabelProcessingStatus.Stopped);
+                LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Warning, "Operation stopped by operator."));
+                PrintControlsStateChanged?.Invoke(this, PrintingState.Stopped);
             }
             finally
             {
                 _lock.Release();
+                PrintControlsStateChanged?.Invoke(this, PrintingState.Idle);
             }
 
         }
 
         private Task<string?> WaitForBarcodeAsync(CancellationToken token)
         {
+            LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Info, "Scanning barcode..."));
+
             var tcs = new TaskCompletionSource<string?>(TaskCreationOptions.RunContinuationsAsynchronously);
 
             CancellationTokenRegistration registration = default;
@@ -273,14 +390,17 @@ namespace LASYS.Application.Features.LabelProcessing.Services
 
 
         //Helper for user decision
-        private TaskCompletionSource<LabelProcessingAction>? _operatorDecisionTcs;
+        private TaskCompletionSource<OperatorDecision>? _operatorDecisionTcs;
 
-        private Task<LabelProcessingAction> WaitForOperatorDecisionAsync(CancellationToken token)
+        private Task<OperatorDecision> WaitForOperatorDecisionAsync(OperatorDecisionRequiredEventArgs eventArgs, CancellationToken token)
         {
             _operatorDecisionTcs?.TrySetCanceled();
 
-            _operatorDecisionTcs = new TaskCompletionSource<LabelProcessingAction>(
+            _operatorDecisionTcs = new TaskCompletionSource<OperatorDecision>(
                 TaskCreationOptions.RunContinuationsAsynchronously);
+
+            // Notify UI that operator decision is required
+            DecisionRequired?.Invoke(this, eventArgs);
 
             // Cancel if job is cancelled
             token.Register(() =>
@@ -290,12 +410,43 @@ namespace LASYS.Application.Features.LabelProcessing.Services
 
             return _operatorDecisionTcs.Task;
         }
-        public void SetUserDecision(LabelProcessingAction action)
+        public void SetUserDecision(OperatorDecision action)
         {
             _operatorDecisionTcs?.TrySetResult(action);
         }
 
+        public void Pause()
+        {
+            if (_isPaused)
+                return;
+
+            _isPaused = true;
+            _pauseTcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Warning, "Operation paused by operator."));
+            PrintControlsStateChanged?.Invoke(this, PrintingState.Paused);
+        }
+
+        public void Resume()
+        {
+            if (!_isPaused)
+                return;
+
+            _isPaused = false;
+            _pauseTcs?.TrySetResult(true);
+            LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Warning, "Operation resumed by operator."));
+            PrintControlsStateChanged?.Invoke(this, PrintingState.Resumed);
+        }
+
+        public void Stop()
+        {
+            _printingCts?.Cancel();
+        }
+
+        public void NotifyStatus(PrintingState status)
+        {
+            throw new NotImplementedException();
+        }
     }
 
-    public record OperatorDecisionLog(int Sequence, string Step, LabelProcessingAction Action, DateTime Timestamp);
+    public record OperatorDecisionLog(int Sequence, string Step, OperatorDecision Action, DateTime Timestamp);
 }

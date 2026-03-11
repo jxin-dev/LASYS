@@ -25,7 +25,7 @@ namespace LASYS.Application.Features.LabelProcessing.StartLabelJob
                 BarcodeVariableName = request.BarcodeVariableName
             };
 
-            await _labelProcessingService.StartJobAsync(request.ViewerSize, startRequest, cancellationToken);
+            await _labelProcessingService.StartJobAsync(request.ViewerSize, startRequest);
         }
     }
 }

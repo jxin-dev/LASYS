@@ -22,8 +22,8 @@ namespace LASYS.Application.Interfaces
         bool PrintLabelWithPreview(string filename, int previewWidth = 800, int previewHeight = 600);
         void Print(int timeoutSeconds = 300);
 
-        event EventHandler<LabelPrintEventArgs> LabelPrintProgress;
-        event EventHandler<PrinterStateChangedEventArgs> PrinterStateChanged;
+        event EventHandler<LabelEventArgs> LabelStatusChanged;
+        event EventHandler<PrinterStatusEventArgs> PrinterStatusChanged;
         event EventHandler<PrinterNotificationEventArgs> PrinterNotification;
 
     }

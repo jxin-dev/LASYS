@@ -1,9 +1,9 @@
 ﻿namespace LASYS.Application.Common.Enums
 {
-    public enum LabelProcessingAction
+    public enum OperatorDecision
     {
         Retry,
-        Ignore,
+        Skip,
         Stop
     }
 }

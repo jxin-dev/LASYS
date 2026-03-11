@@ -1,9 +1,11 @@
-﻿using LASYS.Application.Interfaces;
+﻿using LASYS.Application.Common.Enums;
+using LASYS.Application.Events;
+using LASYS.Application.Features.LabelProcessing.Abstractions;
+using LASYS.Application.Features.LabelProcessing.LoadLabelTemplate;
+using LASYS.Application.Features.LabelProcessing.StartLabelJob;
 using LASYS.DesktopApp.DTOs;
-using LASYS.DesktopApp.Errors;
-using LASYS.DesktopApp.Events;
-using LASYS.DesktopApp.Views.Forms;
 using LASYS.DesktopApp.Views.Interfaces;
+using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace LASYS.DesktopApp.Presenters
@@ -14,15 +16,19 @@ namespace LASYS.DesktopApp.Presenters
         private readonly ILabelPrintingView _view;
         private readonly IMainView _mainView;
         private readonly IServiceProvider _services;
-
+        private readonly IMediator _mediator;
+        private readonly ILabelProcessingService _labelProcessingService;
         public LabelPrintingPresenter(ILabelPrintingView view,
                                       IMainView mainView,
-                                      IServiceProvider services)
+                                      IServiceProvider services,
+                                      IMediator mediator,
+                                      ILabelProcessingService labelProcessingService)
         {
-
             _view = view;
             _mainView = mainView;
             _services = services;
+            _mediator = mediator;
+            _labelProcessingService = labelProcessingService;
 
             View = (UserControl)view;
 
@@ -32,16 +38,42 @@ namespace LASYS.DesktopApp.Presenters
             _view.ResumePrintingRequested += OnResumePrintingRequested;
             _view.StopPrintingRequested += OnStopPrintingRequested;
 
-            _view.LabelOperationFailed += OnLabelOperationFailed;
+            _labelProcessingService.DecisionRequired += OnDecisionRequired;
+            _labelProcessingService.LogGenerated += OnLogGenerated;
+            _labelProcessingService.PrintControlsStateChanged += OnPrintControlsStateChanged;
         }
 
-        private void OnLabelOperationFailed(object? sender, LabelOperationFailedEventArgs e)
+        private void OnPrintControlsStateChanged(object? sender, PrintingState e)
         {
-            var errorForm = _services.GetRequiredService<ErrorForm>();
-            errorForm.MessageText = LabelErrorMessages.GetMessage(e);
-            _view.ShowError(errorForm);
+            _view.InvokeOnUI(() => _view.SetPrintingState(e));
         }
 
+        private void OnLogGenerated(object? sender, LogEventArgs e)
+        {
+            _view.InvokeOnUI(() => _view.AddLog(e.Type, e.Timestamp, e.Message));
+        }
+
+        public async Task InitializeTemplateAsync(int workOrderId)
+        {
+            var result = await _mediator.Send(new LoadLabelTemplateCommand(workOrderId));
+            if (!result.IsSuccess)
+            {
+                //_view.ShowNotification(result.Error ?? "An unexpected error occurred.", "Error loading label template", MessageBoxIcon.Error);
+                return;
+            }
+
+        }
+        private void OnDecisionRequired(object? sender, OperatorDecisionRequiredEventArgs e)
+        {
+            var errorPresenter = _services.GetRequiredService<ErrorPresenter>();
+            var errorForm = errorPresenter.View;
+            errorForm.MessageText = errorPresenter.GetErrorMessage(e);
+
+            _view.ShowError(errorForm);
+
+            //var errorForm = _services.GetRequiredService<ErrorForm>();
+            //_view.ShowError(errorForm);
+        }
 
         private void OnBackToWorkOrdersRequested(object? sender, EventArgs e)
         {
@@ -51,22 +83,40 @@ namespace LASYS.DesktopApp.Presenters
 
         private void OnStopPrintingRequested(object? sender, EventArgs e)
         {
-            throw new NotImplementedException();
+            _labelProcessingService.Stop();
         }
 
         private void OnResumePrintingRequested(object? sender, EventArgs e)
         {
-            throw new NotImplementedException();
+            _labelProcessingService.Resume();
         }
 
         private void OnPausePrintingRequested(object? sender, EventArgs e)
         {
-            throw new NotImplementedException();
+            _labelProcessingService.Pause();
         }
 
-        private void OnPrintRequested(object? sender, EventArgs e)
+        private async void OnPrintRequested(object? sender, EventArgs e)
         {
-            throw new NotImplementedException();
+            var command = new StartLabelJobCommand
+            {
+                ItemCode = "ITEM001",
+                StartSequence = 1,
+                Quantity = 100,
+                SequenceVariableName = "SEQ",
+                BarcodeVariableName = "BARCODE",
+                ViewerSize = new Size(100, 100), //_view.PictureBoxSize,
+                LabelData = new Dictionary<string, string>
+                {
+                    { "ItemCode", "ITEM001" }
+                }
+            };
+
+            await _mediator.Send(command);
+
+            //OnLabelOperationFailed(this, new LabelOperationFailedEventArgs(
+            //    LabelOperationType.PrinterNotAvailable));
+
         }
 
         public void SetWorkOrderId(int workOrderId)

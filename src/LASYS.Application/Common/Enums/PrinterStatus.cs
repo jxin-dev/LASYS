@@ -2,11 +2,20 @@
 {
     public enum PrinterStatus
     {
-        Info,
-        Ready,
-        Offline,
-        Printing,
-        Paused,
-        Error,
+        PrinterConfigurationLoaded,
+        PrintStarted,
+        PrinterOffline,
+        PrinterPaused,
+        PrinterResuming,
+        PrinterDataSent,
+        PrinterDataReceived,
+        PrinterConnecting,
+        PrinterConnected,
+        PrinterNotDetected,
+        PrinterDisconnected,
+        PrinterNotConfigured,
+        PrintCompleted,
+        PrintFailed,
+        PrinterError,
     }
 }

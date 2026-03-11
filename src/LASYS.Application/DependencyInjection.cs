@@ -15,7 +15,7 @@ public static class DependencyInjection
     }
     private static IServiceCollection AddLabelServices(this IServiceCollection services)
     {
-        services.AddTransient<ILabelProcessingService, LabelProcessingService>();
+        services.AddSingleton<ILabelProcessingService, LabelProcessingService>();
         return services;
     }
 

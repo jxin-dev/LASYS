@@ -1,4 +1,4 @@
-﻿using LASYS.Application.Common.Enums;
+﻿using LASYS.Application.Common.Messaging;
 namespace LASYS.Application.Events
 {
     public class BarcodeNotificationEventArgs : EventArgs
