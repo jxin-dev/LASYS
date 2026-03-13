@@ -77,6 +77,31 @@ namespace LASYS.Application.Features.LabelProcessing.Services
         }
         private void OnBarcodeStatusChanged(object? sender, BarcodeStatusEventArgs e)
         {
+            switch (e.Status)
+            {
+                case BarcodeStatus.BarcodeNotConfigured:
+                    break;
+                case BarcodeStatus.BarcodeCommunicating:
+                    break;
+                case BarcodeStatus.BarcodeConnected:
+                    break;
+                case BarcodeStatus.BarcodeReconnecting:
+                    break;
+                case BarcodeStatus.BarcodeScanning:
+                    break;
+                case BarcodeStatus.BarcodeScanned:
+                    break;
+                case BarcodeStatus.BarcodeNotDetected:
+                    break;
+                case BarcodeStatus.BarcodeDisconnected:
+                    break;
+                case BarcodeStatus.BarcodeTimeout:
+                    break;
+                case BarcodeStatus.BarcodeError:
+                    break;
+                default:
+                    break;
+            }
             _lastBarcodeStatus = new DeviceStatusEventArgs(DeviceType.Barcode, e.Message, e.Description);
             DeviceStatusChanged?.Invoke(this, _lastBarcodeStatus);
         }
@@ -89,40 +114,21 @@ namespace LASYS.Application.Features.LabelProcessing.Services
         {
             _lastPrinterStatus = new DeviceStatusEventArgs(DeviceType.Printer, e.Message, e.Description);
             DeviceStatusChanged?.Invoke(this, _lastPrinterStatus);
-
             switch (e.Status)
             {
-                case PrinterStatus.PrinterConfigurationLoaded:
-                    break;
-                case PrinterStatus.PrintStarted:
-                    break;
-                case PrinterStatus.PrinterOffline:
-                    break;
                 case PrinterStatus.PrinterPaused:
-                    break;
-                case PrinterStatus.PrinterResuming:
-                    break;
-                case PrinterStatus.PrinterDataSent:
-                    break;
-                case PrinterStatus.PrinterDataReceived:
-                    break;
-                case PrinterStatus.PrinterConnecting:
-                    break;
-                case PrinterStatus.PrinterConnected:
-                    break;
-                case PrinterStatus.PrinterNotDetected:
+                    LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Warning, e.Description));
                     break;
                 case PrinterStatus.PrinterDisconnected:
-                    break;
-                case PrinterStatus.PrinterNotConfigured:
-                    break;
-                case PrinterStatus.PrintCompleted:
-                    break;
                 case PrinterStatus.PrintFailed:
-                    break;
+                case PrinterStatus.PrinterNotDetected:
+                case PrinterStatus.PrinterOffline:
                 case PrinterStatus.PrinterError:
+                case PrinterStatus.PrinterNotConfigured:
+                    LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Error, e.Description));
                     break;
                 default:
+                    LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Info, e.Description));
                     break;
             }
         }
