@@ -4,11 +4,11 @@ using MediatR;
 
 namespace LASYS.Application.Features.LabelProcessing.StartLabelJob
 {
-    public class StartLabelJobCommandHandler : IRequestHandler<StartLabelJobCommand>
+    public class StartLabelJobHandler : IRequestHandler<StartLabelJobCommand>
     {
         private readonly ILabelProcessingService _labelProcessingService;
 
-        public StartLabelJobCommandHandler(ILabelProcessingService labelProcessingService)
+        public StartLabelJobHandler(ILabelProcessingService labelProcessingService)
         {
             _labelProcessingService = labelProcessingService;
         }

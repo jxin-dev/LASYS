@@ -5,11 +5,11 @@ using MediatR;
 
 namespace LASYS.Application.Features.LabelProcessing.LoadLabelTemplate
 {
-    public class LoadLabelTemplateCommandHandler : IRequestHandler<LoadLabelTemplateCommand, Result>
+    public class LoadLabelTemplateHandler : IRequestHandler<LoadLabelTemplateCommand, Result>
     {
         private readonly ILabelProcessingService _labelProcessingService;
         private readonly IWorkOrderRepository _workOrderRepository;
-        public LoadLabelTemplateCommandHandler(ILabelProcessingService labelProcessingService,
+        public LoadLabelTemplateHandler(ILabelProcessingService labelProcessingService,
                                                IWorkOrderRepository workOrderRepository)
         {
             _labelProcessingService = labelProcessingService;
