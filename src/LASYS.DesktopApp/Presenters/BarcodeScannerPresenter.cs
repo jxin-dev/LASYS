@@ -1,4 +1,5 @@
-﻿using LASYS.Application.Common.Messaging;
+﻿using LASYS.Application.Common.Enums;
+using LASYS.Application.Common.Messaging;
 using LASYS.Application.Contracts;
 using LASYS.Application.Events;
 using LASYS.Application.Interfaces;
@@ -48,7 +49,7 @@ namespace LASYS.DesktopApp.Presenters
         {
             if (string.IsNullOrEmpty(_view.USBPort))
             {
-                OnBarcodeStatusChanged(this, new BarcodeStatusEventArgs("Please select a USB port before saving.", true));
+                OnBarcodeStatusChanged(this, new BarcodeStatusEventArgs(BarcodeStatus.BarcodeNotConfigured));
                 return;
             }
 
@@ -61,7 +62,26 @@ namespace LASYS.DesktopApp.Presenters
 
         private void OnBarcodeStatusChanged(object? sender, BarcodeStatusEventArgs e)
         {
-            _view.InvokeOnUI(() => _view.DisplayBarcodeStatus(e.Message, e.IsError));
+            switch (e.Status)
+            {
+                case BarcodeStatus.BarcodeCommunicating:
+                case BarcodeStatus.BarcodeConnected:
+                case BarcodeStatus.BarcodeReconnecting:
+                case BarcodeStatus.BarcodeScanning:
+                case BarcodeStatus.BarcodeScanned:
+                    _view.InvokeOnUI(() => _view.DisplayBarcodeStatus(e.Description, false));
+                    break;
+                case BarcodeStatus.BarcodeNotConfigured:
+                case BarcodeStatus.BarcodeNotDetected:
+                case BarcodeStatus.BarcodeDisconnected:
+                case BarcodeStatus.BarcodeTimeout:
+                case BarcodeStatus.BarcodeError:
+                    _view.InvokeOnUI(() => _view.DisplayBarcodeStatus(e.Description, true));
+                    break;
+                default:
+                    break;
+            }
+           
         }
 
         private async void OnLoadRequested(object? sender, EventArgs e)
@@ -79,7 +99,7 @@ namespace LASYS.DesktopApp.Presenters
                 //var usbPorts = _barcodeService.GetUSBVirtualCOMPortList();
                 var usbPorts = _barcodeService.GetManualCOMList();
                 _view.SetUSBVirtualCOMPortList(usbPorts);
-                OnBarcodeStatusChanged(this, new BarcodeStatusEventArgs("No barcode device configured.", true));
+                OnBarcodeStatusChanged(this, new BarcodeStatusEventArgs(BarcodeStatus.BarcodeNotConfigured));
             }
         }
     }

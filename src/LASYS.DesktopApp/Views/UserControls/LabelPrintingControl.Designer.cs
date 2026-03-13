@@ -109,6 +109,7 @@
             btnPrint.Text = "Stop Print";
             btnPrint.TextImageRelation = TextImageRelation.ImageBeforeText;
             btnPrint.UseVisualStyleBackColor = false;
+            btnPrint.Visible = false;
             // 
             // btnPauseResume
             // 
@@ -125,6 +126,7 @@
             btnPauseResume.Text = "Pause";
             btnPauseResume.TextImageRelation = TextImageRelation.ImageBeforeText;
             btnPauseResume.UseVisualStyleBackColor = false;
+            btnPauseResume.Visible = false;
             // 
             // groupBox4
             // 

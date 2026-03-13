@@ -21,6 +21,10 @@ namespace LASYS.DesktopApp.Views.Interfaces
         void UpdateWorkOrderData(WorkOrderDto workOrderDto);
         //void UpdateProgress(int percent, string message);
         void HideError();
+        void UpdateCameraStatus(string status, string details);
+        void UpdatePrinterStatus(string status, string details);
+        void UpdateBarcodeStatus(string status, string details);
+
     }
 
 }

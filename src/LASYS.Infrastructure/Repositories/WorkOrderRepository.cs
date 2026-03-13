@@ -6,8 +6,8 @@ namespace LASYS.Infrastructure.Repositories
     {
         public Task<string?> GetTemplatePathAsync(int workOrderId)
         {
-            return Task.FromResult<string?>("test"); //Temporary data
-            //return Task.FromResult<string?>(null); //Temporary data
+            //return Task.FromResult<string?>("test"); //Temporary data
+            return Task.FromResult<string?>(null); //Temporary data
         }
     }
 }

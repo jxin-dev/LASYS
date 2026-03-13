@@ -223,7 +223,7 @@ namespace LASYS.DesktopApp.Views.UserControls
                     using var pen = new Pen(SystemColors.HotTrack, 2);
                     e.Graphics.DrawRectangle(pen, _ocrPreviewRegion.Value);
                 }
-                
+
 
                 if (_normalizedRegion != null)
                 {
@@ -425,7 +425,7 @@ namespace LASYS.DesktopApp.Views.UserControls
                 DropDownStyle = ComboBoxStyle.DropDownList
             };
 
-            _cameraResolutionComboBox.SelectedIndexChanged += (sender, e) => 
+            _cameraResolutionComboBox.SelectedIndexChanged += (sender, e) =>
             {
                 CameraResolutionSelected?.Invoke(this, _cameraResolutionComboBox.Text);
             };
@@ -969,22 +969,27 @@ namespace LASYS.DesktopApp.Views.UserControls
             _focusValueLabel!.Text = value.ToString();
 
             if (value == 0)
+            {
                 _focusLevelLabel!.Text = "Auto";
+            }
             else
+            {
                 _focusLevelLabel!.Text = value.ToString();
+                _focusOverlay!.Visible = true;
+            }
 
             FocusValueChanged?.Invoke(this, value);
         }
 
         public void ShowCameraNotification(string message, string caption, bool isError = false)
         {
-            if(isError)
+            if (isError)
                 MessageBox.Show(message, caption, MessageBoxButtons.OK, MessageBoxIcon.Error);
             else
                 MessageBox.Show(message, caption, MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
-     
+
     }
 }
 public static class ControlExtensions

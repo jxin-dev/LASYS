@@ -47,9 +47,7 @@ namespace LASYS.DesktopApp.Views.Forms
         protected override void OnShown(EventArgs e)
         {
             base.OnShown(e);
-            //_presenter.AttachView(this);
             ViewShown?.Invoke(this, EventArgs.Empty);
-            //await _presenter.InitializeAsync();
         }
 
 
@@ -59,7 +57,20 @@ namespace LASYS.DesktopApp.Views.Forms
             _progressBar.UpdateStatus(message);
         }
 
-        public void ShowView() => Show();// System.Windows.Forms.Application.Run(this);
-        public void HideView() => Hide();
+        public void InvokeOnUI(Action action)
+        {
+            if (IsDisposed)
+                return;
+
+            if (InvokeRequired)
+                Invoke(action);
+            else
+                action();
+        }
+
+        public void ShowView()
+        {
+            ShowDialog();
+        }
     }
 }

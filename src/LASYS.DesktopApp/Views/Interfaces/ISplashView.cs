@@ -7,5 +7,7 @@ namespace LASYS.DesktopApp.Views.Interfaces
         event EventHandler ViewShown;
         void UpdateProgress(int percent, string message);
         void CloseView();
+        void InvokeOnUI(Action action);
+        void ShowView();
     }
 }

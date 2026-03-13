@@ -1,4 +1,5 @@
 ﻿using LASYS.Application.Common.Enums;
+using LASYS.Application.Common.Messaging;
 using LASYS.Application.Events;
 using LASYS.Application.Features.LabelProcessing.Abstractions;
 using LASYS.Application.Features.LabelProcessing.LoadLabelTemplate;
@@ -41,6 +42,26 @@ namespace LASYS.DesktopApp.Presenters
             _labelProcessingService.DecisionRequired += OnDecisionRequired;
             _labelProcessingService.LogGenerated += OnLogGenerated;
             _labelProcessingService.PrintControlsStateChanged += OnPrintControlsStateChanged;
+            _labelProcessingService.DeviceStatusChanged += OnDeviceStatusChanged;
+
+            
+        }
+        private void OnDeviceStatusChanged(object? sender, DeviceStatusEventArgs e)
+        {
+            switch (e.Device)
+            {
+                case DeviceType.Camera:
+                    _view.InvokeOnUI(() => _view.UpdateCameraStatus(e.Message, e.Description));
+                    break;
+                case DeviceType.Printer:
+                    _view.InvokeOnUI(() => _view.UpdatePrinterStatus(e.Message, e.Description));
+                    break;
+                case DeviceType.Barcode:
+                    _view.InvokeOnUI(() => _view.UpdateBarcodeStatus(e.Message, e.Description));
+                    break;
+                default:
+                    break;
+            }
         }
 
         private void OnPrintControlsStateChanged(object? sender, PrintingState e)
@@ -55,10 +76,15 @@ namespace LASYS.DesktopApp.Presenters
 
         public async Task InitializeTemplateAsync(int workOrderId)
         {
+            foreach (var status in _labelProcessingService.GetCurrentDeviceStatuses())
+            {
+                OnDeviceStatusChanged(this, status);
+            }
+
             var result = await _mediator.Send(new LoadLabelTemplateCommand(workOrderId));
             if (!result.IsSuccess)
             {
-                //_view.ShowNotification(result.Error ?? "An unexpected error occurred.", "Error loading label template", MessageBoxIcon.Error);
+                OnLogGenerated(this, new LogEventArgs(MessageType.Error, result.ErrorOrDefault));
                 return;
             }
 
@@ -78,7 +104,7 @@ namespace LASYS.DesktopApp.Presenters
         private void OnBackToWorkOrdersRequested(object? sender, EventArgs e)
         {
             var workOrdersPresenter = _services.GetRequiredService<WorkOrdersPresenter>();
-            _mainView?.LoadView(workOrdersPresenter.View);
+            _mainView?.LoadView(workOrdersPresenter.View, false); //always new);
         }
 
         private void OnStopPrintingRequested(object? sender, EventArgs e)

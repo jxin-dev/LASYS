@@ -6,6 +6,6 @@
         event EventHandler VisionSettingsRequested;
         event EventHandler PrinterManagementRequested;
         event EventHandler BarcodeDeviceSetupRequested;
-        void LoadView(UserControl control);
+        void LoadView(UserControl control, bool cache = true);
     }
 }

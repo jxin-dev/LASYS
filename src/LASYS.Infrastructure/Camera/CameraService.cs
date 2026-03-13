@@ -2,6 +2,7 @@
 using System.Drawing;
 using System.Text.RegularExpressions;
 using DirectShowLib;
+using LASYS.Application.Common.Enums;
 using LASYS.Application.Contracts;
 using LASYS.Application.Events;
 using LASYS.Application.Interfaces;
@@ -21,8 +22,6 @@ namespace LASYS.Infrastructure.Camera
         public event EventHandler? CameraDisconnected;
         public event EventHandler? CameraConnected;
         public event EventHandler<CameraNotificationEventArgs>? CameraNotification;
-
-        private readonly ICameraConfig _cameraConfig;
 
         private VideoCapture? _capture;
         private CameraConfig? _activeConfig;
@@ -44,26 +43,14 @@ namespace LASYS.Infrastructure.Camera
         private bool _isStreaming = false;
         public bool IsStreaming => _isStreaming;
 
-        public CameraService(ICameraConfig cameraConfig)
+        public CameraService()
         {
-
-            _cameraConfig = cameraConfig;
-
-            _cameraConfig.CameraConfigIssue += (s, e) =>
-            {
-                CameraStatusChanged?.Invoke(this,
-                    new CameraStatusEventArgs(e.Message, true));
-            };
-
             _cts = new CancellationTokenSource();
         }
 
 
         public async Task InitializeAsync()
         {
-            CameraStatusChanged?.Invoke(this,
-              new CameraStatusEventArgs("Initializing camera, please wait..."));
-
             await StopAsync();
             _activeConfig = await LoadCameraConfigAsync();
             await OpenCameraAsync(_activeConfig);
@@ -98,8 +85,7 @@ namespace LASYS.Infrastructure.Camera
                     var cameraIndex = GetCameraIndex(config.Name);
                     if (cameraIndex == -1)
                     {
-                        CameraStatusChanged?.Invoke(this, new CameraStatusEventArgs(
-                                $"Camera not found ({config.Name})", true));
+                        CameraStatusChanged?.Invoke(this, new CameraStatusEventArgs(CameraStatus.CameraNotDetected, $"Camera not found ({config.Name})"));
                         CameraDisconnected?.Invoke(this, EventArgs.Empty);
                         return;
                     }
@@ -158,16 +144,13 @@ namespace LASYS.Infrastructure.Camera
             {
                 if (!_cts.IsCancellationRequested)
                 {
-                    CameraStatusChanged?.Invoke(this,
-                        new CameraStatusEventArgs(
-                            "Camera initialization timed out.", true));
+                    CameraStatusChanged?.Invoke(this, new CameraStatusEventArgs(CameraStatus.CameraTimeout));
                     CameraDisconnected?.Invoke(this, EventArgs.Empty);
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                CameraStatusChanged?.Invoke(this,
-                    new CameraStatusEventArgs(ex.Message, true));
+                CameraStatusChanged?.Invoke(this, new CameraStatusEventArgs(CameraStatus.CameraError));
             }
 
         }
@@ -188,7 +171,7 @@ namespace LASYS.Infrastructure.Camera
 
                 if (_capture == null || !_capture.IsOpened())
                 {
-                    CameraStatusChanged?.Invoke(this, new CameraStatusEventArgs("Camera not initialized", true));
+                    CameraStatusChanged?.Invoke(this, new CameraStatusEventArgs(CameraStatus.CameraDisconnected));
                     CameraDisconnected?.Invoke(this, EventArgs.Empty);
                     return Task.CompletedTask;
                 }
@@ -213,8 +196,7 @@ namespace LASYS.Infrastructure.Camera
                     {
                         CreateAndCaptureEmptyFrame(getTargetResolution(), onFrameCaptured);
 
-                        CameraStatusChanged?.Invoke(this,
-                          new CameraStatusEventArgs("Unable to access the camera.", true));
+                        CameraStatusChanged?.Invoke(this, new CameraStatusEventArgs(CameraStatus.CameraDisconnected));
 
                         CameraDisconnected?.Invoke(this, EventArgs.Empty);
 
@@ -229,8 +211,7 @@ namespace LASYS.Infrastructure.Camera
                     {
                         HandleEmptyFrame(onFrameCaptured, getTargetResolution);
 
-                        CameraStatusChanged?.Invoke(this,
-                          new CameraStatusEventArgs("Unable to access the camera.", true));
+                        CameraStatusChanged?.Invoke(this, new CameraStatusEventArgs(CameraStatus.CameraDisconnected));
 
                         CameraDisconnected?.Invoke(this, EventArgs.Empty);
                         continue;
@@ -257,6 +238,7 @@ namespace LASYS.Infrastructure.Camera
                         }
                         else
                         {
+                            CameraStatusChanged?.Invoke(this, new CameraStatusEventArgs(CameraStatus.CameraConnected));
                             resized.CopyTo(LastCapturedFrame);
 
                             //var focus = _capture?.Get(VideoCaptureProperties.Focus);
@@ -344,9 +326,7 @@ namespace LASYS.Infrastructure.Camera
                     }
                     else
                     {
-                        CameraStatusChanged?.Invoke(this,
-                            new CameraStatusEventArgs("Unable to access the camera.", true));
-
+                        CameraStatusChanged?.Invoke(this, new CameraStatusEventArgs(CameraStatus.CameraDisconnected));
                         CameraDisconnected?.Invoke(this, EventArgs.Empty);
                     }
                 }
@@ -411,8 +391,7 @@ namespace LASYS.Infrastructure.Camera
 
             CameraConnected?.Invoke(this, EventArgs.Empty);
 
-            CameraStatusChanged?.Invoke(this,
-                new CameraStatusEventArgs("Connected"));
+            CameraStatusChanged?.Invoke(this, new CameraStatusEventArgs(CameraStatus.CameraConnected));
 
             _isCameraConnected = true;
         }
@@ -502,7 +481,7 @@ namespace LASYS.Infrastructure.Camera
             {
                 if (LastCapturedFrame == null || LastCapturedFrame.Empty())
                     return null;
-
+                CameraStatusChanged?.Invoke(this, new CameraStatusEventArgs(CameraStatus.CameraCapturing));
                 return LastCapturedFrame.Clone();  // safe snapshot
             }
         }
@@ -522,7 +501,13 @@ namespace LASYS.Infrastructure.Camera
             }
 
             var focus = _capture?.Get(VideoCaptureProperties.Focus);
-            Debug.WriteLine($"Focus: {focus}");
+            //Debug.WriteLine($"Focus: {focus}");
+            CameraStatusChanged?.Invoke(this, new CameraStatusEventArgs(
+                CameraStatus.CameraFocusing,
+                focusValue == 0
+                ? "Auto focus is being enabled."
+                : $"Manual focus is being set to value {focusValue}."));
+
         }
 
         public int GetCameraIndex(string cameraName)
@@ -543,20 +528,6 @@ namespace LASYS.Infrastructure.Camera
         public IReadOnlyList<string> GetCameras()
         {
             return DsDevice.GetDevicesOfCat(FilterCategory.VideoInputDevice).Select(d => d.Name).ToList();
-            //var devices = DsDevice.GetDevicesOfCat(FilterCategory.VideoInputDevice);
-
-            //var cameras = new List<CameraInfo>();
-
-            //for (int i = 0; i < devices.Length; i++)
-            //{
-            //    cameras.Add(new CameraInfo
-            //    {
-            //        Index = i,
-            //        Name = devices[i].Name
-            //    });
-            //}
-
-            //return cameras;
         }
 
         public async Task<CameraConfig> LoadCameraConfigAsync()
@@ -565,7 +536,7 @@ namespace LASYS.Infrastructure.Camera
             {
                 if (!File.Exists(_configPath))
                 {
-                    CameraConfigIssue?.Invoke(this, new CameraConfigEventArgs("Camera configuration file not found."));
+                    CameraStatusChanged?.Invoke(this, new CameraStatusEventArgs(CameraStatus.CameraNotConfigured));
                     await Task.Delay(1000);
                     return new CameraConfig();
                 }
@@ -577,7 +548,7 @@ namespace LASYS.Infrastructure.Camera
             catch (Exception ex)
             {
                 Console.Error.WriteLine($"Failed to load camera.config.json: {ex.Message}");
-                CameraConfigIssue?.Invoke(this, new CameraConfigEventArgs("Failed to load camera.config.json"));
+                CameraStatusChanged?.Invoke(this, new CameraStatusEventArgs(CameraStatus.CameraError));
                 await Task.Delay(1000);
                 return new CameraConfig();
             }
@@ -650,7 +621,7 @@ namespace LASYS.Infrastructure.Camera
             catch (Exception ex)
             {
                 Console.Error.WriteLine($"Failed to restart application: {ex.Message}");
-                CameraConfigIssue?.Invoke(this, new CameraConfigEventArgs("Failed to restart application"));
+                CameraStatusChanged?.Invoke(this, new CameraStatusEventArgs(CameraStatus.CameraError));
             }
         }
 
@@ -673,9 +644,7 @@ namespace LASYS.Infrastructure.Camera
 
         public async Task PreviewCameraAsync(string cameraName)
         {
-            CameraStatusChanged?.Invoke(this,
-            new CameraStatusEventArgs("Initializing camera, please wait..."));
-
+            CameraStatusChanged?.Invoke(this, new CameraStatusEventArgs(CameraStatus.CameraConfiguring));
             await StopAsync();
             var config = _activeConfig ?? new CameraConfig();
             config.Name = cameraName;
@@ -683,6 +652,43 @@ namespace LASYS.Infrastructure.Camera
             await OpenCameraAsync(config);
         }
 
+        public async Task<CameraConfig> LoadAsync()
+        {
+            try
+            {
+                if (!File.Exists(_configPath))
+                {
+                    CameraStatusChanged?.Invoke(this, new CameraStatusEventArgs(CameraStatus.CameraNotConfigured));
+                    await Task.Delay(1000);
+                    return new CameraConfig();
+                }
+
+                var json = await File.ReadAllTextAsync(_configPath);
+                return JsonConvert.DeserializeObject<CameraConfig>(json)
+                       ?? new CameraConfig();
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Failed to load camera.config.json: {ex.Message}");
+                CameraStatusChanged?.Invoke(this, new CameraStatusEventArgs(CameraStatus.CameraError));
+                await Task.Delay(1000);
+                return new CameraConfig();
+            }
+        }
+
+        public async Task SaveAsync(CameraConfig config)
+        {
+            try
+            {
+                var json = JsonConvert.SerializeObject(config, Formatting.Indented);
+                await File.WriteAllTextAsync(_configPath, json);
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Failed to save config: {ex.Message}");
+                CameraStatusChanged?.Invoke(this, new CameraStatusEventArgs(CameraStatus.CameraError));
+            }
+        }
     }
 }
 

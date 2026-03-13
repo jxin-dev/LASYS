@@ -1,6 +1,5 @@
 ﻿using System.Drawing;
 using LASYS.Application.Common.Enums;
-using LASYS.Application.Common.Results;
 using LASYS.Application.Events;
 using LASYS.Application.Features.LabelProcessing.Contracts;
 
@@ -8,6 +7,7 @@ namespace LASYS.Application.Features.LabelProcessing.Abstractions
 {
     public interface ILabelProcessingService
     {
+        Task InitializeDevicesAsync();
         void LoadLabelTemplateAsync(string templatePath);
         Task StartJobAsync(Size viewerSize, StartLabelJobRequest request);
         void SetUserDecision(OperatorDecision action);
@@ -18,6 +18,9 @@ namespace LASYS.Application.Features.LabelProcessing.Abstractions
         event EventHandler<LogEventArgs> LogGenerated;
         event EventHandler<PrintingState> PrintControlsStateChanged;
         event EventHandler<OperatorDecisionRequiredEventArgs> DecisionRequired;
+        event EventHandler<DeviceStatusEventArgs> DeviceStatusChanged;
         void NotifyStatus(PrintingState status);
+
+        IEnumerable<DeviceStatusEventArgs> GetCurrentDeviceStatuses();
     }
 }

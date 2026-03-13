@@ -14,7 +14,7 @@ namespace LASYS.Application.Interfaces
         event EventHandler<BarcodeNotificationEventArgs> BarcodeNotification;
         event EventHandler<BarcodeStatusEventArgs> BarcodeStatusChanged;
         event EventHandler<BarcodeScannedEventArgs> BarcodeScanned;
-
+        bool IsConnected { get; }
         Task InitializeAsync();
         Task ScanAsync();
         Task SetManualModeAsync();

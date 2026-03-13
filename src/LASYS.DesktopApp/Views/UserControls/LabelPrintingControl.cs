@@ -21,7 +21,7 @@ namespace LASYS.DesktopApp.Views.UserControls
         public event EventHandler? ResumePrintingRequested;
         public event EventHandler? StopPrintingRequested;
 
-        private PrintingState _currentState = PrintingState.Idle;
+        private PrintingState _currentState = PrintingState.Initializing;
 
         private readonly DraggableResizerPanel _resizablePanel;
 
@@ -35,6 +35,9 @@ namespace LASYS.DesktopApp.Views.UserControls
 
         private Label? _barcodeStatus;
         private Label? _barcodeDetails;
+
+        public UserControl UserControl => this;
+
         public LabelPrintingControl()
         {
             InitializeComponent();
@@ -236,9 +239,28 @@ namespace LASYS.DesktopApp.Views.UserControls
         {
             return status switch
             {
+                "Configuring..." => Color.Green,
+                "Reconnecting..." => Color.Green,
+                "Printing..." => Color.Green,
+                "Resuming..." => Color.Green,
+                "Connecting..." => Color.Green,
+                "Scanning..." => Color.Green,
+                "Communicating..." => Color.Green,
+
                 "Connected" => Color.Green,
                 "Ready" => Color.Green,
+                "Print Completed" => Color.Green,
+
                 "Disconnected" => Color.Red,
+                "Timeout" => Color.Red,
+                "Not Detected" => Color.Red,
+                "Error" => Color.Red,
+
+                "Not Configured" => Color.Red,
+                "Offline" => Color.Red,
+                "Print Failed" => Color.Red,
+
+                "Paused" => Color.Black,
                 _ => Color.Black
             };
         }
@@ -265,7 +287,8 @@ namespace LASYS.DesktopApp.Views.UserControls
                     Dock = DockStyle.Fill,
                     Padding = new Padding(5),
                     Font = new Font("Segoe UI", 9),
-                    TextAlign = ContentAlignment.MiddleLeft
+                    TextAlign = ContentAlignment.MiddleLeft,
+                    AutoSize = true
                 };
             }
 
@@ -302,6 +325,10 @@ namespace LASYS.DesktopApp.Views.UserControls
             table.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
 
             table.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            table.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            table.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            table.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+
 
 
             // Header
@@ -311,24 +338,24 @@ namespace LASYS.DesktopApp.Views.UserControls
             table.Controls.Add(CreateHeader("Details"), 3, 0);
 
             //Camera
-            _cameraStatus = CreateCell("Disconnected");
-            _cameraDetails = CreateCell("Camera not detected");
+            _cameraStatus = CreateCell("Loading...");
+            _cameraDetails = CreateCell("Loading...");
             table.Controls.Add(CreateCell("Camera"), 0, 1);
             table.Controls.Add(CreateCell(":"), 1, 1);
             table.Controls.Add(_cameraStatus, 2, 1);
             table.Controls.Add(_cameraDetails, 3, 1);
 
             //Printer
-            _printerStatus = CreateCell("Disconnected");
-            _printerDetails = CreateCell("Printer not detected");
+            _printerStatus = CreateCell("Loading...");
+            _printerDetails = CreateCell("Loading...");
             table.Controls.Add(CreateCell("Printer"), 0, 2);
             table.Controls.Add(CreateCell(":"), 1, 2);
             table.Controls.Add(_printerStatus, 2, 2);
             table.Controls.Add(_printerDetails, 3, 2);
 
             //Barcode
-            _barcodeStatus = CreateCell("Disconnected");
-            _barcodeDetails = CreateCell("Scanner not detected");
+            _barcodeStatus = CreateCell("Loading...");
+            _barcodeDetails = CreateCell("Loading...");
             table.Controls.Add(CreateCell("Barcode Scanner"), 0, 3);
             table.Controls.Add(CreateCell(":"), 1, 3);
             table.Controls.Add(_barcodeStatus, 2, 3);
@@ -456,6 +483,12 @@ namespace LASYS.DesktopApp.Views.UserControls
             _currentState = state;
             switch (state)
             {
+                case PrintingState.Initializing:
+                    btnPrint.Visible = false;
+                    btnPauseResume.Visible = false;
+                    ClearLogs();
+
+                    break;
                 case PrintingState.Idle:
                 case PrintingState.Stopped:
                 case PrintingState.Completed:
@@ -498,7 +531,12 @@ namespace LASYS.DesktopApp.Views.UserControls
                     break;
             }
         }
-
+        private void ClearLogs()
+        {
+            _logListView!.BeginUpdate();
+            _logListView!.Items.Clear();
+            _logListView!.EndUpdate();
+        }
         public void AddLog(MessageType type, DateTime timeStamp, string message)
         {
             var item = new ListViewItem(timeStamp.ToString("yyyy-MM-dd"));
@@ -523,7 +561,7 @@ namespace LASYS.DesktopApp.Views.UserControls
                 return;
 
             if (InvokeRequired)
-                BeginInvoke(action);
+                Invoke(action);
             else
                 action();
         }

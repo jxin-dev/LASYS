@@ -1,6 +1,7 @@
 ﻿using System.Drawing;
 using LASYS.Application.Common.Enums;
 using LASYS.Application.Common.Messaging;
+using LASYS.Application.Contracts;
 using LASYS.Application.Events;
 using LASYS.Application.Features.LabelProcessing.Abstractions;
 using LASYS.Application.Features.LabelProcessing.Contracts;
@@ -26,12 +27,16 @@ namespace LASYS.Application.Features.LabelProcessing.Services
 
         public event EventHandler<LogEventArgs>? LogGenerated;
         public event EventHandler<PrintingState>? PrintControlsStateChanged;
+        public event EventHandler<DeviceStatusEventArgs>? DeviceStatusChanged;
 
         private volatile bool _isPaused;
         private TaskCompletionSource<bool>? _pauseTcs;
 
         private CancellationTokenSource? _printingCts;
 
+        private DeviceStatusEventArgs? _lastPrinterStatus;
+        private DeviceStatusEventArgs? _lastCameraStatus;
+        private DeviceStatusEventArgs? _lastBarcodeStatus;
         public LabelProcessingService(ILogger<LabelProcessingService> logger,
                                       ICameraService cameraService,
                                       IOCRService ocrService,
@@ -49,10 +54,42 @@ namespace LASYS.Application.Features.LabelProcessing.Services
             _printerService.LabelStatusChanged += OnLabelStatusChanged;
             _printerService.PrinterStatusChanged += OnPrinterStatusChanged;
 
+            _cameraService.CameraStatusChanged += OnCameraStatusChanged;
+            _barcodeService.BarcodeStatusChanged += OnBarcodeStatusChanged;
+
         }
 
+        public async Task InitializeDevicesAsync()
+        {
+            var config = await _cameraService.LoadAsync();
+            var cameraIndex = _cameraService.GetCameraIndex(config.Name);
+
+            await _cameraService.InitializeAsync();
+            await _printerService.InitializeAsync();
+            await _barcodeService.InitializeAsync();
+        }
+
+        public IEnumerable<DeviceStatusEventArgs> GetCurrentDeviceStatuses()
+        {
+            if (_lastPrinterStatus != null) yield return _lastPrinterStatus;
+            if (_lastCameraStatus != null) yield return _lastCameraStatus;
+            if (_lastBarcodeStatus != null) yield return _lastBarcodeStatus;
+        }
+        private void OnBarcodeStatusChanged(object? sender, BarcodeStatusEventArgs e)
+        {
+            _lastBarcodeStatus = new DeviceStatusEventArgs(DeviceType.Barcode, e.Message, e.Description);
+            DeviceStatusChanged?.Invoke(this, _lastBarcodeStatus);
+        }
+        private void OnCameraStatusChanged(object? sender, CameraStatusEventArgs e)
+        {
+            _lastCameraStatus = new DeviceStatusEventArgs(DeviceType.Camera, e.Message, e.Description);
+            DeviceStatusChanged?.Invoke(this, _lastCameraStatus);
+        }
         private void OnPrinterStatusChanged(object? sender, PrinterStatusEventArgs e)
         {
+            _lastPrinterStatus = new DeviceStatusEventArgs(DeviceType.Printer, e.Message, e.Description);
+            DeviceStatusChanged?.Invoke(this, _lastPrinterStatus);
+
             switch (e.Status)
             {
                 case PrinterStatus.PrinterConfigurationLoaded:
@@ -110,6 +147,7 @@ namespace LASYS.Application.Features.LabelProcessing.Services
 
         public void LoadLabelTemplateAsync(string templatePath)
         {
+            PrintControlsStateChanged?.Invoke(this, PrintingState.Initializing);
             try
             {
                 _printerService.LoadLabelTemplate(templatePath);
@@ -179,7 +217,7 @@ namespace LASYS.Application.Features.LabelProcessing.Services
 
                     await WaitIfPausedAsync(token); // Check for pause between labels
                     // Print label
-                    LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Info, "Printing label"));
+                    LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Info, $"Printing label with sequence {currentSequence}"));
 
                     var labelData = new Dictionary<string, string>(request.LabelData);
                     labelData[request.SequenceVariableName] = currentSequence.ToString();
@@ -446,6 +484,8 @@ namespace LASYS.Application.Features.LabelProcessing.Services
         {
             throw new NotImplementedException();
         }
+
+
     }
 
     public record OperatorDecisionLog(int Sequence, string Step, OperatorDecision Action, DateTime Timestamp);

@@ -46,13 +46,7 @@ public static class DependencyInjection
 
     private static IServiceCollection AddCameraServices(this IServiceCollection services)
     {
-
-        services.AddScoped<ICameraConfig, CameraConfigStore>();
-        services.AddScoped<ICameraEnumerator, CameraEnumerator>();
-        // Camera implementations
-        services.AddTransient<IPreviewCameraService, PreviewCameraService>();
         services.AddSingleton<ICameraService, CameraService>();
-
         return services;
     }
 

@@ -38,5 +38,8 @@ namespace LASYS.Application.Interfaces
         Task PreviewCameraAsync(string cameraName);
 
 
+        Task<CameraConfig> LoadAsync();
+        Task SaveAsync(CameraConfig config);
+
     }
 }

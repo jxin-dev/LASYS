@@ -2,6 +2,7 @@
 using LASYS.Application.Interfaces;
 using LASYS.DesktopApp.Core.Interfaces;
 using LASYS.DesktopApp.Presenters.Interfaces;
+using LASYS.DesktopApp.Views.Forms;
 using LASYS.DesktopApp.Views.Interfaces;
 using Velopack;
 using Velopack.Sources;
@@ -12,10 +13,12 @@ namespace LASYS.DesktopApp.Presenters
     {
         private ILoginView _view;
         private readonly IUserRepository _userRepository;
-
+        public LoginForm View { get; }
         public LoginPresenter(ILoginView view, IUserRepository userRepository)
         {
             _view = view;
+            View = (LoginForm)view;
+
             _view.LoginClicked += OnLoginClicked;
             _view.CheckForUpdatesRequested += OnCheckForUpdatesRequested;
             _userRepository = userRepository;

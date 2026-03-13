@@ -1,4 +1,5 @@
-﻿using LASYS.DesktopApp.Views.Interfaces;
+﻿using System.Windows.Forms;
+using LASYS.DesktopApp.Views.Interfaces;
 using LASYS.UIControls.Controls;
 using LASYS.UIControls.Models;
 
@@ -92,23 +93,33 @@ namespace LASYS.DesktopApp.Views.Forms
         public void ShowView() => Show();
 
         private Dictionary<Type, UserControl> _views = new Dictionary<Type, UserControl>();
-        public void LoadView(UserControl control)
+        public void LoadView(UserControl control, bool cache = true)
         {
             var type = control.GetType();
-            if (_contentPanel.Controls.Count > 0 && _contentPanel.Controls[0].GetType() == type) return;
 
             _contentPanel.SuspendLayout();
 
-            if (!_views.ContainsKey(type))
-                _views[type] = control;
+            if (_contentPanel.Controls.Count > 0 && _contentPanel.Controls[0].GetType() == type)
+            {
+                _contentPanel.ResumeLayout();
+                return;
+            }
+
+            if (cache)
+            {
+                if (!_views.ContainsKey(type))
+                    _views[type] = control;
+
+                control = _views[type];
+            }
 
             _contentPanel.Controls.Clear();
-            _contentPanel.Controls.Add(_views[type]);
-            _views[type].Dock = DockStyle.Fill;
+
+            control.Dock = DockStyle.Fill;
+            _contentPanel.Controls.Add(control);
 
             _contentPanel.ResumeLayout();
             _contentPanel.Refresh();
-
         }
     }
 }

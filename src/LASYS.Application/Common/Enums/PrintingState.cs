@@ -2,6 +2,7 @@
 {
     public enum PrintingState
     {
+        Initializing,
         Idle,
         Disabled,
         Printing,

@@ -9,6 +9,7 @@
             IsSuccess = success;
             Error = error;
         }
+        public string ErrorOrDefault => Error ?? "An unexpected error occurred.";
         public static Result Success() => new(true, null);
         public static Result Failure(string error) => new(false, error);
     }

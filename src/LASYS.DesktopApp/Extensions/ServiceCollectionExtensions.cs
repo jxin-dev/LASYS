@@ -13,45 +13,22 @@ namespace LASYS.DesktopApp.Extensions
         public static IServiceCollection AddMvp(this IServiceCollection services)
         {
 
-            services.AddTransient<SplashForm>(sp =>
-            {
-                var view = new SplashForm();
-                var cameraConfig = sp.GetRequiredService<ICameraConfig>();
-                var cameraService = sp.GetRequiredService<ICameraService>();
-                var printerService = sp.GetRequiredService<IPrinterService>();
-                var barcodeService = sp.GetRequiredService<IBarcodeService>();
+            services.AddTransient<ISplashView, SplashForm>();
+            services.AddTransient<SplashPresenter>();
 
-                new SplashPresenter(view, cameraConfig, cameraService, printerService, barcodeService);
-                return view;
-            });
-            services.AddTransient<ISplashView>(sp => sp.GetRequiredService<SplashForm>());
-
-            services.AddTransient<LoginForm>(sp =>
-            {
-                var userRepo = sp.GetRequiredService<IUserRepository>();
-                var view = new LoginForm();
-                new LoginPresenter(view, userRepo);
-                return view;
-            });
-            services.AddTransient<ILoginView>(sp => sp.GetRequiredService<LoginForm>());
+            services.AddTransient<ILoginView, LoginForm>();
+            services.AddTransient<LoginPresenter>();
 
             services.AddSingleton<IMainView, MainForm>();
-            services.AddSingleton<MainPresenter>(sp =>
-            {
-                var view = sp.GetRequiredService<IMainView>();
-                return new MainPresenter(view, sp);
-            });
+            //services.AddTransient<IMainView>(sp => sp.GetRequiredService<MainForm>());
+            services.AddSingleton<MainPresenter>();
 
-
-            //services.AddTransient<ErrorForm>(sp =>
+            //services.AddSingleton<IMainView, MainForm>();
+            //services.AddSingleton<MainPresenter>(sp =>
             //{
-            //    var labelProcessingService = sp.GetRequiredService<ILabelProcessingService>();
-            //    var view = new ErrorForm();
-            //    new ErrorPresenter(view, labelProcessingService);
-            //    return view;
+            //    var view = sp.GetRequiredService<IMainView>();
+            //    return new MainPresenter(view, sp);
             //});
-
-            //services.AddTransient<IErrorView>(sp => sp.GetRequiredService<ErrorForm>());
 
             services.AddTransient<IErrorView, ErrorForm>();
             services.AddTransient<ErrorPresenter>();

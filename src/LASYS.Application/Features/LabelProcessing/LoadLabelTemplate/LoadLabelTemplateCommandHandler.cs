@@ -23,7 +23,6 @@ namespace LASYS.Application.Features.LabelProcessing.LoadLabelTemplate
             {
                 return Result.Failure($"No template path found for WorkOrderId: {request.WorkOrderId}");
             }
-
              _labelProcessingService.LoadLabelTemplateAsync(templatePath);
             return Result.Success();
         }
