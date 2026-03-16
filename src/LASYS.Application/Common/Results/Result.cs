@@ -4,25 +4,29 @@
     {
         public bool IsSuccess { get; }
         public string? Error { get; }
-        protected Result(bool success, string? error)
+        public string ErrorOrDefault => string.IsNullOrWhiteSpace(Error) 
+            ? "An unexpected error occurred." : Error;
+        protected Result(bool isSuccess, string? error)
         {
-            IsSuccess = success;
+            IsSuccess = isSuccess;
             Error = error;
         }
-        public string ErrorOrDefault => Error ?? "An unexpected error occurred.";
-        public static Result Success() => new(true, null);
-        public static Result Failure(string error) => new(false, error);
+        public static Result Success()
+            => new Result(true, null);
+        public static Result Failure(string error)
+            => new Result(false, error);
+        public static Result<T> Success<T>(T value)
+            => new Result<T>(value, true, null);
+        public static Result<T> Failure<T>(string error)
+            => new Result<T>(default, false, error);
     }
     public class Result<T> : Result
     {
         public T? Value { get; }
-
-        private Result(bool success, T? value, string? error)
-            : base(success, error)
+        internal Result(T? value, bool isSuccess, string? error)
+            : base(isSuccess, error)
         {
             Value = value;
         }
-        public static Result<T> Success(T value) => new(true, value, null);
-        public static new Result<T> Failure(string error) => new(false, default, error);
     }
 }

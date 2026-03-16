@@ -2,6 +2,7 @@
 using LASYS.Application.Common.Messaging;
 using LASYS.Application.Events;
 using LASYS.Application.Features.LabelProcessing.Abstractions;
+using LASYS.Application.Features.LabelProcessing.GetLabelTemplate;
 using LASYS.Application.Features.LabelProcessing.LoadLabelTemplate;
 using LASYS.Application.Features.LabelProcessing.StartLabelJob;
 using LASYS.DesktopApp.DTOs;
@@ -80,13 +81,15 @@ namespace LASYS.DesktopApp.Presenters
             {
                 OnDeviceStatusChanged(this, status);
             }
-
-            var result = await _mediator.Send(new LoadLabelTemplateCommand(workOrderId));
+            var result = await _mediator.Send(new GetLabelTemplateQuery(workOrderId));
+            
             if (!result.IsSuccess)
             {
                 OnLogGenerated(this, new LogEventArgs(MessageType.Error, result.ErrorOrDefault));
                 return;
             }
+
+            _labelProcessingService.LoadLabelTemplateAsync(result.Value!);
 
         }
         private void OnDecisionRequired(object? sender, OperatorDecisionRequiredEventArgs e)

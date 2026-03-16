@@ -2,7 +2,8 @@
 using LASYS.Application.Common.Messaging;
 using LASYS.Application.Contracts;
 using LASYS.Application.Events;
-using LASYS.Application.Interfaces;
+using LASYS.Application.Interfaces.Services;
+using LASYS.Application.Models.Hardware.Printer;
 using LASYS.DesktopApp.Views.Interfaces;
 
 namespace LASYS.DesktopApp.Presenters
@@ -97,7 +98,7 @@ namespace LASYS.DesktopApp.Presenters
         {
             try
             {
-                IPrinterConnection connection = _view.SelectedInterfaceType switch
+                PrinterConnection connection = _view.SelectedInterfaceType switch
                 {
                     "Serial COM" => new SerialPrinterConnection
                     {

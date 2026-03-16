@@ -1,5 +1,5 @@
 ﻿using LASYS.Application.Common.Messaging;
-using LASYS.Application.Interfaces;
+using LASYS.Application.Interfaces.Services;
 
 namespace LASYS.Infrastructure.Logging
 {

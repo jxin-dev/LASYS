@@ -2,7 +2,7 @@
 using LASYS.Application.Common.Messaging;
 using LASYS.Application.Contracts;
 using LASYS.Application.Events;
-using LASYS.Application.Interfaces;
+using LASYS.Application.Interfaces.Services;
 using LASYS.DesktopApp.Views.Interfaces;
 
 namespace LASYS.DesktopApp.Presenters

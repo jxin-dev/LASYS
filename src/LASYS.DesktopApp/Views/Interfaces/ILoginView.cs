@@ -7,6 +7,7 @@ namespace LASYS.DesktopApp.Views.Interfaces
         event Func<object?, EventArgs, Task>? LoginClicked;
         string Username { get; }
         string Password { get; }
+        string SelectedEnvironment { get; }
         void ShowMessage(string errorMessage);
 
 

@@ -1,6 +1,6 @@
 ﻿using System.Drawing;
 using LASYS.Application.Events;
-using LASYS.Application.Interfaces;
+using LASYS.Application.Interfaces.Services;
 using OpenCvSharp;
 using OpenCvSharp.Extensions;
 using Tesseract;
@@ -129,7 +129,7 @@ namespace LASYS.Infrastructure.OCR
                        using Mat thresholded = new Mat();
                        Cv2.Threshold(claheResult, thresholded, 0, 255, ThresholdTypes.Binary | ThresholdTypes.Otsu);
 
-                       using Bitmap bitmap = BitmapConverter.ToBitmap(thresholded);
+                       using Bitmap bitmap = thresholded.ToBitmap();
                        //using Bitmap bitmap = BitmapConverter.ToBitmap(roiMat); //no improvement
 
                        // NO MEMORYSTREAM

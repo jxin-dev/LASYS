@@ -1,9 +1,9 @@
-﻿using LASYS.Application.Interfaces;
+﻿using LASYS.Application.Models.Hardware.Printer;
 
 namespace LASYS.Application.Contracts
 {
     public class PrinterConfig
     {
-        public IPrinterConnection? SatoPrinter { get; set; }
+        public PrinterConnection? SatoPrinter { get; set; }
     }
 }

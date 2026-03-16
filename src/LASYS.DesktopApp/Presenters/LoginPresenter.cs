@@ -1,9 +1,7 @@
-﻿using System.Threading.Tasks;
-using LASYS.Application.Interfaces;
-using LASYS.DesktopApp.Core.Interfaces;
-using LASYS.DesktopApp.Presenters.Interfaces;
-using LASYS.DesktopApp.Views.Forms;
+﻿using LASYS.DesktopApp.Views.Forms;
 using LASYS.DesktopApp.Views.Interfaces;
+using LASYS.Infrastructure.Persistence.Connection;
+using MediatR;
 using Velopack;
 using Velopack.Sources;
 
@@ -12,16 +10,18 @@ namespace LASYS.DesktopApp.Presenters
     public class LoginPresenter
     {
         private ILoginView _view;
-        private readonly IUserRepository _userRepository;
+        private readonly DatabaseSettings _databaseSettings;
+        private readonly IMediator _mediator;
         public LoginForm View { get; }
-        public LoginPresenter(ILoginView view, IUserRepository userRepository)
+        public LoginPresenter(ILoginView view, IMediator mediator, DatabaseSettings databaseSettings)
         {
             _view = view;
             View = (LoginForm)view;
+            _mediator = mediator;
+            _databaseSettings = databaseSettings;
 
             _view.LoginClicked += OnLoginClicked;
             _view.CheckForUpdatesRequested += OnCheckForUpdatesRequested;
-            _userRepository = userRepository;
         }
         private async Task OnCheckForUpdatesRequested(object? sender, EventArgs e)
         {
@@ -30,31 +30,31 @@ namespace LASYS.DesktopApp.Presenters
 
         private async Task OnLoginClicked(object? sender, EventArgs e)
         {
+            _databaseSettings.Environment = _view.SelectedEnvironment;
+
             if (string.IsNullOrWhiteSpace(_view.Username) || string.IsNullOrWhiteSpace(_view.Password))
             {
                 _view.ShowMessage("Please enter both username and password.");
                 return;
             }
+
 #if (DEBUG)
             _view.SetDialogResult(DialogResult.OK);
 #else
-            var user = await _userRepository.GetUserByUsernameAndPassword(_view.Username, _view.Password);
 
-            if (user != null)
+            var result = await _mediator.Send(new LoginQuery(_view.Username, _view.Password));
+            if (result.IsSuccess)
             {
                 _view.SetDialogResult(DialogResult.OK);
             }
             else
             {
-                _view.ShowMessage("Invalid username or password.");
+                _view.ShowMessage(result.ErrorOrDefault);
             }
+
 #endif
 
         }
-        //_view.HideView();
-        //var main = _factory.Create<IMainView, MainPresenter>();
-        //System.Windows.Forms.Application.Run((Form)main);
-        //main.ShowView();
         public async Task CheckForUpdatesAsync()
         {
             try

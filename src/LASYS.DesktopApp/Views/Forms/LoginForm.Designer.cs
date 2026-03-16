@@ -32,7 +32,7 @@
             txtPassword = new TextBox();
             btnLogin = new Button();
             chkShowPassword = new CheckBox();
-            comboBox1 = new ComboBox();
+            cbxEnvironment = new ComboBox();
             label1 = new Label();
             pictureBox1 = new PictureBox();
             label2 = new Label();
@@ -90,16 +90,16 @@
             chkShowPassword.Text = "Show Password";
             chkShowPassword.UseVisualStyleBackColor = true;
             // 
-            // comboBox1
+            // cbxEnvironment
             // 
-            comboBox1.DropDownStyle = ComboBoxStyle.DropDownList;
-            comboBox1.Font = new Font("Segoe UI", 9.75F);
-            comboBox1.FormattingEnabled = true;
-            comboBox1.Items.AddRange(new object[] { "Production Database", "Test Database" });
-            comboBox1.Location = new Point(346, 68);
-            comboBox1.Name = "comboBox1";
-            comboBox1.Size = new Size(156, 25);
-            comboBox1.TabIndex = 4;
+            cbxEnvironment.DropDownStyle = ComboBoxStyle.DropDownList;
+            cbxEnvironment.Font = new Font("Segoe UI", 9.75F);
+            cbxEnvironment.FormattingEnabled = true;
+            cbxEnvironment.Items.AddRange(new object[] { "Production Environment", "Test Environment" });
+            cbxEnvironment.Location = new Point(346, 68);
+            cbxEnvironment.Name = "cbxEnvironment";
+            cbxEnvironment.Size = new Size(156, 25);
+            cbxEnvironment.TabIndex = 4;
             // 
             // label1
             // 
@@ -214,7 +214,7 @@
             Controls.Add(panel1);
             Controls.Add(label2);
             Controls.Add(label1);
-            Controls.Add(comboBox1);
+            Controls.Add(cbxEnvironment);
             Controls.Add(chkShowPassword);
             Controls.Add(btnLogin);
             Controls.Add(txtPassword);
@@ -239,7 +239,7 @@
         private TextBox txtPassword;
         private Button btnLogin;
         private CheckBox chkShowPassword;
-        private ComboBox comboBox1;
+        private ComboBox cbxEnvironment;
         private Label label1;
         private PictureBox pictureBox1;
         private Label label2;

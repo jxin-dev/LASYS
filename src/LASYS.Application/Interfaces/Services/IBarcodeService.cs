@@ -1,0 +1,23 @@
+﻿using LASYS.Application.Contracts;
+using LASYS.Application.Events;
+namespace LASYS.Application.Interfaces.Services
+{
+    public interface IBarcodeService
+    {
+        Task<BarcodeConfig?> LoadAsync();
+        Task SaveAsync(BarcodeConfig config);
+
+        IReadOnlyList<string> GetUSBVirtualCOMPortList();
+        IReadOnlyList<string> GetManualCOMList(int start = 1, int end = 5);
+
+        // Events
+        event EventHandler<BarcodeNotificationEventArgs> BarcodeNotification;
+        event EventHandler<BarcodeStatusEventArgs> BarcodeStatusChanged;
+        event EventHandler<BarcodeScannedEventArgs> BarcodeScanned;
+        bool IsConnected { get; }
+        Task InitializeAsync();
+        Task ScanAsync();
+        Task SetManualModeAsync();
+
+    }
+}

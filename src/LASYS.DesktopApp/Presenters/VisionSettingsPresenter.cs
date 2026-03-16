@@ -2,7 +2,7 @@
 using System.Diagnostics;
 using LASYS.Application.Contracts;
 using LASYS.Application.Events;
-using LASYS.Application.Interfaces;
+using LASYS.Application.Interfaces.Services;
 using LASYS.DesktopApp.Events;
 using LASYS.DesktopApp.Views.Interfaces;
 using OpenCvSharp;

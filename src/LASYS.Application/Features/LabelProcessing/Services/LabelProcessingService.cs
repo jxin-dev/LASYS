@@ -5,7 +5,7 @@ using LASYS.Application.Contracts;
 using LASYS.Application.Events;
 using LASYS.Application.Features.LabelProcessing.Abstractions;
 using LASYS.Application.Features.LabelProcessing.Contracts;
-using LASYS.Application.Interfaces;
+using LASYS.Application.Interfaces.Services;
 using Microsoft.Extensions.Logging;
 
 namespace LASYS.Application.Features.LabelProcessing.Services

@@ -1,6 +1,6 @@
 ﻿using System.Drawing;
 using LASYS.Application.Contracts;
-using LASYS.Application.Interfaces;
+using LASYS.Application.Interfaces.Services;
 using Newtonsoft.Json;
 
 namespace LASYS.Infrastructure.OCR

@@ -10,6 +10,8 @@ namespace LASYS.DesktopApp.Views.Forms
         public string Username => txtUsername.Text;
         public string Password => txtPassword.Text;
 
+        public string SelectedEnvironment => cbxEnvironment.SelectedItem?.ToString() ?? "Test Environment";
+
         public LoginForm()
         {
             InitializeComponent();
