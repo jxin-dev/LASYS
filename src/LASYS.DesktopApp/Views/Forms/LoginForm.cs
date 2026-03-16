@@ -6,17 +6,17 @@ namespace LASYS.DesktopApp.Views.Forms
     {
         public event Func<object?, EventArgs, Task>? LoginClicked;
         public event Func<object?, EventArgs, Task>? CheckForUpdatesRequested;
-
         public string Username => txtUsername.Text;
         public string Password => txtPassword.Text;
 
-        public string SelectedEnvironment => cbxEnvironment.SelectedItem?.ToString() ?? "Test Environment";
+        public string? SelectedEnvironment => cbxEnvironment?.SelectedItem?.ToString();
 
         public LoginForm()
         {
             InitializeComponent();
             btnLogin.Click += (s, e) => LoginClicked?.Invoke(this, EventArgs.Empty);
-            btnCancel.Click += delegate { CloseView(); };
+            btnCancel.Click += (s, e) => Close();
+
             chkShowPassword.CheckedChanged += (s, e) =>
             {
                 txtPassword.UseSystemPasswordChar = !chkShowPassword.Checked;
@@ -24,15 +24,6 @@ namespace LASYS.DesktopApp.Views.Forms
 
             lnklblCheckUpdates.Click += (s, e) => CheckForUpdatesRequested?.Invoke(this, EventArgs.Empty);
         }
-
-        protected override void OnClosed(EventArgs e)
-        {
-            base.OnClosed(e);
-            CloseView();
-        }
-        public void CloseView() => this.Close();//System.Windows.Forms.Application.Exit();
-        public void ShowView() => Show();
-        public void HideView() => Hide();
 
         public void ShowMessage(string errorMessage)
         {
@@ -48,6 +39,16 @@ namespace LASYS.DesktopApp.Views.Forms
         public void SetDialogResult(DialogResult result)
         {
             this.DialogResult = result;
+        }
+
+        public void SetLoginEnabled(bool enabled)
+        {
+            btnLogin.Enabled = enabled;
+        }
+
+        public void SetStatus(string status)
+        {
+            this.Text = status;
         }
     }
 }

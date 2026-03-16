@@ -9,6 +9,7 @@ using LASYS.Infrastructure.Logging;
 using LASYS.Infrastructure.OCR;
 using LASYS.Infrastructure.Persistence.Connection;
 using LASYS.Infrastructure.Persistence.Repositories;
+using LASYS.Infrastructure.Services.Session;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace LASYS.Infrastructure;
@@ -25,9 +26,17 @@ public static class DependencyInjection
 
         services.AddLoggingServices();
 
+        services.AddSessionServices();
+
         return services;
     }
 
+    public static IServiceCollection AddSessionServices(this IServiceCollection services)
+    {
+        services.AddSingleton<ISessionTracker, SessionTracker>();
+
+        return services;
+    }
     public static IServiceCollection AddPersistence(this IServiceCollection services)
     {
         //Connection

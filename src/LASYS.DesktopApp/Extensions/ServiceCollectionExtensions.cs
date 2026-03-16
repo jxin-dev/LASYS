@@ -1,6 +1,8 @@
 ﻿using LASYS.Application.Features.LabelProcessing.Abstractions;
 using LASYS.Application.Interfaces;
+using LASYS.Application.Interfaces.Context;
 using LASYS.DesktopApp.Presenters;
+using LASYS.DesktopApp.Services.Context;
 using LASYS.DesktopApp.Views.Forms;
 using LASYS.DesktopApp.Views.Interfaces;
 using LASYS.DesktopApp.Views.UserControls;
@@ -20,19 +22,10 @@ namespace LASYS.DesktopApp.Extensions
             services.AddTransient<LoginPresenter>();
 
             services.AddSingleton<IMainView, MainForm>();
-            //services.AddTransient<IMainView>(sp => sp.GetRequiredService<MainForm>());
             services.AddSingleton<MainPresenter>();
-
-            //services.AddSingleton<IMainView, MainForm>();
-            //services.AddSingleton<MainPresenter>(sp =>
-            //{
-            //    var view = sp.GetRequiredService<IMainView>();
-            //    return new MainPresenter(view, sp);
-            //});
 
             services.AddTransient<IErrorView, ErrorForm>();
             services.AddTransient<ErrorPresenter>();
-
 
             services.AddTransient<IWorkOrdersView, WorkOrdersControl>();
             services.AddTransient<WorkOrdersPresenter>();
@@ -50,7 +43,7 @@ namespace LASYS.DesktopApp.Extensions
             services.AddSingleton<BarcodeScannerPresenter>();
 
             // Services
-
+            services.AddSingleton<ICurrentUser, CurrentUser>();
 
 
             return services;

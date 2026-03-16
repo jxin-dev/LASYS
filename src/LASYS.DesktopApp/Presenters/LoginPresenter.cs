@@ -1,6 +1,11 @@
-﻿using LASYS.DesktopApp.Views.Forms;
+﻿using LASYS.Application.Common.Messaging;
+using LASYS.Application.Features.Authentication.Login;
+using LASYS.Application.Interfaces.Context;
+using LASYS.Application.Interfaces.Services;
+using LASYS.DesktopApp.Views.Forms;
 using LASYS.DesktopApp.Views.Interfaces;
 using LASYS.Infrastructure.Persistence.Connection;
+using LASYS.Infrastructure.Services.Session;
 using MediatR;
 using Velopack;
 using Velopack.Sources;
@@ -12,17 +17,27 @@ namespace LASYS.DesktopApp.Presenters
         private ILoginView _view;
         private readonly DatabaseSettings _databaseSettings;
         private readonly IMediator _mediator;
+        private readonly ICurrentUser _currentUser;
+        private readonly ILogService _logService;
+        private readonly ISessionTracker _sessionTracker;
+        private bool _isLoggingIn = false;
         public LoginForm View { get; }
-        public LoginPresenter(ILoginView view, IMediator mediator, DatabaseSettings databaseSettings)
+        public LoginPresenter(ILoginView view, IMediator mediator, DatabaseSettings databaseSettings, ICurrentUser currentUser, ILogService logService, ISessionTracker sessionTracker)
         {
             _view = view;
             View = (LoginForm)view;
+
             _mediator = mediator;
             _databaseSettings = databaseSettings;
+            _currentUser = currentUser;
+            _logService = logService;
 
             _view.LoginClicked += OnLoginClicked;
             _view.CheckForUpdatesRequested += OnCheckForUpdatesRequested;
+            _sessionTracker = sessionTracker;
         }
+
+
         private async Task OnCheckForUpdatesRequested(object? sender, EventArgs e)
         {
             await CheckForUpdatesAsync();
@@ -30,7 +45,18 @@ namespace LASYS.DesktopApp.Presenters
 
         private async Task OnLoginClicked(object? sender, EventArgs e)
         {
-            _databaseSettings.Environment = _view.SelectedEnvironment;
+            if (_isLoggingIn)
+                return;
+
+            var environment = _view.SelectedEnvironment;
+            var username = _view.Username?.Trim();
+            var password = _view.Password;
+
+            if (string.IsNullOrWhiteSpace(environment))
+            {
+                _view.ShowMessage("Please select an environment.");
+                return;
+            }
 
             if (string.IsNullOrWhiteSpace(_view.Username) || string.IsNullOrWhiteSpace(_view.Password))
             {
@@ -38,21 +64,45 @@ namespace LASYS.DesktopApp.Presenters
                 return;
             }
 
-#if (DEBUG)
-            _view.SetDialogResult(DialogResult.OK);
-#else
+            _databaseSettings.Environment = environment;
+            _isLoggingIn = true;
 
-            var result = await _mediator.Send(new LoginQuery(_view.Username, _view.Password));
-            if (result.IsSuccess)
+            try
             {
-                _view.SetDialogResult(DialogResult.OK);
-            }
-            else
-            {
-                _view.ShowMessage(result.ErrorOrDefault);
-            }
+                _view.SetLoginEnabled(false);
+                _view.SetStatus("Logging in...");
+                var result = await _mediator.Send(new LoginQuery(_view.Username, _view.Password));
+                if (result.IsSuccess)
+                {
+                    var user = result.Value!;
+                    
+                    _currentUser.SetUser(
+                        user.USER_CODE,
+                        user.USER_NAME,
+                        user.SECTION_ID,
+                        user.ROLE_CODE,
+                        user.PLANT_CODE,
+                        user.FIRST_NAME,
+                        user.LAST_NAME,
+                        user.MIDDLE_NAME);
 
-#endif
+                    _sessionTracker.StartSession();
+
+                    _view.SetDialogResult(DialogResult.OK);
+                }
+                else
+                {
+                    _view.ShowMessage(result.ErrorOrDefault);
+                }
+            }
+            finally
+            {
+                _view.SetLoginEnabled(true);
+                _view.SetStatus("Login");
+                _isLoggingIn = false;
+            }
+           
+            //_view.SetDialogResult(DialogResult.OK);
 
         }
         public async Task CheckForUpdatesAsync()

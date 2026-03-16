@@ -1,5 +1,7 @@
 ﻿using System.Data;
+using LASYS.Application.Common.Messaging;
 using LASYS.Application.Interfaces.Persistence;
+using LASYS.Application.Interfaces.Services;
 using Microsoft.Extensions.Configuration;
 using MySqlConnector;
 
@@ -9,11 +11,13 @@ namespace LASYS.Infrastructure.Persistence.Connection
     {
         private readonly IConfiguration _configuration;
         private readonly DatabaseSettings _settings;
+        private readonly ILogService _logService;
 
-        public DapperContext(IConfiguration configuration, DatabaseSettings settings)
+        public DapperContext(IConfiguration configuration, DatabaseSettings settings, ILogService logService)
         {
             _configuration = configuration;
             _settings = settings;
+            _logService = logService;
         }
 
         public async Task<IDbConnection> CreateConnectionAsync()
@@ -27,8 +31,19 @@ namespace LASYS.Infrastructure.Persistence.Connection
 
             var connection = new MySqlConnection(connectionString);
 
-            if (connection.State != ConnectionState.Open)
-                await connection.OpenAsync();
+            try
+            {
+                if (connection.State != ConnectionState.Open)
+                {
+                    _logService.Log($"Opening database connection (Environment: {_settings.Environment})", MessageType.Info);
+                    await connection.OpenAsync();
+                }
+            }
+            catch (Exception ex)
+            {
+                _logService.Log($"Database connection failed (Environment: {_settings.Environment}) - {ex.Message}", MessageType.Error);
+                throw;
+            }
 
             return connection;
         }

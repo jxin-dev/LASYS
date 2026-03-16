@@ -14,6 +14,8 @@ namespace LASYS.DesktopApp.Views.Forms
         public event EventHandler? VisionSettingsRequested;
         public event EventHandler? PrinterManagementRequested;
         public event EventHandler? BarcodeDeviceSetupRequested;
+        public event EventHandler? FormClosingRequested;
+        public event EventHandler? LogoutRequested;
 
         public MainForm()
         {
@@ -72,7 +74,7 @@ namespace LASYS.DesktopApp.Views.Forms
 
             deviceSetup.SubItems[2].Clicked += delegate { BarcodeDeviceSetupRequested?.Invoke(this, EventArgs.Empty); };
 
-
+            logOut.Clicked += (_, _) => LogoutRequested?.Invoke(this, EventArgs.Empty);
         }
 
         protected override void OnLoad(EventArgs e)
@@ -81,16 +83,7 @@ namespace LASYS.DesktopApp.Views.Forms
             WorkOrderRequested?.Invoke(this, EventArgs.Empty);
 
         }
-        protected override void OnClosed(EventArgs e)
-        {
-            base.OnClosed(e);
-            CloseView();
-        }
-        public void CloseView() => Close();//System.Windows.Forms.Application.Exit();
-
-        public void HideView() => Hide();
-
-        public void ShowView() => Show();
+        public void CloseView() => Close();
 
         private Dictionary<Type, UserControl> _views = new Dictionary<Type, UserControl>();
         public void LoadView(UserControl control, bool cache = true)
@@ -120,6 +113,12 @@ namespace LASYS.DesktopApp.Views.Forms
 
             _contentPanel.ResumeLayout();
             _contentPanel.Refresh();
+        }
+
+        protected override void OnFormClosing(FormClosingEventArgs e)
+        {
+            FormClosingRequested?.Invoke(this, EventArgs.Empty);
+            base.OnFormClosing(e);
         }
     }
 }
