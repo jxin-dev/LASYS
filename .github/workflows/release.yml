@@ -76,7 +76,16 @@ jobs:
             --packTitle "LASYS Application - Upgraded" `
             --packVersion $version `
             --packDir ./publish `
-            --mainExe "LASYS.DesktopApp.exe"
+            --mainExe "LASYS.DesktopApp.exe" `
+            --icon "src/LASYS.DesktopApp/Resources/installer.ico"
+
+      # ───────────────────────────────────────────────
+      - name: Rename installer to Setup.exe
+        shell: pwsh
+        run: |
+          Rename-Item `
+            -Path "./releases/LASYSDesktopApp-win-Setup.exe" `
+            -NewName "Setup.exe"
       # ───────────────────────────────────────────────
       - name: Create GitHub Release & Upload Assets
         uses: softprops/action-gh-release@v1
