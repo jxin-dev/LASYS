@@ -72,7 +72,7 @@ jobs:
           $version = "${{ github.ref_name }}".TrimStart('v')
 
           vpk pack `
-            --packId "InnovaThink Corporation" `
+            --packId "InnovaThinkCorporation" `
             --packTitle "New LASYS" `
             --packVersion $version `
             --packDir ./publish `
