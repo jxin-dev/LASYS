@@ -72,8 +72,8 @@ jobs:
           $version = "${{ github.ref_name }}".TrimStart('v')
 
           vpk pack `
-            --packId "LASYSDesktopApp" `
-            --packTitle "LASYS Application" `
+            --packId "InnovaThink Corporation" `
+            --packTitle "New LASYS" `
             --packVersion $version `
             --packDir ./publish `
             --mainExe "LASYS.DesktopApp.exe" `
