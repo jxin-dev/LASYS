@@ -42,6 +42,7 @@ jobs:
       # Publish Desktop App + include resource subfolders
       - name: Publish 32-bit Desktop App
         run: |
+          $version = "${{ github.ref_name }}".TrimStart('v')
           dotnet publish src/LASYS.DesktopApp/LASYS.DesktopApp.csproj `
             -c Release `
             -p:RuntimeIdentifier=win-x86 `
