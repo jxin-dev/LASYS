@@ -84,7 +84,11 @@ namespace LASYS.Infrastructure.Hardware.Camera
                     var cameraIndex = GetCameraIndex(config.Name);
                     if (cameraIndex == -1)
                     {
-                        CameraStatusChanged?.Invoke(this, new CameraStatusEventArgs(CameraStatus.CameraNotDetected, $"Camera not found ({config.Name})"));
+                        if (string.IsNullOrWhiteSpace(config.Name))
+                            CameraStatusChanged?.Invoke(this, new CameraStatusEventArgs(CameraStatus.CameraNotConfigured));
+                        else
+                            CameraStatusChanged?.Invoke(this, new CameraStatusEventArgs(CameraStatus.CameraNotDetected, $"No camera device was found using the configured device name ({config.Name})"));
+
                         CameraDisconnected?.Invoke(this, EventArgs.Empty);
                         return;
                     }
