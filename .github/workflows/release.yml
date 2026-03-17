@@ -80,12 +80,12 @@ jobs:
             --icon "src/LASYS.DesktopApp/Resources/installer.ico"
 
       # ───────────────────────────────────────────────
-      - name: Rename installer with full title
+      - name: Rename installer
         shell: pwsh
         run: |
           $version = "${{ github.ref_name }}".TrimStart('v')
           $file = Get-ChildItem ./releases/*-Setup.exe | Select-Object -First 1
-          $newName = "LASYS Application Setup $version.exe"
+          $newName = "lasys-$version-win.exe"
           Rename-Item `
             -Path $file.FullName `
             -NewName $newName
