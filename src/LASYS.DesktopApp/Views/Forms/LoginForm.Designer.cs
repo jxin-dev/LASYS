@@ -159,10 +159,10 @@
             lnklblCheckUpdates.LinkColor = Color.White;
             lnklblCheckUpdates.Location = new Point(12, 14);
             lnklblCheckUpdates.Name = "lnklblCheckUpdates";
-            lnklblCheckUpdates.Size = new Size(72, 15);
+            lnklblCheckUpdates.Size = new Size(37, 15);
             lnklblCheckUpdates.TabIndex = 0;
             lnklblCheckUpdates.TabStop = true;
-            lnklblCheckUpdates.Text = "Version 1.0.0";
+            lnklblCheckUpdates.Text = "v1.0.0";
             lnklblCheckUpdates.VisitedLinkColor = Color.White;
             // 
             // panel3

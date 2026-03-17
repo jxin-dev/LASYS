@@ -1,4 +1,5 @@
-﻿using LASYS.DesktopApp.Views.Interfaces;
+﻿using LASYS.DesktopApp.Helpers;
+using LASYS.DesktopApp.Views.Interfaces;
 
 namespace LASYS.DesktopApp.Views.Forms
 {
@@ -22,6 +23,7 @@ namespace LASYS.DesktopApp.Views.Forms
                 txtPassword.UseSystemPasswordChar = !chkShowPassword.Checked;
             };
 
+            lnklblCheckUpdates.Text = AppVersionHelper.GetVersion();
             lnklblCheckUpdates.Click += (s, e) => CheckForUpdatesRequested?.Invoke(this, EventArgs.Empty);
         }
 
