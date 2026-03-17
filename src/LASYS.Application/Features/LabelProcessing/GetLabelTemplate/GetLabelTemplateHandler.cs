@@ -15,12 +15,16 @@ namespace LASYS.Application.Features.LabelProcessing.LoadLabelTemplate
         }
         public async Task<Result<string>> Handle(GetLabelTemplateQuery request, CancellationToken cancellationToken)
         {
-            var connection = await _factory.CreateConnectionAsync();
-            var sql = "";
-            var templatePath = await connection.QuerySingleOrDefaultAsync<string>(sql);
+            //var connection = await _factory.CreateConnectionAsync();
+            //var sql = "";
+            //var templatePath = await connection.QuerySingleOrDefaultAsync<string>(sql);
 
-            if (templatePath is null)
-                return Result.Failure<string>($"No template path found for WorkOrderId: {request.WorkOrderId}");
+            //if (templatePath is null)
+            //    return Result.Failure<string>($"No template path found for WorkOrderId: {request.WorkOrderId}");
+           
+            //var templatePath = ‪@"C:\Users\ITC - JAYSON OLICIA\Desktop\SRFF2032_ub_w manufacturedate.lbl";
+            var templatePath = @"C:\Users\ITC - JAYSON OLICIA\Desktop\SRFF2032_ub_w manufacturedate.lbl";
+           
             return Result.Success(templatePath);
         }
 

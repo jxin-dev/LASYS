@@ -7,14 +7,14 @@ namespace LASYS.Application.Events
     {
         public string? CustomMessage { get; }  // Optional custom message
         public ValidationFailure FailureType { get; }
-        public int? SequenceNo { get; }
+        public string? SequenceNo { get; }
         public string? OcrResult { get; }
         public string? BarcodeResult { get; }
 
         public OperatorDecisionRequiredEventArgs(
             ValidationFailure operationType,
             string? customMessage = null,
-            int? sequenceNo = null,
+            string? sequenceNo = null,
             string? ocrResult = null,
             string? barcodeResult = null)
         {

@@ -3,7 +3,6 @@ using LASYS.Application.Common.Messaging;
 using LASYS.Application.Events;
 using LASYS.Application.Features.LabelProcessing.Abstractions;
 using LASYS.Application.Features.LabelProcessing.GetLabelTemplate;
-using LASYS.Application.Features.LabelProcessing.LoadLabelTemplate;
 using LASYS.Application.Features.LabelProcessing.StartLabelJob;
 using LASYS.DesktopApp.DTOs;
 using LASYS.DesktopApp.Views.Interfaces;

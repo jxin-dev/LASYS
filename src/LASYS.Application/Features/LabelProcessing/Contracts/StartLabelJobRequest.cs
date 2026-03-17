@@ -13,6 +13,7 @@
 
         // Tell system which key is sequence variable
         public string SequenceVariableName { get; set; } = "SEQUENCE";
+        public int SequencePaddingLength { get; init; } = 6;
         // Tell system which key is barcode variable
         public string BarcodeVariableName { get; set; } = "BARCODE";
     }

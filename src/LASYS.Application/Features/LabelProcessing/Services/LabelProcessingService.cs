@@ -5,6 +5,7 @@ using LASYS.Application.Contracts;
 using LASYS.Application.Events;
 using LASYS.Application.Features.LabelProcessing.Abstractions;
 using LASYS.Application.Features.LabelProcessing.Contracts;
+using LASYS.Application.Features.LabelProcessing.Utilities;
 using LASYS.Application.Interfaces.Services;
 using Microsoft.Extensions.Logging;
 
@@ -177,9 +178,8 @@ namespace LASYS.Application.Features.LabelProcessing.Services
         public async Task StartJobAsync(Size viewerSize, StartLabelJobRequest request)
         {
             //DecisionRequired?.Invoke(this, new OperatorDecisionRequiredEventArgs(
-            //                      ValidationFailure.BarcodeMismatch,
-            //                      sequenceNo: 1,
-            //                      barcodeResult: "test"));
+            //                      ValidationFailure.OcrMismatch,
+            //                      sequenceNo: "000001", ocrResult: "00001"));
 
             if (!await _lock.WaitAsync(0))
             {
@@ -226,7 +226,9 @@ namespace LASYS.Application.Features.LabelProcessing.Services
                     LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Info, $"Printing label with sequence {currentSequence}"));
 
                     var labelData = new Dictionary<string, string>(request.LabelData);
-                    labelData[request.SequenceVariableName] = currentSequence.ToString();
+                    var formattedSequence = SequenceFormatter.Format(currentSequence, request.SequencePaddingLength);
+
+                    labelData[request.SequenceVariableName] = formattedSequence;
 
                     bool generated = _printerService.PrintLabelWithPreview($"LBL_{currentSequence}");
                     if (!generated)
@@ -269,7 +271,7 @@ namespace LASYS.Application.Features.LabelProcessing.Services
                             var decision = await WaitForOperatorDecisionAsync(
                                 new OperatorDecisionRequiredEventArgs(
                                     ValidationFailure.BarcodeMismatch,
-                                    sequenceNo: currentSequence,
+                                    sequenceNo: formattedSequence,
                                     barcodeResult: scannedBarcode),
                                 token);
 
@@ -359,7 +361,7 @@ namespace LASYS.Application.Features.LabelProcessing.Services
                                 var decision = await WaitForOperatorDecisionAsync(
                                     new OperatorDecisionRequiredEventArgs(
                                         ValidationFailure.OcrMismatch,
-                                        sequenceNo: currentSequence,
+                                        sequenceNo: formattedSequence,
                                         ocrResult: ocrResult),
                                     token);
 
