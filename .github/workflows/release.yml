@@ -49,6 +49,10 @@ jobs:
             -p:PublishSingleFile=false `
             -p:IncludeNativeLibrariesForSelfExtract=true `
             -p:EnableCompressionInSingleFile=true `
+            -p:Version=$version `
+            -p:AssemblyVersion=$version `
+            -p:FileVersion=$version `
+            -p:InformationalVersion=$version `
             -o publish
 
           # Copy additional resource folders if they exist
