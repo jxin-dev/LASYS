@@ -73,19 +73,22 @@ jobs:
 
           vpk pack `
             --packId "LASYSDesktopApp" `
-            --packTitle "LASYS Application - Upgraded" `
+            --packTitle "LASYS Application" `
             --packVersion $version `
             --packDir ./publish `
             --mainExe "LASYS.DesktopApp.exe" `
             --icon "src/LASYS.DesktopApp/Resources/installer.ico"
 
       # ───────────────────────────────────────────────
-      - name: Rename installer to Setup.exe
+      - name: Rename installer with full title
         shell: pwsh
         run: |
+          $version = "${{ github.ref_name }}".TrimStart('v')
+          $file = Get-ChildItem ./releases/*-Setup.exe | Select-Object -First 1
+          $newName = "LASYS Application Setup $version.exe"
           Rename-Item `
-            -Path "./releases/LASYSDesktopApp-win-Setup.exe" `
-            -NewName "Setup.exe"
+            -Path $file.FullName `
+            -NewName $newName
       # ───────────────────────────────────────────────
       - name: Create GitHub Release & Upload Assets
         uses: softprops/action-gh-release@v1
