@@ -417,12 +417,12 @@
             // lblLabelFile
             // 
             lblLabelFile.AutoSize = true;
-            lblLabelFile.Font = new Font("Segoe UI", 9.75F, FontStyle.Underline, GraphicsUnit.Point, 0);
+            lblLabelFile.Font = new Font("Segoe UI", 9.75F);
             lblLabelFile.Location = new Point(139, 113);
             lblLabelFile.Name = "lblLabelFile";
-            lblLabelFile.Size = new Size(95, 17);
+            lblLabelFile.Size = new Size(64, 17);
             lblLabelFile.TabIndex = 9;
-            lblLabelFile.Text = "Not Applicable";
+            lblLabelFile.Text = "Loading...";
             // 
             // label9
             // 
@@ -437,12 +437,12 @@
             // lblLotNo
             // 
             lblLotNo.AutoSize = true;
-            lblLotNo.Font = new Font("Segoe UI", 9.75F, FontStyle.Underline, GraphicsUnit.Point, 0);
+            lblLotNo.Font = new Font("Segoe UI", 9.75F);
             lblLotNo.Location = new Point(139, 92);
             lblLotNo.Name = "lblLotNo";
-            lblLotNo.Size = new Size(95, 17);
+            lblLotNo.Size = new Size(64, 17);
             lblLotNo.TabIndex = 7;
-            lblLotNo.Text = "Not Applicable";
+            lblLotNo.Text = "Loading...";
             // 
             // label11
             // 
@@ -457,12 +457,12 @@
             // lblExpiryDate
             // 
             lblExpiryDate.AutoSize = true;
-            lblExpiryDate.Font = new Font("Segoe UI", 9.75F, FontStyle.Underline, GraphicsUnit.Point, 0);
+            lblExpiryDate.Font = new Font("Segoe UI", 9.75F);
             lblExpiryDate.Location = new Point(139, 71);
             lblExpiryDate.Name = "lblExpiryDate";
-            lblExpiryDate.Size = new Size(95, 17);
+            lblExpiryDate.Size = new Size(64, 17);
             lblExpiryDate.TabIndex = 5;
-            lblExpiryDate.Text = "Not Applicable";
+            lblExpiryDate.Text = "Loading...";
             // 
             // label7
             // 
@@ -477,12 +477,12 @@
             // lblItemCode
             // 
             lblItemCode.AutoSize = true;
-            lblItemCode.Font = new Font("Segoe UI", 9.75F, FontStyle.Underline, GraphicsUnit.Point, 0);
+            lblItemCode.Font = new Font("Segoe UI", 9.75F);
             lblItemCode.Location = new Point(139, 50);
             lblItemCode.Name = "lblItemCode";
-            lblItemCode.Size = new Size(95, 17);
+            lblItemCode.Size = new Size(64, 17);
             lblItemCode.TabIndex = 3;
-            lblItemCode.Text = "Not Applicable";
+            lblItemCode.Text = "Loading...";
             // 
             // label5
             // 
@@ -497,12 +497,12 @@
             // lblInstructionCode
             // 
             lblInstructionCode.AutoSize = true;
-            lblInstructionCode.Font = new Font("Segoe UI", 9.75F, FontStyle.Underline, GraphicsUnit.Point, 0);
+            lblInstructionCode.Font = new Font("Segoe UI", 9.75F);
             lblInstructionCode.Location = new Point(139, 29);
             lblInstructionCode.Name = "lblInstructionCode";
-            lblInstructionCode.Size = new Size(95, 17);
+            lblInstructionCode.Size = new Size(64, 17);
             lblInstructionCode.TabIndex = 1;
-            lblInstructionCode.Text = "Not Applicable";
+            lblInstructionCode.Text = "Loading...";
             // 
             // label2
             // 

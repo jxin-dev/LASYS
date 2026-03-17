@@ -96,16 +96,16 @@
             cbxEnvironment.Font = new Font("Segoe UI", 9.75F);
             cbxEnvironment.FormattingEnabled = true;
             cbxEnvironment.Items.AddRange(new object[] { "Production Environment", "Test Environment" });
-            cbxEnvironment.Location = new Point(346, 68);
+            cbxEnvironment.Location = new Point(272, 68);
             cbxEnvironment.Name = "cbxEnvironment";
-            cbxEnvironment.Size = new Size(156, 25);
+            cbxEnvironment.Size = new Size(230, 25);
             cbxEnvironment.TabIndex = 4;
             // 
             // label1
             // 
             label1.AutoSize = true;
             label1.Font = new Font("Segoe UI", 9.75F);
-            label1.Location = new Point(272, 71);
+            label1.Location = new Point(272, 47);
             label1.Name = "label1";
             label1.Size = new Size(68, 17);
             label1.TabIndex = 5;

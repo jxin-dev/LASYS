@@ -112,9 +112,9 @@
             label1.ForeColor = Color.FromArgb(240, 84, 84);
             label1.Location = new Point(14, 11);
             label1.Name = "label1";
-            label1.Size = new Size(225, 30);
+            label1.Size = new Size(320, 30);
             label1.TabIndex = 0;
-            label1.Text = "Barcode Device Setup";
+            label1.Text = "Barcode Scanner Configuration";
             // 
             // label5
             // 
@@ -134,12 +134,12 @@
             label4.TabIndex = 7;
             label4.Text = "USB Virtual COM Port";
             // 
-            // BarcodeDeviceSetupControl
+            // BarcodeScannerControl
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             Controls.Add(pnlContent);
-            Name = "BarcodeDeviceSetupControl";
+            Name = "BarcodeScannerControl";
             Size = new Size(749, 413);
             pnlContent.ResumeLayout(false);
             pnlContent.PerformLayout();
