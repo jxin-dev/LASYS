@@ -9,14 +9,16 @@ using LASYS.Infrastructure.Logging;
 using LASYS.Infrastructure.OCR;
 using LASYS.Infrastructure.Persistence.Connection;
 using LASYS.Infrastructure.Persistence.Repositories;
+using LASYS.Infrastructure.Services.Media;
 using LASYS.Infrastructure.Services.Session;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace LASYS.Infrastructure;
 
 public static class DependencyInjection
 {
-    public static IServiceCollection AddInfrastructure(this IServiceCollection services)
+    public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration config)
     {
         services.AddPersistence();
         services.AddBarcodeAnalyzerServices();
@@ -27,6 +29,17 @@ public static class DependencyInjection
         services.AddLoggingServices();
 
         services.AddSessionServices();
+
+        services.AddImageServices(config);
+        return services;
+    }
+
+    public static IServiceCollection AddImageServices(this IServiceCollection services, IConfiguration config)
+    {
+        services.Configure<ImageSettings>(config.GetSection("ImageSettings"));
+
+        services.AddSingleton<HttpClient>();
+        services.AddScoped<IImageService, ImageService>();
 
         return services;
     }

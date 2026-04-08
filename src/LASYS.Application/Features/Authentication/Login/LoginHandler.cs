@@ -11,10 +11,12 @@ namespace LASYS.Application.Features.Authentication.Login
     {
         private readonly ILogService _logService;
         private readonly IUserRepository _userRepository;
-        public LoginHandler(ILogService logService, IUserRepository userRepository)
+        private readonly IImageService _imageService;
+        public LoginHandler(ILogService logService, IUserRepository userRepository, IImageService imageService)
         {
             _logService = logService;
             _userRepository = userRepository;
+            _imageService = imageService;
         }
 
         public async Task<Result<LoginResponse>> Handle(LoginQuery request, CancellationToken cancellationToken)
@@ -29,6 +31,9 @@ namespace LASYS.Application.Features.Authentication.Login
                     _logService.Log($"Login failed for '{request.Username}'", MessageType.Warning);
                     return Result.Failure<LoginResponse>("Invalid username or password.");
                 }
+
+                await _imageService.GetUserImageUrlAsync(user.USER_CODE);
+
                 _logService.Log($"User '{user.USER_NAME}' logged in successfully", MessageType.Info);
 
                 return Result.Success(new LoginResponse(

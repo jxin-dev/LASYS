@@ -20,11 +20,13 @@ namespace LASYS.DesktopApp
             ApplicationConfiguration.Initialize();
 
             var host = Host.CreateDefaultBuilder()
-           .ConfigureServices(services =>
+           .ConfigureServices((context, services) =>
            {
+               var config = context.Configuration;
+
                services.AddMvp(); // from our extension
                services.AddApplication(); // from our application layer
-               services.AddInfrastructure(); // from our infrastructure layer
+               services.AddInfrastructure(config); // from our infrastructure layer
            })
            .Build();
 
