@@ -13,6 +13,7 @@ namespace LASYS.DesktopApp.Services.Context
         public string? FirstName { get; private set; }
         public string? LastName { get; private set; }
         public string? MiddleName { get; private set; }
+        public string? ImagePath { get; private set; }
         public string FullName => $"{FirstName} {LastName}";
         public string ShortName => string.IsNullOrEmpty(LastName)
             ? FirstName ?? ""
@@ -31,7 +32,8 @@ namespace LASYS.DesktopApp.Services.Context
                            string? plantCode,
                            string? firstName,
                            string? lastName,
-                           string? middleName)
+                           string? middleName,
+                           string? imagePath)
         {
             LoginTime = DateTime.Now;
             UserCode = userCode;
@@ -42,6 +44,7 @@ namespace LASYS.DesktopApp.Services.Context
             FirstName = firstName;
             LastName = lastName;
             MiddleName = middleName;
+            ImagePath = imagePath;
         }
 
         public void Clear()
@@ -54,6 +57,7 @@ namespace LASYS.DesktopApp.Services.Context
             FirstName = null;
             LastName = null;
             MiddleName = null;
+            ImagePath = null;
         }
 
     }

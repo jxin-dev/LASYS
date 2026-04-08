@@ -11,6 +11,7 @@
         string? FirstName { get; }
         string? LastName { get; }
         string? MiddleName { get; }
+        string? ImagePath { get; }
         string FullName { get; }
         string ShortName { get; }
         string LogIdentity { get; }
@@ -22,7 +23,8 @@
             string? plantCode,
             string? firstName,
             string? lastName,
-            string? middleName);
+            string? middleName,
+            string? imagePath);
         void Clear();
     }
 }

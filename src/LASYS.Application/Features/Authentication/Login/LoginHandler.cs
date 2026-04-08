@@ -1,6 +1,6 @@
 ﻿using LASYS.Application.Common.Messaging;
 using LASYS.Application.Common.Results;
-using LASYS.Application.Interfaces.Persistence;
+using LASYS.Application.Features.Permissions.GetUserPermissions;
 using LASYS.Application.Interfaces.Persistence.Repositories;
 using LASYS.Application.Interfaces.Services;
 using MediatR;
@@ -12,11 +12,15 @@ namespace LASYS.Application.Features.Authentication.Login
         private readonly ILogService _logService;
         private readonly IUserRepository _userRepository;
         private readonly IImageService _imageService;
-        public LoginHandler(ILogService logService, IUserRepository userRepository, IImageService imageService)
+        private readonly IPermissionService _permissionService;
+        private readonly IMediator _mediator;
+        public LoginHandler(ILogService logService, IUserRepository userRepository, IImageService imageService, IPermissionService permissionService, IMediator mediator)
         {
             _logService = logService;
             _userRepository = userRepository;
             _imageService = imageService;
+            _permissionService = permissionService;
+            _mediator = mediator;
         }
 
         public async Task<Result<LoginResponse>> Handle(LoginQuery request, CancellationToken cancellationToken)
@@ -32,7 +36,11 @@ namespace LASYS.Application.Features.Authentication.Login
                     return Result.Failure<LoginResponse>("Invalid username or password.");
                 }
 
-                await _imageService.GetUserImageUrlAsync(user.USER_CODE);
+                var imagePath = await _imageService.GetUserImageUrlAsync(user.USER_CODE);
+                
+                var permissions = await _mediator.Send(new GetUserPermissionsQuery(user.ROLE_CODE!), cancellationToken);
+                _permissionService.SetPermissions(permissions);
+
 
                 _logService.Log($"User '{user.USER_NAME}' logged in successfully", MessageType.Info);
 
@@ -44,7 +52,7 @@ namespace LASYS.Application.Features.Authentication.Login
                     user.PLANT_CODE,
                     user.FIRST_NAME,
                     user.LAST_NAME,
-                    user.MIDDLE_NAME));
+                    user.MIDDLE_NAME, imagePath));
             }
             catch
             {

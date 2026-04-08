@@ -84,7 +84,8 @@ namespace LASYS.DesktopApp.Presenters
                         user.PLANT_CODE,
                         user.FIRST_NAME,
                         user.LAST_NAME,
-                        user.MIDDLE_NAME);
+                        user.MIDDLE_NAME,
+                        user.IMAGE_PATH);
 
                     _sessionTracker.StartSession();
 

@@ -10,6 +10,7 @@ using LASYS.Infrastructure.OCR;
 using LASYS.Infrastructure.Persistence.Connection;
 using LASYS.Infrastructure.Persistence.Repositories;
 using LASYS.Infrastructure.Services.Media;
+using LASYS.Infrastructure.Services.Security;
 using LASYS.Infrastructure.Services.Session;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -31,9 +32,18 @@ public static class DependencyInjection
         services.AddSessionServices();
 
         services.AddImageServices(config);
+
+        services.AddPermissionServices();
+
         return services;
     }
 
+
+    public static IServiceCollection AddPermissionServices(this IServiceCollection services)
+    {
+        services.AddSingleton<IPermissionService, PermissionService>();
+        return services;
+    }
     public static IServiceCollection AddImageServices(this IServiceCollection services, IConfiguration config)
     {
         services.Configure<ImageSettings>(config.GetSection("ImageSettings"));
