@@ -34,6 +34,8 @@ namespace LASYS.DesktopApp.Presenters
 
             _view.FormClosingRequested += OnFormClosingRequested;
             _view.LogoutRequested += OnLogoutRequested;
+
+            _view.ShowUserInfo(_currentUser.FullName, _currentUser.SectionName ?? "Unknown", _currentUser.ImagePath);
         }
 
         private void OnLogoutRequested(object? sender, EventArgs e)

@@ -17,6 +17,7 @@ namespace LASYS.DesktopApp.Views.Forms
         public event EventHandler? FormClosingRequested;
         public event EventHandler? LogoutRequested;
 
+        private NavItem? _workOrders;
         public MainForm()
         {
             InitializeComponent();
@@ -27,7 +28,7 @@ namespace LASYS.DesktopApp.Views.Forms
 
             try
             {
-                _sideNav.SetProfile("Guest User", @"C:\Users\ITC - JAYSON OLICIA\Downloads\cartoon-1890438_1280.jpg");
+                _sideNav.SetProfile("Guest User", "Section Name", @"C:\Users\ITC - JAYSON OLICIA\Downloads\cartoon-1890438_1280.jpg");
             }
             catch (ArgumentException ex)
             {
@@ -52,7 +53,7 @@ namespace LASYS.DesktopApp.Views.Forms
         private void SetupNavigation()
         {
             // Define main menu items
-            var workOrders = new NavItem { Text = "Work Orders" };
+            _workOrders = new NavItem { Text = "Work Orders" };
             var deviceSetup = new NavItem { Text = "Device Settings" };
             var logOut = new NavItem { Text = "Log Out" };
             // Define sub-items
@@ -60,13 +61,13 @@ namespace LASYS.DesktopApp.Views.Forms
             deviceSetup.SubItems.Add(new NavItem { Text = "Printer Management" });
             deviceSetup.SubItems.Add(new NavItem { Text = "Barcode Scanner" });
             // Add to navigation
-            _sideNav.AddItem(workOrders);
+            _sideNav.AddItem(_workOrders);
             _sideNav.AddItem(deviceSetup);
             //_sideNav.AddItem(endToEndTest);
             _sideNav.AddItem(logOut);
 
 
-            workOrders.Clicked += delegate { WorkOrderRequested?.Invoke(this, EventArgs.Empty); };
+            _workOrders.Clicked += delegate { WorkOrderRequested?.Invoke(this, EventArgs.Empty); };
 
             deviceSetup.SubItems[0].Clicked += delegate { VisionSettingsRequested?.Invoke(this, EventArgs.Empty); };
 
@@ -80,8 +81,8 @@ namespace LASYS.DesktopApp.Views.Forms
         protected override void OnLoad(EventArgs e)
         {
             base.OnLoad(e);
-            WorkOrderRequested?.Invoke(this, EventArgs.Empty);
-
+            //WorkOrderRequested?.Invoke(this, EventArgs.Empty);
+            _sideNav.SelectItem(_workOrders);
         }
         public void CloseView() => Close();
 
@@ -119,6 +120,11 @@ namespace LASYS.DesktopApp.Views.Forms
         {
             FormClosingRequested?.Invoke(this, EventArgs.Empty);
             base.OnFormClosing(e);
+        }
+
+        public void ShowUserInfo(string fullName, string sectionName, string? imagePath)
+        {
+            _sideNav.SetProfile(fullName, sectionName, imagePath);
         }
     }
 }

@@ -10,10 +10,13 @@ namespace LASYS.UIControls.Controls
         private readonly Panel _profilePanel;
         private readonly ProfileAvatar _avatar;
         private readonly Label _username;
+        private readonly Label _sectionName;
 
-        public Color BackgroundColor { get; set; } = Color.FromArgb(45, 45, 48);
-        public Color SubItemColor { get; set; } = Color.FromArgb(37, 37, 38);
-        public Color HoverColor { get; set; } = Color.FromArgb(63, 63, 70);
+        public Color ProfilePanelColor { get; set; } = Color.FromArgb(10, 95, 80);
+        public Color BackgroundColor { get; set; } = Color.FromArgb(15, 127, 102);
+        public Color SubItemColor { get; set; } = Color.FromArgb(20, 90, 80); //Color.FromArgb(31, 42, 46);
+        public Color HoverColor { get; set; } = Color.FromArgb(0, 166, 147);
+        public Color ActiveColor { get; set; } = Color.FromArgb(0, 140, 125); // darker green
 
         public SideNavigation()
         {
@@ -26,13 +29,32 @@ namespace LASYS.UIControls.Controls
             {
                 Height = 140,
                 Dock = DockStyle.Top,
-                BackColor = Color.FromArgb(28, 28, 30)
+                BackColor = ProfilePanelColor
             };
+
+            _profilePanel.Paint += (s, e) =>
+            {
+                using var pen = new Pen(Color.FromArgb(0, 166, 147), 2);
+                e.Graphics.DrawLine(pen, 0, _profilePanel.Height - 1, _profilePanel.Width, _profilePanel.Height - 1);
+            };
+
+            var table = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                ColumnCount = 1,
+                RowCount = 3,
+                //CellBorderStyle = TableLayoutPanelCellBorderStyle.Single
+            };
+
+            table.RowStyles.Add(new RowStyle(SizeType.Percent, 60)); // Avatar
+            table.RowStyles.Add(new RowStyle(SizeType.Percent, 20)); // Username
+            table.RowStyles.Add(new RowStyle(SizeType.Percent, 20)); // Section
 
             _avatar = new ProfileAvatar
             {
                 Size = new Size(70, 70),
-                Location = new Point((220 - 70) / 2, 20),
+                //Location = new Point((220 - 70) / 2, 20),
+                Anchor = AnchorStyles.None,
                 Cursor = Cursors.Hand,
                 ProfileImage = CreateDefaultAvatar()
             };
@@ -47,9 +69,22 @@ namespace LASYS.UIControls.Controls
                 Text = "Guest"
             };
 
-            _profilePanel.Controls.Add(_avatar);
-            _profilePanel.Controls.Add(_username);
+            _sectionName = new Label
+            {
+                Dock = DockStyle.Bottom,
+                Height = 35,
+                ForeColor = Color.White,
+                Font = new Font("Segoe UI", 8, FontStyle.Regular),
+                TextAlign = ContentAlignment.MiddleCenter,
+                Text = "Section Name"
+            };
 
+            // Add controls to table
+            table.Controls.Add(_avatar, 0, 0);
+            table.Controls.Add(_username, 0, 1);
+            table.Controls.Add(_sectionName, 0, 2);
+
+            _profilePanel.Controls.Add(table);
             Controls.Add(_profilePanel);
         }
 
@@ -86,9 +121,10 @@ namespace LASYS.UIControls.Controls
             return bmp;
         }
 
-        public void SetProfile(string username, string imagePath)
+        public void SetProfile(string username, string sectionName, string? imagePath)
         {
             _username.Text = username;
+            _sectionName.Text = sectionName;
 
             Image? avatar = null;
 
@@ -142,9 +178,11 @@ namespace LASYS.UIControls.Controls
         {
             var baseColor = isSub ? SubItemColor : BackgroundColor;
             var hoverColor = HoverColor;
+            var activeColor = ActiveColor;
             var btn = new NavButton
             {
-                Text = (isSub ? "   • " : "") + item.Text,
+                //Text = (isSub ? "   • " : "") + item.Text,
+                Text = item.Text,
                 IsSubButton = isSub,
                 Dock = DockStyle.None,
                 Height = 40,
@@ -153,7 +191,8 @@ namespace LASYS.UIControls.Controls
                 ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat,
                 Cursor = Cursors.Hand,
-                UseMnemonic = false
+                UseMnemonic = false,
+                Padding = isSub  ? new Padding(40, 0, 0, 0) : new Padding(20, 0, 0, 0)
             };
 
             btn.UseVisualStyleBackColor = false;
@@ -164,12 +203,16 @@ namespace LASYS.UIControls.Controls
 
             btn.MouseEnter += (_, _) =>
             {
-                btn.BackColor = hoverColor;
+                //btn.BackColor = hoverColor;
+                if (btn.BackColor != activeColor)
+                    btn.BackColor = hoverColor;
             };
 
             btn.MouseLeave += (_, _) =>
             {
-                btn.BackColor = baseColor;
+                //btn.BackColor = baseColor;
+                if (btn.BackColor != activeColor)
+                    btn.BackColor = baseColor;
             };
             // Click event
             btn.Click += (_, _) =>
@@ -177,15 +220,55 @@ namespace LASYS.UIControls.Controls
                 item.RaiseClicked();
                 foreach (var tuple in _buttons)
                 {
-                    tuple.Button.BackColor = tuple.Button == btn ? hoverColor : (tuple.Button.IsSubButton ? SubItemColor : BackgroundColor);
+                    // MAIN BUTTON
+                    bool isActiveMain = tuple.Button == btn;
+
+                    tuple.Button.IsActive = isActiveMain;
+                    tuple.Button.BackColor =
+                        isActiveMain
+                        ? ActiveColor
+                        : (tuple.Button.IsSubButton ? SubItemColor : BackgroundColor);
+
+                    tuple.Button.Invalidate(); // 🔥 redraw indicator
+
+                    // SUB BUTTONS
                     foreach (var sb in tuple.SubButtons)
                     {
-                        sb.BackColor = sb == btn ? hoverColor : SubItemColor;
+                        bool isActiveSub = sb == btn;
+
+                        sb.IsActive = isActiveSub;
+                        sb.BackColor = isActiveSub ? ActiveColor : SubItemColor;
+                        sb.Invalidate();
                     }
+                    
                 }
             };
 
             return btn;   
+        }
+
+        public void SelectItem(NavItem? targetItem)
+        {
+            if (targetItem == null)
+                return;
+
+            foreach (var (item, button, subs) in _buttons)
+            {
+                if (item == targetItem)
+                {
+                    button.PerformClick();
+                    return;
+                }
+
+                foreach (var sub in subs)
+                {
+                    if (sub.Tag == targetItem)
+                    {
+                        sub.PerformClick();
+                        return;
+                    }
+                }
+            }
         }
 
         private void ToggleSubItems(NavItem parent)

@@ -1,5 +1,16 @@
 ﻿namespace LASYS.Application.Features.Authentication.Login
 {
-    public record LoginResponse(string USER_CODE, string USER_NAME, string? SECTION_ID, string? ROLE_CODE, string? PLANT_CODE, string? FIRST_NAME ,string? LAST_NAME, string? MIDDLE_NAME, string? IMAGE_PATH);
+    public record LoginResponse(string UserCode,
+                                string UserName,
+                                string? SectionId,
+                                string? RoleCode,
+                                string? PlantCode,
+                                string? FirstName,
+                                string? LastName,
+                                string? MiddleName,
+                                string? Nickname,
+                                string? Position,
+                                string? DepartmentCode,
+                                string? SectionName,
+                                string? ImagePath);
 }
-

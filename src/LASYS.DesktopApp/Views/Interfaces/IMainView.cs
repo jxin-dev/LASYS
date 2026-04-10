@@ -11,5 +11,7 @@
         event EventHandler FormClosingRequested;
         event EventHandler LogoutRequested;
 
+        void ShowUserInfo(string fullName, string sectionName, string? imagePath);
+
     }
 }

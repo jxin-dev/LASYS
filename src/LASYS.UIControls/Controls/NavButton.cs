@@ -3,6 +3,7 @@ namespace LASYS.UIControls.Controls
 {
     public class NavButton : Button
     {
+        public bool IsActive { get; set; }
         public bool IsExpanded { get; set; }
         public bool IsSubButton { get; set; }
 
@@ -18,6 +19,16 @@ namespace LASYS.UIControls.Controls
             Dock = DockStyle.Top;
         }
 
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            base.OnPaint(e);
+
+            if (IsActive)
+            {
+                using var brush = new SolidBrush(Color.FromArgb(0, 200, 180));
+                e.Graphics.FillRectangle(brush, 0, 0, 4, Height);
+            }
+        }
         protected override void OnMouseEnter(EventArgs e)
         {
             base.OnMouseEnter(e);

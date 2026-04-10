@@ -1,11 +1,9 @@
-﻿using LASYS.Application.Common.Messaging;
-using LASYS.Application.Features.Authentication.Login;
+﻿using LASYS.Application.Features.Authentication.Login;
 using LASYS.Application.Interfaces.Context;
 using LASYS.Application.Interfaces.Services;
 using LASYS.DesktopApp.Views.Forms;
 using LASYS.DesktopApp.Views.Interfaces;
 using LASYS.Infrastructure.Persistence.Connection;
-using LASYS.Infrastructure.Services.Session;
 using MediatR;
 using Velopack;
 using Velopack.Sources;
@@ -77,15 +75,19 @@ namespace LASYS.DesktopApp.Presenters
                     var user = result.Value!;
                     
                     _currentUser.SetUser(
-                        user.USER_CODE,
-                        user.USER_NAME,
-                        user.SECTION_ID,
-                        user.ROLE_CODE,
-                        user.PLANT_CODE,
-                        user.FIRST_NAME,
-                        user.LAST_NAME,
-                        user.MIDDLE_NAME,
-                        user.IMAGE_PATH);
+                        user.UserCode,
+                        user.UserName,
+                        user.SectionId,
+                        user.RoleCode,
+                        user.PlantCode,
+                        user.FirstName,
+                        user.LastName,
+                        user.MiddleName,
+                        user.Nickname,
+                        user.Position,
+                        user.DepartmentCode,
+                        user.SectionName,
+                        user.ImagePath);
 
                     _sessionTracker.StartSession();
 

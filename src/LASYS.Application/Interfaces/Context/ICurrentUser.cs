@@ -11,6 +11,10 @@
         string? FirstName { get; }
         string? LastName { get; }
         string? MiddleName { get; }
+        string? NickName { get; }
+        string? Position { get; }
+        string? DepartmentCode { get; }
+        string? SectionName { get; }
         string? ImagePath { get; }
         string FullName { get; }
         string ShortName { get; }
@@ -24,6 +28,10 @@
             string? firstName,
             string? lastName,
             string? middleName,
+            string? nickName,
+            string? position,
+            string? departmentCode,
+            string? sectionName,
             string? imagePath);
         void Clear();
     }

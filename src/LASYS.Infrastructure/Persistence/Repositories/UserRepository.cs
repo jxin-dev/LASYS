@@ -47,7 +47,6 @@ namespace LASYS.Infrastructure.Persistence.Repositories
                 throw;
             }
         }
-
         public async Task DeleteUser(string code)
         {
             string sql = "DELETE FROM sec_users_mst WHERE USER_CODE = @USER_CODE;";
@@ -64,7 +63,40 @@ namespace LASYS.Infrastructure.Persistence.Repositories
                 throw;
             }
         }
+        public async Task UpdateUser(User user)
+        {
+            string sql = @"
+            UPDATE sec_users_mst
+            SET 
+                USER_NAME = @USER_NAME,
+                USER_PASSWORD = MD5(@USER_PASSWORD),
+                FIRST_NAME = @FIRST_NAME,
+                MIDDLE_NAME = @MIDDLE_NAME,
+                LAST_NAME = @LAST_NAME,
+                SECTION_ID = @SECTION_ID,
+                ROLE_CODE = @ROLE_CODE,
+                PLANT_CODE = @PLANT_CODE,
+                COMMENT = @COMMENT,
+                ACCESS_FLAG = @ACCESS_FLAG,
+                ACTIVE_FLAG = @ACTIVE_FLAG,
+                LASTUPDATE_USER_CODE = @LASTUPDATE_USER_CODE,
+                LASTUPDATE_SECTION_ID = @LASTUPDATE_SECTION_ID,
+                LASTUPDATE_IP_ADDRESS = INET_ATON(@LASTUPDATE_IP_ADDRESS),
+                LASTUPDATE_DATETIME = CURRENT_TIMESTAMP+0
+            WHERE USER_CODE = @USER_CODE;";
 
+            try
+            {
+                using (var connection = await _factory.CreateConnectionAsync())
+                {
+                    await connection.QueryAsync(sql, user);
+                }
+            }
+            catch
+            {
+                throw;
+            }
+        }
         public async Task<IEnumerable<User>> GetAllUser()
         {
             string sql = "select * from sec_users_mst";
@@ -81,7 +113,6 @@ namespace LASYS.Infrastructure.Persistence.Repositories
                 throw;
             }
         }
-
         public async Task<User?> GetUserByCode(string code)
         {
             string sql = "select * from sec_users_mst where USER_CODE = @USER_CODE";
@@ -98,7 +129,6 @@ namespace LASYS.Infrastructure.Persistence.Repositories
                 throw;
             }
         }
-
         public async Task<User?> GetUserByUsername(string username)
         {
             string sql = "select * from sec_users_mst where USER_NAME = @USER_NAME";
@@ -137,39 +167,5 @@ namespace LASYS.Infrastructure.Persistence.Repositories
             }
         }
 
-        public async Task UpdateUser(User user)
-        {
-            string sql = @"
-            UPDATE sec_users_mst
-            SET 
-                USER_NAME = @USER_NAME,
-                USER_PASSWORD = MD5(@USER_PASSWORD),
-                FIRST_NAME = @FIRST_NAME,
-                MIDDLE_NAME = @MIDDLE_NAME,
-                LAST_NAME = @LAST_NAME,
-                SECTION_ID = @SECTION_ID,
-                ROLE_CODE = @ROLE_CODE,
-                PLANT_CODE = @PLANT_CODE,
-                COMMENT = @COMMENT,
-                ACCESS_FLAG = @ACCESS_FLAG,
-                ACTIVE_FLAG = @ACTIVE_FLAG,
-                LASTUPDATE_USER_CODE = @LASTUPDATE_USER_CODE,
-                LASTUPDATE_SECTION_ID = @LASTUPDATE_SECTION_ID,
-                LASTUPDATE_IP_ADDRESS = INET_ATON(@LASTUPDATE_IP_ADDRESS),
-                LASTUPDATE_DATETIME = CURRENT_TIMESTAMP+0
-            WHERE USER_CODE = @USER_CODE;";
-
-            try
-            {
-                using (var connection = await _factory.CreateConnectionAsync())
-                {
-                    await connection.QueryAsync(sql, user);
-                }
-            }
-            catch
-            {
-                throw;
-            }
-        }
     }
 }

@@ -11,16 +11,18 @@ namespace LASYS.Application.Features.Authentication.Login
     {
         private readonly ILogService _logService;
         private readonly IUserRepository _userRepository;
+        private readonly IHrUserRepository _hrUserRepository;
         private readonly IImageService _imageService;
         private readonly IPermissionService _permissionService;
         private readonly IMediator _mediator;
-        public LoginHandler(ILogService logService, IUserRepository userRepository, IImageService imageService, IPermissionService permissionService, IMediator mediator)
+        public LoginHandler(ILogService logService, IUserRepository userRepository, IImageService imageService, IPermissionService permissionService, IMediator mediator, IHrUserRepository hrUserRepository)
         {
             _logService = logService;
             _userRepository = userRepository;
             _imageService = imageService;
             _permissionService = permissionService;
             _mediator = mediator;
+            _hrUserRepository = hrUserRepository;
         }
 
         public async Task<Result<LoginResponse>> Handle(LoginQuery request, CancellationToken cancellationToken)
@@ -36,8 +38,15 @@ namespace LASYS.Application.Features.Authentication.Login
                     return Result.Failure<LoginResponse>("Invalid username or password.");
                 }
 
+                var hrUser = await _hrUserRepository.GetEmployeeInfoByIdAsync(user.USER_CODE);
+                if (hrUser == null)
+                {
+                    _logService.Log($"HR record not found for '{request.Username}'", MessageType.Warning);
+                    return Result.Failure<LoginResponse>("Employee information not found.");
+                }
+
                 var imagePath = await _imageService.GetUserImageUrlAsync(user.USER_CODE);
-                
+
                 var permissions = await _mediator.Send(new GetUserPermissionsQuery(user.ROLE_CODE!), cancellationToken);
                 _permissionService.SetPermissions(permissions);
 
@@ -52,7 +61,12 @@ namespace LASYS.Application.Features.Authentication.Login
                     user.PLANT_CODE,
                     user.FIRST_NAME,
                     user.LAST_NAME,
-                    user.MIDDLE_NAME, imagePath));
+                    user.MIDDLE_NAME,
+                    hrUser.NICKNAME,
+                    hrUser.POSITION,
+                    hrUser.DEPARTMENT_CODE,
+                    hrUser.SECTION_NAME,
+                    imagePath));
             }
             catch
             {
