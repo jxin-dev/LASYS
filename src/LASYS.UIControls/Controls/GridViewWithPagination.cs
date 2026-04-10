@@ -16,11 +16,14 @@
 
         public int RowHeight { get; set; } = 28;
         public int HeaderHeight { get; set; } = 32;
-        public Color HeaderBackColor { get; set; } = Color.FromArgb(45, 45, 48);
-        public Color HeaderForeColor { get; set; } = Color.White;
+
+        public Color HeaderBackColor = Color.FromArgb(210, 230, 225);
+        public Color HeaderForeColor = Color.FromArgb(0, 100, 90);
         public Color RowBackColor { get; set; } = Color.White;
-        public Color AltRowBackColor { get; set; } = Color.FromArgb(245, 245, 245);
-        public Color GridLineColor { get; set; } = Color.FromArgb(200, 200, 200);
+
+        public Color AltRowBackColor = Color.FromArgb(245, 250, 248); // subtle green tint
+        public Color GridLineColor = Color.FromArgb(210, 220, 218);
+
         public Font HeaderFont { get; set; } = new Font("Segoe UI", 9F, FontStyle.Bold);
         public Font RowFont { get; set; } = new Font("Segoe UI", 9F, FontStyle.Regular);
 
@@ -242,6 +245,8 @@
             using var headerBrush = new SolidBrush(HeaderBackColor);
             using var headerTextBrush = new SolidBrush(HeaderForeColor);
 
+            using var subHeaderFont = new Font("Segoe UI", 8F, FontStyle.Bold);
+
             int x = xOffset;
 
             // Top merged header row
@@ -275,24 +280,47 @@
                         int colWidth = _columnWidths[subIndex + i];
                         g.FillRectangle(headerBrush, subX, HeaderHeight, colWidth, HeaderHeight);
                         g.DrawRectangle(gridPen, subX, HeaderHeight, colWidth, HeaderHeight);
-                        g.DrawString(_subHeaders[subIndex + i], HeaderFont, headerTextBrush,
+                        //g.DrawString(_subHeaders[subIndex + i], HeaderFont, headerTextBrush,
+                        //    new RectangleF(subX, HeaderHeight, colWidth, HeaderHeight),
+                        //    new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center });
+                        g.DrawString(_subHeaders[subIndex + i], subHeaderFont, headerTextBrush,
                             new RectangleF(subX, HeaderHeight, colWidth, HeaderHeight),
                             new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center });
+
                         subX += colWidth;
                     }
                 }
 
                 x += width;
+                using (var dividerPen = new Pen(Color.FromArgb(180, 200, 195), 2))
+                {
+                    g.DrawLine(dividerPen, x - 1, 0, x - 1, HeaderHeight * 2);
+                }
                 subIndex += top.ColSpan;
             }
+            using var accentPen = new Pen(Color.FromArgb(0, 166, 147), 2);
+            g.DrawLine(accentPen, 0, HeaderHeight * 2 - 1, Width, HeaderHeight * 2 - 1);
         }
 
         private void DrawDataRow(Graphics g, string[] row, int rowIndex, int y, int xOffset, int viewportWidth)
         {
             int totalWidth = _columnWidths.Sum();
             var backColor = (rowIndex % 2 == 0) ? RowBackColor : AltRowBackColor;
-            using var b = new SolidBrush(backColor);
-            g.FillRectangle(b, -_hScroll.Value, y, totalWidth, RowHeight); // spans all columns
+
+            bool isSelected = rowIndex == _selectedRowIndex;
+            if (isSelected)
+            {
+                backColor = Color.FromArgb(220, 245, 240); // soft green highlight
+            }
+
+            using (var b = new SolidBrush(backColor))
+            {
+                g.FillRectangle(b, -_hScroll.Value, y, totalWidth, RowHeight);
+            }
+
+            var textColor = isSelected
+                ? Color.FromArgb(0, 80, 70) // darker green text when selected
+                : ForeColor;
 
             // 2) Text and grid lines
             using var f = new SolidBrush(ForeColor);
@@ -309,12 +337,14 @@
                 x += colWidth;
             }
 
-            // 3) Highlight if selected
-            if (rowIndex == _selectedRowIndex)
+            if (isSelected)
             {
-                using var highlightPen = new Pen(Color.LimeGreen, 3);
-                g.DrawRectangle(highlightPen, -_hScroll.Value, y, totalWidth - 1, RowHeight - 1);
+                using var accentBrush = new SolidBrush(Color.FromArgb(0, 166, 147));
+                g.FillRectangle(accentBrush, -_hScroll.Value, y, 4, RowHeight);
             }
+
+            
+
         }
 
         protected override void OnMouseMove(MouseEventArgs e)
@@ -458,8 +488,8 @@
             set => _textLabel.Text = value;
         }
 
-        public Color HoverBackColor { get; set; } = Color.FromArgb(50, 50, 50);
-        public new Color DefaultBackColor { get; set; } = Color.FromArgb(45, 45, 48);
+        public Color HoverBackColor { get; set; } = Color.FromArgb(200, 230, 225); //Color.FromArgb(50, 50, 50);
+        public new Color DefaultBackColor { get; set; } = Color.White; //Color.FromArgb(45, 45, 48);
 
         public IconButton()
         {
@@ -492,8 +522,20 @@
             Controls.Add(_textLabel);
 
             // Mouse events
-            MouseEnter += (s, e) => BackColor = HoverBackColor;
-            MouseLeave += (s, e) => BackColor = DefaultBackColor;
+            //MouseEnter += (s, e) => BackColor = HoverBackColor;
+            //MouseLeave += (s, e) => BackColor = DefaultBackColor;
+            MouseEnter += (s, e) =>
+            {
+                if (Enabled)
+                    BackColor = HoverBackColor;
+            };
+
+            MouseLeave += (s, e) =>
+            {
+                if (Enabled)
+                    BackColor = DefaultBackColor;
+            };
+
             MouseClick += (s, e) => Clicked?.Invoke(this, EventArgs.Empty);
 
             // Propagate events to children
@@ -504,6 +546,21 @@
             _textLabel.MouseEnter += (s, e) => BackColor = HoverBackColor;
             _textLabel.MouseLeave += (s, e) => BackColor = DefaultBackColor;
             _textLabel.MouseClick += (s, e) => Clicked?.Invoke(this, EventArgs.Empty);
+
+            this.Paint += (s, e) =>
+            {
+                using var pen = new Pen(Color.FromArgb(180, 200, 195));
+                e.Graphics.DrawRectangle(pen, 0, 0, Width - 1, Height - 1);
+            };
+        }
+        protected override void OnEnabledChanged(EventArgs e)
+        {
+            base.OnEnabledChanged(e);
+
+            BackColor = Enabled ? DefaultBackColor : Color.FromArgb(235, 235, 235);
+            ForeColor = Enabled ? Color.FromArgb(0, 110, 100) : Color.Gray;
+
+            Invalidate();
         }
     }
     internal class PlaceholderTextBox : TextBox
@@ -592,7 +649,7 @@
             _searchPanel = new Panel
             {
                 Dock = DockStyle.Fill,
-                BackColor = Color.FromArgb(60, 60, 60),
+                BackColor = Color.FromArgb(230, 240, 238), // Color.FromArgb(60, 60, 60),
                 Padding = new Padding(5),
                 Margin = new Padding(0)
             };
@@ -601,12 +658,12 @@
             _txtSearch = new PlaceholderTextBox
             {
                 PlaceholderText = "Search...",
-                PlaceholderColor = Color.FromArgb(160, 160, 160),
+                PlaceholderColor = Color.Gray, //Color.FromArgb(160, 160, 160),
                 Dock = DockStyle.Fill,
                 BorderStyle = BorderStyle.FixedSingle,
                 Font = new Font("Segoe UI", 10F),
-                ForeColor = Color.White,
-                BackColor = Color.FromArgb(80, 80, 80),
+                ForeColor = Color.Black, //Color.White,
+                BackColor =  Color.White //Color.FromArgb(80, 80, 80),
             };
             EnableDoubleBuffer(_txtSearch);
 
@@ -639,7 +696,7 @@
             {
                 Dock = DockStyle.Fill,
                 Height = 50,
-                BackColor = Color.FromArgb(45, 45, 48)
+                BackColor = Color.FromArgb(230, 240, 238) //Color.FromArgb(45, 45, 48)
             };
             EnableDoubleBuffer(_paginationPanel);
 
@@ -658,9 +715,10 @@
             // Initialize page label
             _lblPage = new Label
             {
+                Font = new Font("Segoe UI", 10F, FontStyle.Bold),
                 Text = "Page 1 of 1",
                 AutoSize = false,
-                ForeColor = Color.White,
+                ForeColor = Color.FromArgb(0, 140, 125), //Color.White,
                 TextAlign = ContentAlignment.MiddleCenter,
                 Height = 35,
             };
@@ -727,9 +785,9 @@
                 ButtonText = text,
                 Width = 70,
                 Height = 30,
-                DefaultBackColor = _paginationPanel.BackColor,
-                HoverBackColor = LightenColor(_paginationPanel.BackColor, 20),
-                ForeColor = Color.White,
+                DefaultBackColor = Color.White, //_paginationPanel.BackColor,
+                HoverBackColor = Color.FromArgb(200, 230, 225), //LightenColor(_paginationPanel.BackColor, 20),
+                ForeColor = Color.FromArgb(0, 110, 100), //Color.White,
                 Icon = Image.FromFile(imagePath) // Load icon from file
             };
         }
