@@ -28,6 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(ErrorForm));
             btnRetry = new Button();
             btnSkip = new Button();
             btnStopBatch = new Button();
@@ -119,6 +120,7 @@
             Controls.Add(btnSkip);
             Controls.Add(btnRetry);
             FormBorderStyle = FormBorderStyle.None;
+            Icon = (Icon)resources.GetObject("$this.Icon");
             Name = "ErrorForm";
             Text = "ErrorForm";
             ResumeLayout(false);

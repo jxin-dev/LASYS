@@ -1,5 +1,4 @@
-﻿using LASYS.DesktopApp.Presenters;
-using LASYS.DesktopApp.Views.Interfaces;
+﻿using LASYS.DesktopApp.Views.Interfaces;
 using LASYS.UIControls.Controls;
 
 namespace LASYS.DesktopApp.Views.Forms
@@ -13,12 +12,12 @@ namespace LASYS.DesktopApp.Views.Forms
         public SplashForm()
         {
             InitializeComponent();
-            //_presenter = presenter;
+
 
             _progressBar = new CustomProgressBar
             {
                 Dock = DockStyle.Bottom,
-                ProgressColor = Color.FromArgb(255, 0, 255, 255), //Color.FromArgb(0, 122, 204),
+                ProgressColor = Color.FromArgb(0, 166, 147), //Color.FromArgb(255, 0, 255, 255), //Color.FromArgb(0, 122, 204),
                 ProgressBackgroundColor = Color.LightGray,
                 ShowPercentage = false
             };

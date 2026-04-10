@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel;
+using System.Drawing.Drawing2D;
 
 namespace LASYS.UIControls.Controls
 {
@@ -9,8 +10,10 @@ namespace LASYS.UIControls.Controls
         private readonly Label _statusLabel;
         private int _value = 0;
         private int _maximum = 100;
-        private Color _progressColor = Color.FromArgb(0, 122, 204);
-        private Color _backgroundColor = Color.LightGray;
+        private Color _progressColor = Color.FromArgb(0, 166, 147);
+        private Color _backgroundColor = Color.FromArgb(220, 230, 228);
+        //private Color _progressColor = Color.FromArgb(0, 122, 204);
+        //private Color _backgroundColor = Color.LightGray;
         private bool _showPercentage = false;
         private readonly object _animationLock = new();
 
@@ -203,6 +206,33 @@ namespace LASYS.UIControls.Controls
             _value = 0;
             _fillPanel.Width = 0;
             _statusLabel.Text = "Initializing...";
+        }
+        private GraphicsPath GetRoundedRect(Rectangle rect, int radius)
+        {
+            var path = new GraphicsPath();
+            int d = radius * 2;
+
+            path.AddArc(rect.X, rect.Y, d, d, 180, 90);
+            path.AddArc(rect.Right - d, rect.Y, d, d, 270, 90);
+            path.AddArc(rect.Right - d, rect.Bottom - d, d, d, 0, 90);
+            path.AddArc(rect.X, rect.Bottom - d, d, d, 90, 90);
+            path.CloseFigure();
+
+            return path;
+        }
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            base.OnPaint(e);
+
+            e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+
+            var rect = new Rectangle(0, _statusLabel.Bottom + 5, Width, 12);
+
+            using (var path = GetRoundedRect(rect, 6))
+            using (var backBrush = new SolidBrush(_backgroundColor))
+            {
+                e.Graphics.FillPath(backBrush, path);
+            }
         }
     }
 }

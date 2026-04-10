@@ -9,13 +9,16 @@
 		<Platforms>AnyCPU;x86</Platforms>
 		<SatelliteResourceLanguages>en</SatelliteResourceLanguages>
 		<Company>InnovaThink Corporation</Company>
+		<ApplicationIcon>Resources\favicon.ico</ApplicationIcon>
 	</PropertyGroup>
 
 	<ItemGroup>
 		<None Remove="appsettings.json" />
+		<None Remove="Resources\favicon.ico" />
 		<None Remove="Resources\first.png" />
 		<None Remove="Resources\installer.ico" />
 		<None Remove="Resources\last.png" />
+		<None Remove="Resources\logo.gif" />
 		<None Remove="Resources\next.png" />
 		<None Remove="Resources\pause24.png" />
 		<None Remove="Resources\previous.png" />
@@ -26,7 +29,13 @@
 	  <Content Include="appsettings.json">
 	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 	  </Content>
+	  <Content Include="Resources\favicon.ico">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </Content>
 	  <Content Include="Resources\installer.ico">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </Content>
+	  <Content Include="Resources\logo.gif">
 	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 	  </Content>
 	  <Content Include="Resources\pause24.png">

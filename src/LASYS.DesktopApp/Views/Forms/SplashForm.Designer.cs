@@ -28,13 +28,14 @@
         /// </summary>
         private void InitializeComponent()
         {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(SplashForm));
             panel1 = new Panel();
             panel2 = new Panel();
             panel3 = new Panel();
             panel4 = new Panel();
             panel5 = new Panel();
-            pictureBox1 = new PictureBox();
             label1 = new Label();
+            pictureBox1 = new PictureBox();
             pnlLoadingContainer = new Panel();
             lblCopyright = new Label();
             panel5.SuspendLayout();
@@ -80,23 +81,13 @@
             // panel5
             // 
             panel5.BackColor = Color.WhiteSmoke;
-            panel5.Controls.Add(pictureBox1);
             panel5.Controls.Add(label1);
+            panel5.Controls.Add(pictureBox1);
             panel5.Dock = DockStyle.Top;
             panel5.Location = new Point(1, 1);
             panel5.Name = "panel5";
             panel5.Size = new Size(524, 169);
             panel5.TabIndex = 4;
-            // 
-            // pictureBox1
-            // 
-            pictureBox1.Image = Properties.Resources.terumo;
-            pictureBox1.Location = new Point(162, 11);
-            pictureBox1.Name = "pictureBox1";
-            pictureBox1.Size = new Size(174, 105);
-            pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
-            pictureBox1.TabIndex = 0;
-            pictureBox1.TabStop = false;
             // 
             // label1
             // 
@@ -108,6 +99,16 @@
             label1.Size = new Size(274, 30);
             label1.TabIndex = 6;
             label1.Text = "LASYS (New Label Design)";
+            // 
+            // pictureBox1
+            // 
+            pictureBox1.Image = Properties.Resources.logo;
+            pictureBox1.Location = new Point(93, 34);
+            pictureBox1.Name = "pictureBox1";
+            pictureBox1.Size = new Size(351, 124);
+            pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
+            pictureBox1.TabIndex = 0;
+            pictureBox1.TabStop = false;
             // 
             // pnlLoadingContainer
             // 
@@ -139,7 +140,9 @@
             Controls.Add(panel2);
             Controls.Add(panel1);
             FormBorderStyle = FormBorderStyle.None;
+            Icon = (Icon)resources.GetObject("$this.Icon");
             Name = "SplashForm";
+            ShowIcon = false;
             StartPosition = FormStartPosition.CenterScreen;
             Text = "SplashForm";
             panel5.ResumeLayout(false);

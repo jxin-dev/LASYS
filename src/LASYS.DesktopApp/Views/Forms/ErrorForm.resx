@@ -135,4 +135,29 @@
   <metadata name="$this.Locked" type="System.Boolean, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
     <value>True</value>
   </metadata>
+  <assembly alias="System.Drawing" name="System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
+  <data name="$this.Icon" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+    <value>
+        AAABAAEAEBAAAAEAIABoBAAAFgAAACgAAAAQAAAAIAAAAAEAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+        AABhjgD/YY4A/2GOAP9hjgD/YY4A/2GOAP9hjgD/YY4A/2GOAP9hjgD/YY4A/2GOAP9hjgD/YY4A/2GO
+        AP9hjgD/YY4A/2GOAP9hjgD/YY4A/2GOAP9hjgD/YY4A/2GOAP9hjgD/YY4A/2GOAP9hjgD/YY4A/2GO
+        AP9hjgD/YY4A/2GOAP9hjgD/YY4A/2GOAP9hjgD/YY4A//v8+P////////////z9+v9hjgD/YY4A/2GO
+        AP9hjgD/YY4A/2GOAP9hjgD/YY4A/2GOAP9hjgD/YY4A/2GOAP/9/fv////////////+/v3/YY4A/2GO
+        AP9hjgD/YY4A/2GOAP9hjgD/YY4A/2GOAP9hjgD/YY4A/2GOAP9hjgD//f37/////////////v79/2GO
+        AP9hjgD/YY4A/2GOAP9hjgD/YY4A/2GOAP9hjgD/YY4A/2GOAP9hjgD/YY4A//39+/////////////7+
+        /f9hjgD/YY4A/2GOAP9hjgD/YY4A/2GOAP9hjgD/YY4A/2GOAP9hjgD/YY4A/2GOAP/9/fv/////////
+        ///+/v3/YY4A/2GOAP9hjgD/YY4A/2GOAP9hjgD/YY4A/2GOAP9hjgD/YY4A/2GOAP9hjgD//f37////
+        /////////v79/2GOAP9hjgD/YY4A/2GOAP9hjgD/YY4A/2GOAP9hjgD/YY4A/2GOAP9hjgD/YY4A//39
+        +/////////////7+/f9hjgD/YY4A/2GOAP9hjgD/YY4A/2GOAP9hjgD/YY4A/2GOAP9hjgD/YY4A/2GO
+        AP/9/fv////////////+/v3/YY4A/2GOAP9hjgD/YY4A/2GOAP9hjgD/YY4A////////////////////
+        ////////////////////////////////////////////////////////aJMM/2GOAP//////////////
+        /////////////////////////////////////////////////////////////2uVEP9hjgD/////////
+        //////////////////////////////////////////////////////////////////9rlRD/YY4A////
+        ////////////////////////////////////////////////////////////////////////ZJAF/2GO
+        AP9hjgD/YY4A/2GOAP9hjgD/YY4A/2GOAP9hjgD/YY4A/2GOAP9hjgD/YY4A/2GOAP9hjgD/YY4A/2GO
+        AP9hjgD/YY4A/2GOAP9hjgD/YY4A/2GOAP9hjgD/YY4A/2GOAP9hjgD/YY4A/2GOAP9hjgD/YY4A/2GO
+        AP9hjgD/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+        AAAAAAAAAAAAAA==
+</value>
+  </data>
 </root>
