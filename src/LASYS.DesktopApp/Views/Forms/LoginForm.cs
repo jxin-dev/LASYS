@@ -15,6 +15,9 @@ namespace LASYS.DesktopApp.Views.Forms
         public LoginForm()
         {
             InitializeComponent();
+            btnLogin.MouseEnter += (_, _) => btnLogin.BackColor = Color.FromArgb(0, 166, 147);
+            btnLogin.MouseLeave += (_, _) => btnLogin.BackColor = Color.FromArgb(0, 140, 125);
+
             btnLogin.Click += (s, e) => LoginClicked?.Invoke(this, EventArgs.Empty);
             btnCancel.Click += (s, e) => Close();
 

@@ -38,13 +38,12 @@
             pictureBox1 = new PictureBox();
             label2 = new Label();
             panel1 = new Panel();
-            panel2 = new Panel();
+            panelBottom = new Panel();
             lnklblCheckUpdates = new LinkLabel();
-            panel3 = new Panel();
-            label3 = new Label();
+            panelTop = new Panel();
             btnCancel = new Button();
             ((System.ComponentModel.ISupportInitialize)pictureBox1).BeginInit();
-            panel2.SuspendLayout();
+            panelBottom.SuspendLayout();
             SuspendLayout();
             // 
             // txtUsername
@@ -68,7 +67,7 @@
             // 
             // btnLogin
             // 
-            btnLogin.BackColor = Color.SeaGreen;
+            btnLogin.BackColor = Color.FromArgb(0, 140, 125);
             btnLogin.FlatAppearance.BorderSize = 0;
             btnLogin.FlatStyle = FlatStyle.Flat;
             btnLogin.Font = new Font("Segoe UI", 12F);
@@ -84,6 +83,7 @@
             // 
             chkShowPassword.AutoSize = true;
             chkShowPassword.Font = new Font("Segoe UI", 9.75F);
+            chkShowPassword.ForeColor = Color.FromArgb(60, 60, 60);
             chkShowPassword.Location = new Point(272, 155);
             chkShowPassword.Name = "chkShowPassword";
             chkShowPassword.Size = new Size(118, 21);
@@ -106,6 +106,7 @@
             // 
             label1.AutoSize = true;
             label1.Font = new Font("Segoe UI", 9.75F);
+            label1.ForeColor = Color.FromArgb(60, 60, 60);
             label1.Location = new Point(272, 47);
             label1.Name = "label1";
             label1.Size = new Size(68, 17);
@@ -142,20 +143,21 @@
             panel1.Size = new Size(1, 170);
             panel1.TabIndex = 9;
             // 
-            // panel2
+            // panelBottom
             // 
-            panel2.BackColor = Color.SeaGreen;
-            panel2.Controls.Add(lnklblCheckUpdates);
-            panel2.Dock = DockStyle.Bottom;
-            panel2.Location = new Point(0, 254);
-            panel2.Name = "panel2";
-            panel2.Size = new Size(570, 38);
-            panel2.TabIndex = 10;
+            panelBottom.BackColor = Color.FromArgb(0, 140, 125);
+            panelBottom.Controls.Add(lnklblCheckUpdates);
+            panelBottom.Dock = DockStyle.Bottom;
+            panelBottom.Location = new Point(0, 254);
+            panelBottom.Name = "panelBottom";
+            panelBottom.Size = new Size(570, 38);
+            panelBottom.TabIndex = 10;
             // 
             // lnklblCheckUpdates
             // 
             lnklblCheckUpdates.ActiveLinkColor = Color.DarkRed;
             lnklblCheckUpdates.AutoSize = true;
+            lnklblCheckUpdates.ForeColor = Color.FromArgb(120, 120, 120);
             lnklblCheckUpdates.LinkBehavior = LinkBehavior.HoverUnderline;
             lnklblCheckUpdates.LinkColor = Color.White;
             lnklblCheckUpdates.Location = new Point(12, 14);
@@ -166,34 +168,22 @@
             lnklblCheckUpdates.Text = "v1.0.0";
             lnklblCheckUpdates.VisitedLinkColor = Color.White;
             // 
-            // panel3
+            // panelTop
             // 
-            panel3.BackColor = Color.SeaGreen;
-            panel3.Dock = DockStyle.Top;
-            panel3.Location = new Point(0, 0);
-            panel3.Name = "panel3";
-            panel3.Size = new Size(570, 12);
-            panel3.TabIndex = 11;
-            // 
-            // label3
-            // 
-            label3.AutoSize = true;
-            label3.Font = new Font("Segoe UI", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            label3.ForeColor = Color.SeaGreen;
-            label3.Location = new Point(82, 205);
-            label3.Name = "label3";
-            label3.Size = new Size(129, 17);
-            label3.TabIndex = 12;
-            label3.Text = "(New Label Design)";
-            label3.TextAlign = ContentAlignment.TopCenter;
+            panelTop.BackColor = Color.FromArgb(0, 140, 125);
+            panelTop.Dock = DockStyle.Top;
+            panelTop.Location = new Point(0, 0);
+            panelTop.Name = "panelTop";
+            panelTop.Size = new Size(570, 12);
+            panelTop.TabIndex = 11;
             // 
             // btnCancel
             // 
-            btnCancel.BackColor = Color.DarkSeaGreen;
+            btnCancel.BackColor = Color.FromArgb(220, 230, 228);
             btnCancel.FlatAppearance.BorderSize = 0;
             btnCancel.FlatStyle = FlatStyle.Flat;
             btnCancel.Font = new Font("Segoe UI", 12F);
-            btnCancel.ForeColor = Color.Black;
+            btnCancel.ForeColor = Color.FromArgb(60, 60, 60);
             btnCancel.Location = new Point(411, 194);
             btnCancel.Name = "btnCancel";
             btnCancel.Size = new Size(91, 37);
@@ -206,12 +196,11 @@
             AcceptButton = btnLogin;
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            BackColor = Color.GhostWhite;
+            BackColor = Color.FromArgb(245, 248, 247);
             ClientSize = new Size(570, 292);
             Controls.Add(btnCancel);
-            Controls.Add(label3);
-            Controls.Add(panel3);
-            Controls.Add(panel2);
+            Controls.Add(panelTop);
+            Controls.Add(panelBottom);
             Controls.Add(panel1);
             Controls.Add(label2);
             Controls.Add(label1);
@@ -229,8 +218,8 @@
             StartPosition = FormStartPosition.CenterScreen;
             Text = "Login";
             ((System.ComponentModel.ISupportInitialize)pictureBox1).EndInit();
-            panel2.ResumeLayout(false);
-            panel2.PerformLayout();
+            panelBottom.ResumeLayout(false);
+            panelBottom.PerformLayout();
             ResumeLayout(false);
             PerformLayout();
         }
@@ -246,9 +235,8 @@
         private PictureBox pictureBox1;
         private Label label2;
         private Panel panel1;
-        private Panel panel2;
-        private Panel panel3;
-        private Label label3;
+        private Panel panelBottom;
+        private Panel panelTop;
         private LinkLabel lnklblCheckUpdates;
         private Button btnCancel;
     }
