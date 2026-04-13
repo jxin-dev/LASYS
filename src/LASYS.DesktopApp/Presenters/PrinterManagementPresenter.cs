@@ -27,7 +27,7 @@ namespace LASYS.DesktopApp.Presenters
 
             // Unsubscribe first to avoid multiple subscriptions if the presenter is re-initialized
             _printerService.PrinterNotification -= OnPrinterNotification;
-            _printerService.PrinterStatusChanged-= OnPrinterStatusChanged;
+            _printerService.PrinterStatusChanged -= OnPrinterStatusChanged;
             // Subscribe to printer events
             _printerService.PrinterNotification += OnPrinterNotification;
             _printerService.PrinterStatusChanged += OnPrinterStatusChanged;
@@ -57,6 +57,15 @@ namespace LASYS.DesktopApp.Presenters
 
         private async void OnLoadConfigRequest(object? sender, EventArgs e)
         {
+
+            var types = new List<string>
+            {
+                new SerialPrinterConnection().InterfaceType,
+                new UsbPrinterConnection().InterfaceType
+            };
+
+            _view.LoadInterfaceTypes(types);
+
             var config = await _printerService.LoadAsync(); // your LoadAsync call
 
             if (config?.SatoPrinter is SerialPrinterConnection serial)
@@ -70,9 +79,19 @@ namespace LASYS.DesktopApp.Presenters
             else if (config?.SatoPrinter is UsbPrinterConnection usb)
             {
                 var usbPorts = _printerService.GetUSBList();
-                _view.SetPortList(usbPorts);
                 _view.SetPort(600, "Select USB port");
-                _view.SetSelectedPort(usb.InterfaceType, usb.UsbId);
+                _view.SetPortList(usbPorts);
+
+                bool exists = usbPorts.Contains(usb.UsbId);
+                if (exists)
+                {
+                    _view.SetSelectedPort(usb.InterfaceType, usb.UsbId);
+                    // found
+                }
+                else
+                {
+                    // not found
+                }
             }
 
         }
@@ -98,15 +117,18 @@ namespace LASYS.DesktopApp.Presenters
         {
             try
             {
+                var serialType = new SerialPrinterConnection().InterfaceType;
+                var usbType = new UsbPrinterConnection().InterfaceType;
+
                 PrinterConnection connection = _view.SelectedInterfaceType switch
                 {
-                    "Serial COM" => new SerialPrinterConnection
+                    var t when t == serialType => new SerialPrinterConnection
                     {
                         ComPort = _view.ComPort,
                         BaudRate = 9600,
                         Parameters = "8N1"
                     },
-                    "USB Port" => new UsbPrinterConnection
+                    var t when t == usbType => new UsbPrinterConnection
                     {
                         UsbId = !string.IsNullOrWhiteSpace(_view.UsbId) ? _view.UsbId : throw new InvalidOperationException("USB ID cannot be null or empty.")
                     },
@@ -131,14 +153,17 @@ namespace LASYS.DesktopApp.Presenters
             _view.ReportPrinterState("");
             _view.InvokeOnUI(() => _view.UpdateTestPrintButtonState(false));
 
-            if (_view.SelectedInterfaceType == "Serial COM")
+            var serialType = new SerialPrinterConnection().InterfaceType;
+            var usbType = new UsbPrinterConnection().InterfaceType;
+
+            if (_view.SelectedInterfaceType == serialType)
             {
                 //var comPorts = _printerService.GetCOMList();
                 var comPorts = _printerService.GetManualCOMList(1, 50);
                 _view.SetPortList(comPorts);
                 _view.SetPort(180, "Select COM port");
             }
-            else if (_view.SelectedInterfaceType == "USB Port")
+            else if (_view.SelectedInterfaceType == usbType)
             {
                 var usbPorts = _printerService.GetUSBList();
 
