@@ -95,17 +95,21 @@ namespace LASYS.UIControls.Controls
             BackColor = Color.Transparent;
             BorderStyle = BorderStyle.None;
 
+            this.Padding = new Padding(0, 0, 0, 0);
+
             // Status label (above the progress bar)
             _statusLabel = new Label
             {
+                AutoEllipsis = true,
                 AutoSize = false,
                 Dock = DockStyle.Top,
                 Height = 18,
                 TextAlign = ContentAlignment.MiddleLeft,
                 Font = new Font("Segoe UI", 9F, FontStyle.Regular),
                 ForeColor = Color.Black,
-                Padding = new Padding(2, 0, 0, 0),
-                Text = "Initializing..."
+                //Padding = new Padding(0,0,0,5),
+                Text = "Initializing...",
+                //BorderStyle = BorderStyle.FixedSingle
             };
 
             // Progress bar background (container for fill)
@@ -121,11 +125,9 @@ namespace LASYS.UIControls.Controls
 
             _barBackground = new Panel
             {
-                Dock = DockStyle.Fill,
+                Dock = DockStyle.Top,
                 BackColor = _backgroundColor,
-                Margin = new Padding(0, 5, 0, 0),
-                Padding = new Padding(0),
-                Height = 25
+                Height = 12
             };
 
 
@@ -141,6 +143,8 @@ namespace LASYS.UIControls.Controls
 
             Controls.Add(_barBackground);
             Controls.Add(_statusLabel);
+
+            this.Height = _statusLabel.Height + 8 + _barBackground.Height;
 
             Resize += (_, _) => UpdateWidthInstant();
         }
@@ -234,19 +238,20 @@ namespace LASYS.UIControls.Controls
 
             return path;
         }
-        protected override void OnPaint(PaintEventArgs e)
-        {
-            base.OnPaint(e);
+        //protected override void OnPaint(PaintEventArgs e)
+        //{
+        //    base.OnPaint(e);
 
-            e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+        //    e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
 
-            var rect = new Rectangle(0, _statusLabel.Bottom + 5, Width, 12);
+        //    //var rect = new Rectangle(0, _statusLabel.Bottom + 5, Width, 12);
+        //    var rect = _barBackground.Bounds;
 
-            using (var path = GetRoundedRect(rect, 6))
-            using (var backBrush = new SolidBrush(_backgroundColor))
-            {
-                e.Graphics.FillPath(backBrush, path);
-            }
-        }
+        //    using (var path = GetRoundedRect(rect, 6))
+        //    using (var backBrush = new SolidBrush(_backgroundColor))
+        //    {
+        //        e.Graphics.FillPath(backBrush, path);
+        //    }
+        //}
     }
 }
