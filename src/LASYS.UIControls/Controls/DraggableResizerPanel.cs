@@ -2,6 +2,13 @@
 {
     public class DraggableResizerPanel : Panel
     {
+        private Color AccentGreen       = Color.FromArgb(0, 166, 147);
+        private Color LightBackground   = Color.FromArgb(245, 248, 247);
+        private Color SoftGray          = Color.FromArgb(220, 230, 228);
+        private Color TextDark          = Color.FromArgb(60, 60, 60);
+
+
+        private System.Windows.Forms.Timer? _animationTimer;
         private Panel resizerBar;
         private Panel toolbar;
         private Panel contentPanel;
@@ -32,14 +39,26 @@
 
 
             this.Dock = DockStyle.Bottom;
-            this.BackColor = Color.LightSlateGray;
+            this.BackColor = LightBackground;
+
+            this.Paint += (s, e) =>
+            {
+                using var pen = new Pen(SoftGray, 1);
+                e.Graphics.DrawLine(pen, 0, 0, Width, 0);
+            };
 
             // ----- Toolbar -----
             toolbar = new Panel
             {
                 Height = 20,
                 Dock = DockStyle.Top,
-                BackColor = Color.MintCream
+                BackColor = Color.White
+            };
+
+            toolbar.Paint += (s, e) =>
+            {
+                using var pen = new Pen(SoftGray);
+                e.Graphics.DrawLine(pen, 0, toolbar.Height - 1, toolbar.Width, toolbar.Height - 1);
             };
 
             // ----- Navigator Panel -----
@@ -47,7 +66,7 @@
             {
                 Height = 30,
                 Dock = DockStyle.Bottom,
-                BackColor = Color.SeaGreen
+                BackColor = Color.FromArgb(230, 240, 238)
             };
 
             // ----- Resizer Bar -----
@@ -56,7 +75,7 @@
                 Height = 5,
                 Dock = DockStyle.Top,
                 Cursor = Cursors.SizeNS,
-                BackColor = Color.SeaGreen
+                BackColor = AccentGreen
             };
             resizerBar.MouseDown += Resizer_MouseDown;
             resizerBar.MouseMove += Resizer_MouseMove;
@@ -84,7 +103,7 @@
             contentPanel = new Panel
             {
                 Dock = DockStyle.Fill,
-                BackColor = Color.WhiteSmoke
+                BackColor = Color.White
             };
 
             this.Controls.Add(contentPanel);
@@ -123,7 +142,7 @@
             {
                 Text = title,
                 AutoSize = true,
-                Padding = new Padding(10, 4, 10, 4),
+                Padding = new Padding(12, 6, 12, 6),
                 Margin = Padding.Empty,
                 BackColor = Color.Silver,
                 Cursor = Cursors.Hand,
@@ -133,11 +152,8 @@
 
             lblTab.Location = new Point(x, (navigatorPanel.Height - lblTab.PreferredHeight) / 2);
 
-            //foreach (Label tab in navigatorPanel.Controls.OfType<Label>()) { }
-            //    tab.BackColor = Color.Silver;
-
-            lblTab.BackColor = Color.MediumSeaGreen;
-            lblTab.ForeColor = Color.WhiteSmoke;
+            lblTab.BackColor = Color.White;
+            lblTab.ForeColor = TextDark;
 
 
             lblTab.Click += (sender, e) =>
@@ -145,13 +161,12 @@
                 if (activeContent == contentControl)
                 {
                     TogglePanel();
-                }
-                else
-                {
-                    ShowPanel();
+                    return; // 🔥 STOP HERE (VERY IMPORTANT)
                 }
 
-                // Show the existing control (if not already shown)
+                // SWITCH TAB
+                ShowPanel();
+
                 if (activeContent != null)
                     activeContent.Visible = false;
 
@@ -160,27 +175,58 @@
 
                 activeContent = contentControl;
                 activeContent.Visible = true;
+
+                UpdateTabStyles(title);
             };
+
 
             lblTab.MouseEnter += (sender, e) =>
             {
-                lblTab.BackColor = Color.Red;
-                lblTab.ForeColor = Color.White;
+                Cursor = Cursors.Hand;
+                if (activeContent != contentControl)
+                    lblTab.BackColor = Color.FromArgb(200, 230, 225);
             };
 
             lblTab.MouseLeave += (sender, e) =>
             {
-                lblTab.BackColor = Color.MediumSeaGreen;
-                lblTab.ForeColor = Color.WhiteSmoke;
-
-
+                Cursor = Cursors.Default;
+                if (activeContent != contentControl)
+                {
+                    lblTab.BackColor = Color.White;
+                    lblTab.ForeColor = TextDark;
+                }
             };
 
+            lblTab.Paint += (s, e) =>
+            {
+                if (activeContent == contentControl)
+                {
+                    using var pen = new Pen(AccentGreen, 2);
+                    e.Graphics.DrawLine(pen, 0, lblTab.Height - 1, lblTab.Width, lblTab.Height - 1);
+                }
+            };
 
             navigatorPanel.Controls.Add(lblTab);
             tabContents[title] = contentControl;
         }
-
+        private void UpdateTabStyles(string title)
+        {
+            foreach (Label tab in navigatorPanel.Controls.OfType<Label>())
+            {
+                if (tab.Text == title)
+                {
+                    tab.BackColor = AccentGreen;
+                    tab.ForeColor = Color.White;
+                    tab.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+                }
+                else
+                {
+                    tab.BackColor = Color.White;
+                    tab.ForeColor = TextDark;
+                    tab.Font = new Font("Segoe UI", 9F, FontStyle.Regular);
+                }
+            }
+        }
         private void TogglePanel()
         {
             if (contentPanel.Visible == true && toolbar.Visible == true && resizerBar.Visible == true)
@@ -195,35 +241,58 @@
 
         private void ShowPanel()
         {
-            if (this.Parent != null)
-            {
-                int maxHeight = (int)(this.Parent.ClientSize.Height * HeightPercentage);
-                this.Height = Math.Max(DefaultPanelHeight, Math.Min(this.Height, maxHeight));
-            }
+            if (this.Parent == null)
+                return;
 
+            // previous animation
+            _animationTimer?.Stop();
+            _animationTimer?.Dispose();
 
-            // Show all sections
+            int maxHeight = (int)(this.Parent.ClientSize.Height * HeightPercentage);
+            int targetHeight = Math.Max(MinimumPanelHeight, Math.Min(DefaultPanelHeight, maxHeight));
+
+            // Show sections first
             contentPanel.Visible = true;
             toolbar.Visible = true;
             resizerBar.Visible = true;
 
             this.Show();
-            this.BringToFront(); // optional: ensure it's top-most in z-order
+            this.BringToFront();
+
+            // Start from collapsed height
+            int startHeight = this.Height;
+            int step = 20;
+
+            var timer = new System.Windows.Forms.Timer { Interval = 10 };
+
+            timer.Tick += (s, e) =>
+            {
+                if (this.Height < targetHeight)
+                {
+                    this.Height = Math.Min(targetHeight, this.Height + step);
+                }
+                else
+                {
+                    timer.Stop();
+                    timer.Dispose();
+                }
+            };
+
+            timer.Start();
         }
 
+     
         public void HidePanel()
         {
-            // Collapse everything except navigatorPanel
+            _animationTimer?.Stop();
+            _animationTimer?.Dispose();
+
             contentPanel.Visible = false;
             toolbar.Visible = false;
             resizerBar.Visible = false;
 
-            // Collapse the panel height to navigator only
             this.Height = navigatorPanel.Height;
-
-            //this.Hide();
         }
-
 
         private void Resizer_MouseUp(object? sender, MouseEventArgs e)
         {
@@ -289,18 +358,19 @@
             // Optionally, update tab appearance if needed (highlight active tab)
             foreach (Label tab in navigatorPanel.Controls.OfType<Label>())
             {
-                tab.BackColor = Color.MediumSeaGreen;
-                tab.ForeColor = Color.WhiteSmoke;
-                //if (tab.Text == title)
-                //{
-                //    tab.BackColor = Color.MediumSeaGreen;
-                //    tab.ForeColor = Color.WhiteSmoke;
-                //}
-                //else
-                //{
-                //    tab.BackColor = Color.Silver;
-                //    tab.ForeColor = Color.Black;
-                //}
+                if (tab.Text == title)
+                {
+                    tab.BackColor = AccentGreen;
+                    tab.ForeColor = Color.White;
+                    tab.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+                }
+                else
+                {
+                    tab.BackColor = Color.White;
+                    tab.ForeColor = TextDark;
+                    tab.Font = new Font("Segoe UI", 9F, FontStyle.Regular);
+                }
+
             }
         }
 
