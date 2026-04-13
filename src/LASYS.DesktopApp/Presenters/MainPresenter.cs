@@ -65,21 +65,6 @@ namespace LASYS.DesktopApp.Presenters
         }
 
 
-        //private readonly IServiceProvider _services;
-        //public MainPresenter(IMainView view, IServiceProvider services)
-        //{
-        //    _view = view;
-        //    View = (MainForm)view;
-
-        //    _services = services;
-        //    _view.WorkOrderRequested += OnWorkOrderRequested;
-        //    _view.VisionSettingsRequested += OnOVisionSettingsRequested;
-        //    _view.PrinterManagementRequested += OnPrinterManagementRequested;
-        //    _view.BarcodeDeviceSetupRequested += OnBarcodeDeviceSetupRequested;
-
-        //}
-
-
         private void OnBarcodeDeviceSetupRequested(object? sender, EventArgs e)
         {
             var barcodePresenter = _serviceProvider.GetRequiredService<BarcodeScannerPresenter>();
