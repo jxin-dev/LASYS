@@ -490,6 +490,8 @@
 
         public Color HoverBackColor { get; set; } = Color.FromArgb(200, 230, 225); //Color.FromArgb(50, 50, 50);
         public new Color DefaultBackColor { get; set; } = Color.White; //Color.FromArgb(45, 45, 48);
+        public Color TextColor { get; set; } = Color.FromArgb(0, 110, 100);
+
 
         public IconButton()
         {
@@ -513,7 +515,7 @@
                 Width = Width - 35,
                 Height = Height,
                 TextAlign = ContentAlignment.MiddleLeft,
-                ForeColor = Color.White,
+                ForeColor = TextColor,
                 BackColor = Color.Transparent
             };
 
@@ -787,7 +789,7 @@
                 Height = 30,
                 DefaultBackColor = Color.White, //_paginationPanel.BackColor,
                 HoverBackColor = Color.FromArgb(200, 230, 225), //LightenColor(_paginationPanel.BackColor, 20),
-                ForeColor = Color.FromArgb(0, 110, 100), //Color.White,
+                TextColor = Color.FromArgb(0, 110, 100), 
                 Icon = Image.FromFile(imagePath) // Load icon from file
             };
         }
