@@ -35,7 +35,11 @@ namespace LASYS.DesktopApp
 
             var loginPresenter = host.Services.GetRequiredService<LoginPresenter>();
             if (loginPresenter.View.ShowDialog() != DialogResult.OK)
+            {
+                System.Windows.Forms.Application.Exit(); // user cancelled login, exit the application
                 return; // user cancelled login
+            }
+                //return; // user cancelled login
 
             var mainPresenter = host.Services.GetRequiredService<MainPresenter>();
             System.Windows.Forms.Application.Run(mainPresenter.View);
