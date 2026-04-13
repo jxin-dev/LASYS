@@ -16,6 +16,7 @@ namespace LASYS.UIControls.Controls
         //private Color _backgroundColor = Color.LightGray;
         private bool _showPercentage = false;
         private readonly object _animationLock = new();
+        private readonly Panel _barBackground;
 
         [Browsable(true)]
         [Category("Behavior")]
@@ -108,7 +109,17 @@ namespace LASYS.UIControls.Controls
             };
 
             // Progress bar background (container for fill)
-            var barBackground = new Panel
+            //var barBackground = new Panel
+            //{
+            //    Dock = DockStyle.Fill,
+            //    BackColor = _backgroundColor,
+            //    Margin = new Padding(0, 5, 0, 0),
+            //    Padding = new Padding(0),
+            //    Height = 25
+            //};
+
+
+            _barBackground = new Panel
             {
                 Dock = DockStyle.Fill,
                 BackColor = _backgroundColor,
@@ -116,6 +127,7 @@ namespace LASYS.UIControls.Controls
                 Padding = new Padding(0),
                 Height = 25
             };
+
 
             // Progress fill
             _fillPanel = new Panel
@@ -125,9 +137,9 @@ namespace LASYS.UIControls.Controls
                 Dock = DockStyle.Left
             };
 
-            barBackground.Controls.Add(_fillPanel);
+            _barBackground.Controls.Add(_fillPanel);
 
-            Controls.Add(barBackground);
+            Controls.Add(_barBackground);
             Controls.Add(_statusLabel);
 
             Resize += (_, _) => UpdateWidthInstant();
@@ -136,7 +148,8 @@ namespace LASYS.UIControls.Controls
         private void UpdateWidthInstant()
         {
             double ratio = (double)_value / _maximum;
-            int targetWidth = (int)(Width * ratio);
+            //int targetWidth = (int)(Width * ratio);
+            int targetWidth = (int)(_barBackground.ClientSize.Width * ratio);
             _fillPanel.Width = targetWidth;
         }
 
@@ -146,7 +159,8 @@ namespace LASYS.UIControls.Controls
                 return;
 
             double ratio = (double)_value / _maximum;
-            int targetWidth = (int)(Width * ratio);
+            //int targetWidth = (int)(Width * ratio);
+            int targetWidth = (int)(_barBackground.ClientSize.Width * ratio);
             int currentWidth = _fillPanel.Width;
             int step = Math.Max(1, Math.Abs(targetWidth - currentWidth) / 15);
 
