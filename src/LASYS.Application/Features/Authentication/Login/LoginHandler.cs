@@ -7,7 +7,7 @@ using MediatR;
 
 namespace LASYS.Application.Features.Authentication.Login
 {
-    public sealed class LoginHandler : IRequestHandler<LoginQuery, Result<LoginResponse>>
+    public sealed class LoginHandler : IRequestHandler<LoginCommand, Result<LoginResponse>>
     {
         private readonly ILogService _logService;
         private readonly IUserRepository _userRepository;
@@ -25,7 +25,7 @@ namespace LASYS.Application.Features.Authentication.Login
             _hrUserRepository = hrUserRepository;
         }
 
-        public async Task<Result<LoginResponse>> Handle(LoginQuery request, CancellationToken cancellationToken)
+        public async Task<Result<LoginResponse>> Handle(LoginCommand request, CancellationToken cancellationToken)
         {
             _logService.Log($"Login attempt for user '{request.Username}'", MessageType.Info);
 

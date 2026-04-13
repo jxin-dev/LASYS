@@ -69,7 +69,7 @@ namespace LASYS.DesktopApp.Presenters
             {
                 _view.SetLoginEnabled(false);
                 _view.SetStatus("Logging in...");
-                var result = await _mediator.Send(new LoginQuery(_view.Username, _view.Password));
+                var result = await _mediator.Send(new LoginCommand(_view.Username, _view.Password));
                 if (result.IsSuccess)
                 {
                     var user = result.Value!;
