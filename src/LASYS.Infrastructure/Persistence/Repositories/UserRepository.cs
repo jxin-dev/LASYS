@@ -131,13 +131,17 @@ namespace LASYS.Infrastructure.Persistence.Repositories
         }
         public async Task<User?> GetUserByUsername(string username)
         {
-            string sql = "select * from sec_users_mst where USER_NAME = @USER_NAME";
+            string sql = @"
+                SELECT USR.USER_CODE, USR.USER_NAME, USR.FIRST_NAME, USR.MIDDLE_NAME, USR.LAST_NAME, USR.ROLE_CODE, USR.SECTION_ID, 
+                SEC.NAME AS SECTION_NAME, USR.LASTPASSRENEW_DATETIME, IF(ISNULL(USR.ACTIVE_FLAG), False, True) AS 'ACTIVE_FLAG' 
+                FROM sec_users_mst USR LEFT JOIN sec_sections_mst SEC ON SEC.ID = USR.SECTION_ID
+                WHERE USR.USER_NAME = @USER_NAME AND USR.ACTIVE_FLAG = ' ' LIMIT 1";
 
             try
             {
                 using (var connection = await _factory.CreateConnectionAsync())
                 {
-                    return await connection.QueryFirstAsync<User>(sql, new { USER_NAME = username });
+                    return await connection.QueryFirstOrDefaultAsync<User>(sql, new { USER_NAME = username });
                 }
             }
             catch

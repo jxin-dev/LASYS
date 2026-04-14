@@ -22,11 +22,11 @@ namespace LASYS.Infrastructure.Persistence.Connection
 
         public async Task<IDbConnection> CreateConnectionAsync()
         {
-            var connectionName = _settings.Environment == "Production Environment"
-                ? "ProductionConnection"
-                : "TestConnection";
+            _logService.Log($"Environment: {_settings.Environment}", MessageType.Info);
 
-            var connectionString = _configuration.GetConnectionString(connectionName)
+            var env = _settings.Environment ?? "Production";
+
+            var connectionString = _configuration.GetConnectionString(env)
                 ?? throw new InvalidOperationException("Connection string not found.");
 
             var connection = new MySqlConnection(connectionString);

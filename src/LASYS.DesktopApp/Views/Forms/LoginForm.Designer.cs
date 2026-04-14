@@ -96,7 +96,7 @@
             cbxEnvironment.DropDownStyle = ComboBoxStyle.DropDownList;
             cbxEnvironment.Font = new Font("Segoe UI", 9.75F);
             cbxEnvironment.FormattingEnabled = true;
-            cbxEnvironment.Items.AddRange(new object[] { "Production Environment", "Test Environment" });
+            cbxEnvironment.Items.AddRange(new object[] { "Production", "Staging" });
             cbxEnvironment.Location = new Point(272, 68);
             cbxEnvironment.Name = "cbxEnvironment";
             cbxEnvironment.Size = new Size(230, 25);

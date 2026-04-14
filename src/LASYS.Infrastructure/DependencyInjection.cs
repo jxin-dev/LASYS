@@ -14,6 +14,7 @@ using LASYS.Infrastructure.Services.Security;
 using LASYS.Infrastructure.Services.Session;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 
 namespace LASYS.Infrastructure;
 
@@ -21,7 +22,7 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration config)
     {
-        services.AddPersistence();
+        services.AddPersistence(config);
         services.AddBarcodeAnalyzerServices();
         services.AddCameraServices();
         services.AddOCRServices();
@@ -60,10 +61,13 @@ public static class DependencyInjection
 
         return services;
     }
-    public static IServiceCollection AddPersistence(this IServiceCollection services)
+    public static IServiceCollection AddPersistence(this IServiceCollection services, IConfiguration config)
     {
         //Connection
-        services.AddSingleton<DatabaseSettings>();
+        //services.AddSingleton<DatabaseSettings>();
+        services.Configure<DatabaseSettings>(config.GetSection("DatabaseSettings"));
+        services.AddSingleton(sp => sp.GetRequiredService<IOptions<DatabaseSettings>>().Value);
+
         services.AddSingleton<IDbConnectionFactory, DapperContext>();
         services.AddScoped<IDbConnection>(sp =>
         {
