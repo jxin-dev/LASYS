@@ -18,17 +18,21 @@ namespace LASYS.Application.Features.LabelProcessing.GetWorkOrders
             try
             {
                 using var connection = await _factory.CreateConnectionAsync();
+                string filter = string.Empty;
 
-                var filter = $@"
-                    inspln.Item_Code LIKE '%{request.filter}%' OR
-                    inspln.Lot_No LIKE '%{request.filter}%' OR
-                    inspln.UB_LBL_INS_CODE LIKE '%{request.filter}%' OR
-                    inspln.OUB_LBL_INS_CODE LIKE '%{request.filter}%' OR    
-                    inspln.OCB_LBL_INS_CODE LIKE '%{request.filter}%' OR
-                    inspln.CB_LBL_INS_CODE LIKE '%{request.filter}%' OR
-                    inspln.AUB_LBL_INS_CODE LIKE '%{request.filter}%' OR
-                    inspln.ACB_LBL_INS_CODE LIKE '%{request.filter}%'
-                ";
+                if (!string.IsNullOrEmpty(request.filter))
+                {
+                    filter = $@"AND (
+                        inspln.Item_Code LIKE '%{request.filter}%' OR
+                        inspln.Lot_No LIKE '%{request.filter}%' OR
+                        inspln.UB_LBL_INS_CODE LIKE '%{request.filter}%' OR
+                        inspln.OUB_LBL_INS_CODE LIKE '%{request.filter}%' OR    
+                        inspln.OCB_LBL_INS_CODE LIKE '%{request.filter}%' OR
+                        inspln.CB_LBL_INS_CODE LIKE '%{request.filter}%' OR
+                        inspln.AUB_LBL_INS_CODE LIKE '%{request.filter}%' OR
+                        inspln.ACB_LBL_INS_CODE LIKE '%{request.filter}%')
+                    ";
+                }
 
                 var query = @$"SELECT inspln.Item_Code AS 'ItemCode',
 	                            inspln.Lot_No AS 'LotNo', 
@@ -101,11 +105,11 @@ namespace LASYS.Application.Features.LabelProcessing.GetWorkOrders
                             LIMIT {request.pageSize} OFFSET {request.pageNo * request.pageSize}";
 
                 var result = await connection.QueryAsync<GetWorkOrdersResult>(query);
-                return Result<IEnumerable<GetWorkOrdersResult>>.Success(result);
+                return Result.Success(result);
             }
             catch(Exception ex)
             {
-                return (Result<IEnumerable<GetWorkOrdersResult>>)Result.Failure(ex.Message);
+                return Result.Failure<IEnumerable<GetWorkOrdersResult>>(ex.Message);
             }
         }
     }

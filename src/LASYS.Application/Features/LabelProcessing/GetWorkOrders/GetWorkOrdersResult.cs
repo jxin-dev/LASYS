@@ -8,7 +8,7 @@
         public string? PrintType { get; set; }
         public string? Verdict { get; set; }
         public string? DateApproved { get; set; }
-        public int ProQty { get; set; }
+        public int ProdQty { get; set; }
         public int MasterLabelRevisionNo { get; set; }
         public int LabelInsRevisionNo { get; set; }
         public string? UB_LI_Code { get; set; }
