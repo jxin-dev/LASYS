@@ -20,5 +20,6 @@
         void ReportPrinterState(string message, bool isError = false);
         void UpdateTestPrintButtonState(bool isEnabled);
         void InvokeOnUI(Action action);
+        void LoadInterfaceTypes(List<string> interfaceTypes);
     }
 }
