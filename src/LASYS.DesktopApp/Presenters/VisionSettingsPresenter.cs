@@ -172,10 +172,21 @@ namespace LASYS.DesktopApp.Presenters
             string message = "Something went wrong. Please try again.";
             bool isError = true;
 
-            // 1️⃣ Validate ItemCode
             if (string.IsNullOrWhiteSpace(e.ItemCode))
             {
-                _view.FinishCalibration("Item code cannot be empty. Please enter a valid item code.", isError: true);
+                _view.FinishCalibration(
+                    "Please search and select an item first.",
+                    isError: true
+                );
+                return;
+            }
+
+            if (e.Revision <= 0)
+            {
+                _view.FinishCalibration(
+                    "Please search and select a valid revision.",
+                    isError: true
+                );
                 return;
             }
 
@@ -189,7 +200,7 @@ namespace LASYS.DesktopApp.Presenters
                 if (result == null)
                     throw new InvalidOperationException("Computed image region is null.");
 
-                await _calibrationService.AddOrUpdateAsync(result.ImageRegion, e.ImageSize, e.ItemCode);
+                await _calibrationService.AddOrUpdateAsync(result.ImageRegion, e.ImageSize, e.ItemCode, e.Revision);
                 message = "Coordinates were saved successfully.";
                 isError = false;
             }
