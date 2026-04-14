@@ -79,5 +79,11 @@ namespace LASYS.DesktopApp.Views.UserControls
             cbxInterface.SelectedIndex = cbxInterface.FindStringExact(printerInterface);
             cbxPort.SelectedIndex = cbxPort.FindStringExact(port);
         }
+
+        public void LoadInterfaceTypes(List<string> interfaceTypes)
+        {
+            cbxInterface.Items.Clear();
+            cbxInterface.Items.AddRange(interfaceTypes.ToArray());
+        }
     }
 }

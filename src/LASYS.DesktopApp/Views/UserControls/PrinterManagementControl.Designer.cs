@@ -123,7 +123,6 @@
             cbxInterface.DropDownStyle = ComboBoxStyle.DropDownList;
             cbxInterface.Font = new Font("Segoe UI", 12F, FontStyle.Regular, GraphicsUnit.Point, 0);
             cbxInterface.FormattingEnabled = true;
-            cbxInterface.Items.AddRange(new object[] { "USB Port", "Serial COM" });
             cbxInterface.Location = new Point(21, 112);
             cbxInterface.Name = "cbxInterface";
             cbxInterface.Size = new Size(180, 29);
@@ -162,6 +161,7 @@
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
+            BackColor = Color.FromArgb(245, 248, 247);
             Controls.Add(pnlContent);
             Name = "PrinterManagementControl";
             Size = new Size(864, 495);
