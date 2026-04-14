@@ -79,13 +79,14 @@
             picCameraPreview.TabIndex = 4;
             picCameraPreview.TabStop = false;
             // 
-            // OCRCalibrationControl
+            // VisionSettingsControl
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
+            BackColor = Color.FromArgb(245, 248, 247);
             Controls.Add(pnlContent);
             Controls.Add(pnlHeader);
-            Name = "OCRCalibrationControl";
+            Name = "VisionSettingsControl";
             Size = new Size(893, 484);
             pnlHeader.ResumeLayout(false);
             pnlHeader.PerformLayout();

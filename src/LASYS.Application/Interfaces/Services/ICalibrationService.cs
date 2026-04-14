@@ -6,7 +6,7 @@ namespace LASYS.Application.Interfaces.Services
     public interface ICalibrationService
     {
         CalibrationResult? ComputeImageRegion(Rectangle viewerRegion, Size pictureBoxSize, Size imageSize);
-        Task AddOrUpdateAsync(Rectangle imageRegion, Size imageSize, string itemCode);
+        Task AddOrUpdateAsync(Rectangle imageRegion, Size imageSize, string itemCode, int revision);
         Task<OCRConfig> LoadAsync();
     }
 }

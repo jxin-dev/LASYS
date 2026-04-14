@@ -13,12 +13,15 @@ namespace LASYS.DesktopApp.Views.UserControls
         private GridViewWithPagination _gridWithPagination;
 
         private TextBox? _txtItemCode;
+        private TextBox? _txtRevisionNumber;
         private TextBox? _txtX;
         private TextBox? _txtY;
         private TextBox? _txtWidth;
         private TextBox? _txtHeight;
         private TextBox? _txtImgWidth;
         private TextBox? _txtImgHeight;
+
+        private Button? _printSampleLabelButton;
 
         private RichTextBox? _richTextOCRResult;
 
@@ -264,20 +267,21 @@ namespace LASYS.DesktopApp.Views.UserControls
             {
                 PageSize = 5,
                 Dock = DockStyle.Fill,
-                BackColor = Color.White
+                //BackColor = Color.White
             };
 
             _gridWithPagination.SetMergedHeaders(
                 [
                     new HeaderColumn { Text = "Item Code", ColSpan = 1 },
+                    new HeaderColumn { Text = "Revision", ColSpan = 1 },
                     new HeaderColumn { Text = "Coordinates", ColSpan = 6 },
                     new HeaderColumn { Text = "Date Registered", ColSpan = 1 }
                 ],
-                ["Item Code", "X", "Y", "Width", "Height", "Image Width", "Image Height", "Date Registered"]
+                ["Item Code", "Revision", "X", "Y", "Width", "Height", "Image Width", "Image Height", "Date Registered"]
             );
 
             _gridWithPagination.SetColumnWidths(
-                150, 80, 80, 80, 80, 100, 100, 150
+                150, 80, 80, 80, 80, 80, 100, 100, 150
             );
 
             _gridWithPagination.RowDoubleClicked += (sender, e) =>
@@ -454,14 +458,21 @@ namespace LASYS.DesktopApp.Views.UserControls
             var saveButton = new Button
             {
                 Text = "Save Configuration",
-                Font = new Font("Segoe UI Semibold,", 9),
-                FlatStyle = FlatStyle.Flat,
-                AutoSize = true,
                 Height = 36,
                 Width = 160,
-                ForeColor = Color.White,
-                BackColor = SystemColors.HotTrack,
-                Margin = new Padding(0, 5, 0, 0)
+                Margin = new Padding(0, 5, 0, 0),
+                AutoSize = true,
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI Semibold", 9),
+                BackColor = Color.FromArgb(240, 240, 240), // light background
+                ForeColor = Color.FromArgb(0, 150, 136),   // teal text
+                FlatAppearance =
+                {
+                    BorderSize = 0,
+                    MouseOverBackColor = Color.FromArgb(220, 240, 238),
+                    MouseDownBackColor = Color.FromArgb(200, 230, 228)
+                },
+                Cursor = Cursors.Hand
             };
 
             saveButton.Click += (sender, e) =>
@@ -648,8 +659,8 @@ namespace LASYS.DesktopApp.Views.UserControls
 
             var labelInfoLayout = new TableLayoutPanel
             {
-                ColumnCount = 2,
-                RowCount = 1,
+                ColumnCount = 3,
+                RowCount = 2,
                 AutoSize = true,
                 Dock = DockStyle.Top,
                 //CellBorderStyle = TableLayoutPanelCellBorderStyle.Single
@@ -666,6 +677,8 @@ namespace LASYS.DesktopApp.Views.UserControls
 
             labelInfoLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 90));
             labelInfoLayout.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+            labelInfoLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 80));
+
 
             labelInfoLayout.Controls.Add(itemCodeLabel, 0, 0);
 
@@ -673,8 +686,87 @@ namespace LASYS.DesktopApp.Views.UserControls
             {
                 Width = 250,
                 Margin = new Padding(0, 5, 15, 5),
+                ReadOnly = true
             };
             labelInfoLayout.Controls.Add(_txtItemCode, 1, 0);
+
+            var searchButton = new Button
+            {
+                Text = "Search",
+                AutoSize = true,
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI Semibold", 9),
+
+                BackColor = Color.FromArgb(240, 240, 240), // light background
+                ForeColor = Color.FromArgb(0, 150, 136),   // teal text
+
+                // remove borders
+                FlatAppearance =
+                {
+                    BorderSize = 0,
+                    MouseOverBackColor = Color.FromArgb(220, 240, 238),
+                    MouseDownBackColor = Color.FromArgb(200, 230, 228)
+                },
+
+                Cursor = Cursors.Hand
+            };
+            labelInfoLayout.Controls.Add(searchButton, 2, 0);
+
+            var revisionNoLabel = new Label
+            {
+                Text = "Revision No:",
+                AutoSize = true,
+                Anchor = AnchorStyles.Left,
+                Margin = new Padding(0, 5, 5, 5)
+            };
+
+            labelInfoLayout.Controls.Add(revisionNoLabel, 0, 1);
+
+            _txtRevisionNumber = new TextBox
+            {
+                Width = 80,
+                Margin = new Padding(0, 5, 15, 5),
+                ReadOnly = true,
+                Dock = DockStyle.Left
+            };
+            labelInfoLayout.Controls.Add(_txtRevisionNumber, 1, 1);
+
+            _printSampleLabelButton = new Button
+            {
+                Text = "Print",
+                AutoSize = true,
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI Semibold", 9),
+
+                BackColor = Color.FromArgb(240, 240, 240), // light background
+                ForeColor = Color.FromArgb(0, 150, 136),   // teal text
+
+                // remove borders
+                FlatAppearance =
+                {
+                    BorderSize = 0,
+                    MouseOverBackColor = Color.FromArgb(220, 240, 238),
+                    MouseDownBackColor = Color.FromArgb(200, 230, 228)
+                },
+
+                Cursor = Cursors.Hand
+            };
+
+            labelInfoLayout.Controls.Add(_printSampleLabelButton, 2, 1);
+
+            labelInfoLayout.Paint += (s, e) =>
+            {
+                if (s is not TableLayoutPanel panel)
+                    return;
+
+                //using var pen = new Pen(Color.Gray, 1);
+                using var pen = new Pen(Color.FromArgb(0, 166, 147), 2);
+                int y = panel.ClientSize.Height - 1;
+
+                e.Graphics.DrawLine(pen, 0, y, panel.ClientSize.Width, y);
+
+            };
+
 
             var coordGrid = new TableLayoutPanel
             {
@@ -749,12 +841,18 @@ namespace LASYS.DesktopApp.Views.UserControls
                 Text = "Save Region",
                 Width = 120,
                 Height = 35,
-                Font = new Font("Segoe UI Semibold,", 9),
-                FlatStyle = FlatStyle.Flat,
                 AutoSize = true,
-                ForeColor = Color.White,
-                BackColor = SystemColors.HotTrack
-
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI Semibold", 9),
+                BackColor = Color.FromArgb(240, 240, 240), // light background
+                ForeColor = Color.FromArgb(0, 150, 136),   // teal text
+                FlatAppearance =
+                {
+                    BorderSize = 0,
+                    MouseOverBackColor = Color.FromArgb(220, 240, 238),
+                    MouseDownBackColor = Color.FromArgb(200, 230, 228)
+                },
+                Cursor = Cursors.Hand
             };
             buttonPanel.Controls.Add(btnSaveRegion, 0, 0);
 
@@ -764,18 +862,26 @@ namespace LASYS.DesktopApp.Views.UserControls
                 Text = "Test OCR",
                 Width = 120,
                 Height = 35,
-                Font = new Font("Segoe UI Semibold,", 9),
-                FlatStyle = FlatStyle.Flat,
                 AutoSize = true,
-                ForeColor = Color.White,
-                BackColor = SystemColors.HotTrack
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI Semibold", 9),
+                BackColor = Color.FromArgb(240, 240, 240), // light background
+                ForeColor = Color.FromArgb(0, 150, 136),   // teal text
+                FlatAppearance =
+                {
+                    BorderSize = 0,
+                    MouseOverBackColor = Color.FromArgb(220, 240, 238),
+                    MouseDownBackColor = Color.FromArgb(200, 230, 228)
+                },
+                Cursor = Cursors.Hand
             };
             buttonPanel.Controls.Add(btnTestOcr, 1, 0);
 
 
             btnSaveRegion.Click += delegate
             {
-                SaveCalibrationClicked?.Invoke(this, new CalibrationEventArgs(_roi, picCameraPreview.Size, picCameraPreview.Image?.Size ?? Size.Empty, _txtItemCode.Text.Trim()));
+                int revision = int.TryParse(_txtRevisionNumber.Text, out var r) ? r : 0;
+                SaveCalibrationClicked?.Invoke(this, new CalibrationEventArgs(_roi, picCameraPreview.Size, picCameraPreview.Image?.Size ?? Size.Empty, _txtItemCode.Text.Trim(), revision));
             };
 
             btnTestOcr.Click += delegate
@@ -901,7 +1007,8 @@ namespace LASYS.DesktopApp.Views.UserControls
         {
             _gridWithPagination.SetRows(config.Products, p =>
             [
-             p.ItemCode,
+                p.ItemCode,
+                p.RevisionNo.ToString(),
                 p.Coordinates.X.ToString(),
                 p.Coordinates.Y.ToString(),
                 p.Coordinates.Width.ToString(),
