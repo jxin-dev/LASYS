@@ -446,7 +446,7 @@
             return null;
         }
 
-        public event EventHandler<object?>? RowDoubleClicked;
+        public event EventHandler<object?>? RowDoubleClicked;        
 
         protected override void OnMouseDoubleClick(MouseEventArgs e)
         {
@@ -610,7 +610,7 @@
         private readonly Panel _searchPanel;
         private readonly PlaceholderTextBox _txtSearch;
 
-
+        private bool _isExternalData = false;
         private int _currentPage = 1;
         private int _pageSize = 10;
         private List<object> _allRows = new(); // all row objects
@@ -665,7 +665,7 @@
                 BorderStyle = BorderStyle.FixedSingle,
                 Font = new Font("Segoe UI", 10F),
                 ForeColor = Color.Black, //Color.White,
-                BackColor =  Color.White //Color.FromArgb(80, 80, 80),
+                BackColor = Color.White //Color.FromArgb(80, 80, 80),
             };
             EnableDoubleBuffer(_txtSearch);
 
@@ -765,10 +765,10 @@
             };
 
             // Wire button events
-            _btnFirst.Clicked += (s, e) => { _currentPage = 1; UpdatePage(); };
-            _btnPrev.Clicked += (s, e) => { if (_currentPage > 1) _currentPage--; UpdatePage(); };
-            _btnNext.Clicked += (s, e) => { if (_currentPage < TotalPages) _currentPage++; UpdatePage(); };
-            _btnLast.Clicked += (s, e) => { _currentPage = TotalPages; UpdatePage(); };
+            _btnFirst.Clicked += (s, e) => { _currentPage = 1; UpdatePage(); PageNoChanged?.Invoke(this, 1); };
+            _btnPrev.Clicked += (s, e) => { if (_currentPage > 1) { _currentPage--; PageNoChanged?.Invoke(this, _currentPage); } UpdatePage();  };
+            _btnNext.Clicked += (s, e) => { if (_currentPage < TotalPages) { _currentPage++; PageNoChanged?.Invoke(this, _currentPage); } UpdatePage(); };
+            _btnLast.Clicked += (s, e) => { _currentPage = TotalPages; UpdatePage(); PageNoChanged?.Invoke(this, TotalPages); };
         }
 
 
@@ -789,7 +789,7 @@
                 Height = 30,
                 DefaultBackColor = Color.White, //_paginationPanel.BackColor,
                 HoverBackColor = Color.FromArgb(200, 230, 225), //LightenColor(_paginationPanel.BackColor, 20),
-                TextColor = Color.FromArgb(0, 110, 100), 
+                TextColor = Color.FromArgb(0, 110, 100),
                 Icon = Image.FromFile(imagePath) // Load icon from file
             };
         }
@@ -802,13 +802,22 @@
 
         public int CurrentPage => _currentPage;
 
-        public int TotalPages => (_filteredRows.Count + _pageSize - 1) / _pageSize;
+        public int TotalPages;
         public void SetRows<T>(IEnumerable<T> rows, Func<T, string[]> displaySelector)
         {
             _allRows = rows.Cast<object>().ToList();
             _filteredRows = _allRows.ToList(); // reset filter
             _displaySelector = obj => displaySelector((T)obj);
-            _currentPage = 1;
+
+            if (_isExternalData)
+            {
+                _currentPage = _currentPage < 1 ? 1 : _currentPage;
+            }
+            else
+            {
+                TotalPages = (_filteredRows.Count + _pageSize - 1) / _pageSize;
+                _currentPage = 1;
+            }
             UpdatePage();
         }
         // Expose SetMergedHeaders
@@ -823,13 +832,31 @@
             _grid.SetColumnWidths(widths);
         }
 
+        public void SetTotalPages(int totalPages)
+        {
+            TotalPages = totalPages;
+            _lblPage.Text = $"Page {_currentPage} of {totalPages}";
+            _btnNext.Enabled = _btnLast.Enabled = _currentPage < totalPages;
+        }
+
         public event EventHandler<object?>? RowDoubleClicked
         {
             add => _grid.RowDoubleClicked += value;
             remove => _grid.RowDoubleClicked -= value;
         }
+
+        public event EventHandler<int>? PageNoChanged;
+
         private void UpdatePage()
         {
+            if (_isExternalData)
+            {
+                _grid.SetRows(_filteredRows, _displaySelector);
+                _grid.ClearSelection();
+                _btnFirst.Enabled = _btnPrev.Enabled = _currentPage > 1;
+                return;
+            }
+
             if (_filteredRows.Count == 0)
             {
                 _grid.SetRows(Array.Empty<object>(), o => Array.Empty<string>());
@@ -853,6 +880,11 @@
             _btnFirst.Enabled = _btnPrev.Enabled = _currentPage > 1;
             _btnNext.Enabled = _btnLast.Enabled = _currentPage < totalPages;
 
+        }
+
+        public void SetExternalDataMode(bool isExternal)
+        {
+            _isExternalData = isExternal;
         }
     }
 }

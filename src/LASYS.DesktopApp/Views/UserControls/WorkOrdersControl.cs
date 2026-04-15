@@ -7,13 +7,15 @@ namespace LASYS.DesktopApp.Views.UserControls
     public partial class WorkOrdersControl : UserControl, IWorkOrdersView
     {
         public event EventHandler<LabelPrintingRequestedEventArgs>? LabelPrintingRequested;
+        public event EventHandler<int>? PageNoChanged;
         private readonly GridViewWithPagination _gridWithPagination;
+
         public WorkOrdersControl()
         {
             InitializeComponent();
             _gridWithPagination = new GridViewWithPagination
             {
-                PageSize = 5,
+                PageSize = 50,
                 Dock = DockStyle.Fill,
                 BackColor = Color.White
             };
@@ -76,6 +78,17 @@ namespace LASYS.DesktopApp.Views.UserControls
 
             };
 
+            _gridWithPagination.PageNoChanged += (sender, e) =>
+            {
+                if (e is int pageNo)
+                {
+                    PageNoChanged?.Invoke(this, pageNo);
+                }
+            };
+
+            // Enable external data mode for pagination
+            _gridWithPagination.SetExternalDataMode(true); 
+
             pnlContent.Controls.Add(_gridWithPagination);
 
 
@@ -96,8 +109,9 @@ namespace LASYS.DesktopApp.Views.UserControls
             MessageBox.Show(message, caption, MessageBoxButtons.OK, icon);
         }
 
-        public void SetWorkOrders(List<SampleData> workOrders)
+        public void SetWorkOrders(List<SampleData> workOrders, int totalPages)
         {
+            _gridWithPagination.SetTotalPages(totalPages);
             _gridWithPagination.SetRows(workOrders, item =>
             [
                 item.ItemCode,
