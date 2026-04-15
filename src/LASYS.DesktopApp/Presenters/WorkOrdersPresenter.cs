@@ -14,6 +14,7 @@ namespace LASYS.DesktopApp.Presenters
         private readonly IServiceProvider _serviceProvider;
         private readonly IMediator _mediator;
         public UserControl View { get; }
+        private bool _isLoading = true;
 
         public WorkOrdersPresenter(IWorkOrdersView view, IMainView mainView, IServiceProvider serviceProvider, IMediator mediator)
         {
@@ -24,6 +25,7 @@ namespace LASYS.DesktopApp.Presenters
             _mediator = mediator;
 
             _view.LabelPrintingRequested += OnLabelPrintingRequested;
+            _view.PageNoChanged += OnPageNoChanged; 
 
             LoadWorkOrdersAsync();
         }
@@ -35,14 +37,41 @@ namespace LASYS.DesktopApp.Presenters
             //labelPrintingPresenter.SetWorkOrderId(e.WorkOrderId);
             _mainView?.LoadView(labelPrintingPresenter.View, false); //always new
             await labelPrintingPresenter.InitializeTemplateAsync(e.WorkOrderId);
+        }
 
+        private async void OnPageNoChanged(object? sender, int pageNo)
+        {
+            if (_isLoading) return;
 
+            var result = await _mediator.Send(new GetWorkOrdersQuery("", 50, pageNo));
+            List<SampleData> data = result.Value.Items.Select(wo => new SampleData(
+                1,
+                wo.ItemCode,
+                wo.LotNo,
+                wo.ExpDate,
+                wo.PrintType,
+                wo.Verdict,
+                wo.DateApproved,
+                wo.ProdQty,
+                wo.MasterLabelRevisionNo,
+                wo.LabelInsRevisionNo,
+                wo.UB_Qty.ToString(),
+                wo.UB_LI_Status,
+                wo.AUB_Qty.ToString(),
+                wo.AUB_LI_Status,
+                wo.OUB_Qty.ToString(),
+                wo.OUB_LI_Status
+            )).ToList();
+            if (data != null && data.Count > 0)
+            {
+                _view.SetWorkOrders(data, result.Value.TotalPages);
+            }
         }
 
         private async void LoadWorkOrdersAsync()
         {
-            var result = await _mediator.Send(new GetWorkOrdersQuery("", 10, 1));
-            List<SampleData> data = result.Value.Select(wo => new SampleData(
+            var result = await _mediator.Send(new GetWorkOrdersQuery("", 50, 1));
+            List<SampleData> data = result.Value.Items.Select(wo => new SampleData(
                 1,
                 wo.ItemCode,
                 wo.LotNo,
@@ -63,8 +92,10 @@ namespace LASYS.DesktopApp.Presenters
 
             if (data != null && data.Count > 0)
             {
-                _view.SetWorkOrders(data);
+                _view.SetWorkOrders(data, result.Value.TotalPages);
             }
+
+            _isLoading = false;
         }
     }
 }

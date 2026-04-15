@@ -1,11 +1,12 @@
 ﻿using Dapper;
+using LASYS.Application.Common.Pagination;
 using LASYS.Application.Common.Results;
 using LASYS.Application.Interfaces.Persistence;
 using MediatR;
 
 namespace LASYS.Application.Features.LabelProcessing.GetWorkOrders
 {
-    public class GetWorkOrdersHandler : IRequestHandler<GetWorkOrdersQuery, Result<IEnumerable<GetWorkOrdersResult>>>
+    public class GetWorkOrdersHandler : IRequestHandler<GetWorkOrdersQuery, Result<PaginatedList<GetWorkOrdersResult>>>
     {
         private readonly IDbConnectionFactory _factory;
         public GetWorkOrdersHandler(IDbConnectionFactory factory)
@@ -13,7 +14,7 @@ namespace LASYS.Application.Features.LabelProcessing.GetWorkOrders
             _factory = factory;
         }
 
-        public async Task<Result<IEnumerable<GetWorkOrdersResult>>> Handle(GetWorkOrdersQuery request, CancellationToken cancellationToken)
+        public async Task<Result<PaginatedList<GetWorkOrdersResult>>> Handle(GetWorkOrdersQuery request, CancellationToken cancellationToken)
         {
             try
             {
@@ -33,6 +34,34 @@ namespace LASYS.Application.Features.LabelProcessing.GetWorkOrders
                         inspln.ACB_LBL_INS_CODE LIKE '%{request.filter}%')
                     ";
                 }
+
+                var queryTotal = @$"SELECT COUNT(*) 
+                            FROM ppt_lbl_instructn_plns_hst inspln 
+                               LEFT JOIN pre_tpc_products_mst prdmst 
+	                              ON inspln.item_code = prdmst.item_code 
+                               INNER JOIN pre_masterlabels_tcl  mstlbltcl  
+	                              ON (mstlbltcl.item_code  = inspln.item_code AND 
+		                               mstlbltcl.masterlabel_revision_number = inspln.master_label_revision_number ) 
+                               INNER JOIN pre_tpc_products_tcl prdct 
+	                              ON (inspln.item_code = prdct.item_code 
+                            AND prdct.masterlabel_revision_number = mstlbltcl.masterlabel_revision_number) 
+                            INNER JOIN (SELECT item_code, lot_no, MAX(label_ins_rev_number) AS 'max_ins_rev' FROM ppt_lbl_instructn_plns_hst GROUP BY item_code, lot_no) finalinspln
+                            ON (finalinspln.item_code = inspln.item_code 
+	                            AND finalinspln.lot_no = inspln.lot_no 
+	                            AND finalinspln.max_ins_rev = inspln.label_ins_rev_number)
+                            WHERE 1 = 1 
+                            AND inspln.item_code=prdct.item_code 
+                            AND prdct.masterlabel_revision_number = inspln.master_label_revision_number 
+                            AND prdct.active_flag = '' 
+                            AND ((inspln.UB_LBL_INS_STATUS IN (2,3) AND inspln.UB_LBL_INS_VERDICT = 2 AND inspln.UB_Lbl_Status IN ('Not Printed','Partially Printed','Completely Printed')) OR  
+                            (inspln.OUB_LBL_INS_STATUS IN (2,3) AND inspln.OUB_LBL_INS_VERDICT = 2 AND inspln.OUB_Lbl_Status IN ('Not Printed','Partially Printed','Completely Printed')) OR  
+                            (inspln.OCB_LBL_INS_STATUS IN (2,3) AND inspln.OCB_LBL_INS_VERDICT = 2 AND inspln.OCB_Lbl_Status IN ('Not Printed','Partially Printed','Completely Printed')) OR  
+                            (inspln.CB_LBL_INS_STATUS IN (2,3) AND inspln.CB_LBL_INS_VERDICT = 2 AND inspln.CB_Lbl_Status IN ('Not Printed','Partially Printed','Completely Printed')) ) 
+                            {filter}
+                            ORDER BY inspln.history_datetime DESC
+                ";
+
+                var totalCount = await connection.ExecuteScalarAsync<int>(queryTotal);
 
                 var query = @$"SELECT inspln.Item_Code AS 'ItemCode',
 	                            inspln.Lot_No AS 'LotNo', 
@@ -105,11 +134,11 @@ namespace LASYS.Application.Features.LabelProcessing.GetWorkOrders
                             LIMIT {request.pageSize} OFFSET {request.pageNo * request.pageSize}";
 
                 var result = await connection.QueryAsync<GetWorkOrdersResult>(query);
-                return Result.Success(result);
+                return Result.Success(new PaginatedList<GetWorkOrdersResult>(result, totalCount, request.pageNo, request.pageSize));
             }
             catch(Exception ex)
             {
-                return Result.Failure<IEnumerable<GetWorkOrdersResult>>(ex.Message);
+                return Result.Failure<PaginatedList<GetWorkOrdersResult>>(ex.Message);
             }
         }
     }
