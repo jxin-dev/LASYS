@@ -702,31 +702,42 @@
             };
             EnableDoubleBuffer(_paginationPanel);
 
-
-            // Container for buttons, centered horizontally
-            var buttonContainer = new FlowLayoutPanel
+            // Container for buttons (TableLayoutPanel)
+            var buttonContainer = new TableLayoutPanel
             {
                 AutoSize = true,
                 AutoSizeMode = AutoSizeMode.GrowAndShrink,
-                FlowDirection = FlowDirection.LeftToRight,
-                WrapContents = false,
-                Location = new Point((_paginationPanel.Width - 0) / 2, 5), // temporary X, will adjust later
+                ColumnCount = 5,
+                RowCount = 1,
+                Dock = DockStyle.None,
+                Anchor = AnchorStyles.Top,
+                Padding = new Padding(0),
+                Margin = new Padding(0)
             };
+
             EnableDoubleBuffer(buttonContainer);
+
+            // Define column styles (auto-size each)
+            buttonContainer.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize)); // First
+            buttonContainer.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize)); // Prev
+            buttonContainer.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize)); // Label
+            buttonContainer.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize)); // Next
+            buttonContainer.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize)); // Last
 
             // Initialize page label
             _lblPage = new Label
             {
                 Font = new Font("Segoe UI", 10F, FontStyle.Bold),
                 Text = "Page 1 of 1",
-                AutoSize = false,
-                ForeColor = Color.FromArgb(0, 140, 125), //Color.White,
+                AutoSize = true,
+                ForeColor = Color.FromArgb(0, 140, 125),
                 TextAlign = ContentAlignment.MiddleCenter,
-                Height = 35,
+                Anchor = AnchorStyles.None,
+                Padding = new Padding(10, 8, 10, 8),
             };
             EnableDoubleBuffer(_lblPage);
 
-            // Initialize IconButtons
+            // Initialize buttons
             _btnFirst = CreateButton("First", @"Resources/first.png");
             _btnPrev = CreateButton("Prev", @"Resources/previous.png");
             _btnNext = CreateButton("Next", @"Resources/next.png");
@@ -737,12 +748,29 @@
             EnableDoubleBuffer(_btnNext);
             EnableDoubleBuffer(_btnLast);
 
-            // Add buttons to container
-            buttonContainer.Controls.AddRange([_btnFirst, _btnPrev, _lblPage, _btnNext, _btnLast]);
+            // Center content inside cells
+            _btnFirst.Anchor = AnchorStyles.None;
+            _btnPrev.Anchor = AnchorStyles.None;
+            _btnNext.Anchor = AnchorStyles.None;
+            _btnLast.Anchor = AnchorStyles.None;
+
+            // Add controls to table (column, row)
+            buttonContainer.Controls.Add(_btnFirst, 0, 0);
+            buttonContainer.Controls.Add(_btnPrev, 1, 0);
+            buttonContainer.Controls.Add(_lblPage, 2, 0);
+            buttonContainer.Controls.Add(_btnNext, 3, 0);
+            buttonContainer.Controls.Add(_btnLast, 4, 0);
+
+            // Center the whole container inside pagination panel
+            buttonContainer.Location = new Point(
+                (_paginationPanel.Width - buttonContainer.PreferredSize.Width) / 2,
+                5
+            );
 
             // Add container to panel
             _paginationPanel.Controls.Add(buttonContainer);
 
+            // Layout
             layout.Controls.Add(_searchPanel, 0, 0);
             layout.Controls.Add(_grid, 0, 1);
             layout.Controls.Add(_paginationPanel, 0, 2);
