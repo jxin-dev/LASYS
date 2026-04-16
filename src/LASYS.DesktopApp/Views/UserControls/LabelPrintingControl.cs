@@ -1,5 +1,6 @@
 ﻿using LASYS.Application.Common.Enums;
 using LASYS.Application.Common.Messaging;
+using LASYS.Application.Common.Models;
 using LASYS.DesktopApp.DTOs;
 using LASYS.DesktopApp.Views.Forms;
 using LASYS.DesktopApp.Views.Interfaces;
@@ -35,6 +36,8 @@ namespace LASYS.DesktopApp.Views.UserControls
 
         private Label? _barcodeStatus;
         private Label? _barcodeDetails;
+
+        private PrintData? _printData;
 
         public UserControl UserControl => this;
 
@@ -564,6 +567,22 @@ namespace LASYS.DesktopApp.Views.UserControls
                 Invoke(action);
             else
                 action();
+        }
+
+        public void UpdatePrintData(PrintData printData)
+        {
+            _printData = printData;
+            lblTotalQuantity.Text = printData.TargetQuantity.ToString();
+            lblRemaining.Text = (printData.LastSequence - printData.SequenceNumber).ToString();
+            lblLabelSample.Text = printData.TotalSampleCase.ToString();
+            lblTotalPrinted.Text = (printData.ResultData.TotalPassed + printData.ResultData.TotalFailed).ToString();
+            lblTotalPassed.Text = printData.ResultData.TotalPassed.ToString();
+            lblTotalFailed.Text = printData.ResultData.TotalFailed.ToString();
+        }
+
+        public void UpdateFilePath(string filePath)
+        {
+            lblLabelFile.Text = filePath;
         }
 
 

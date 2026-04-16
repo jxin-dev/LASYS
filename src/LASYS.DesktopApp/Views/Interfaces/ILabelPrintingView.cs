@@ -1,5 +1,6 @@
 ﻿using LASYS.Application.Common.Enums;
 using LASYS.Application.Common.Messaging;
+using LASYS.Application.Common.Models;
 using LASYS.DesktopApp.DTOs;
 using LASYS.DesktopApp.Views.Forms;
 
@@ -19,6 +20,9 @@ namespace LASYS.DesktopApp.Views.Interfaces
 
         void SetPrintingState(PrintingState state);
         void UpdateWorkOrderData(WorkOrderDto workOrderDto);
+        void UpdatePrintData(PrintData printData);
+
+        void UpdateFilePath(string filePath);
         //void UpdateProgress(int percent, string message);
         void HideError();
         void UpdateCameraStatus(string status, string details);

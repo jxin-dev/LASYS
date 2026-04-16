@@ -20,19 +20,21 @@ namespace LASYS.Application.Features.LabelProcessing.GetWorkOrders
             {
                 using var connection = await _factory.CreateConnectionAsync();
                 string filter = string.Empty;
+                var parameters = new DynamicParameters();
 
                 if (!string.IsNullOrEmpty(request.filter))
                 {
-                    filter = $@"AND (
-                        inspln.Item_Code LIKE '%{request.filter}%' OR
-                        inspln.Lot_No LIKE '%{request.filter}%' OR
-                        inspln.UB_LBL_INS_CODE LIKE '%{request.filter}%' OR
-                        inspln.OUB_LBL_INS_CODE LIKE '%{request.filter}%' OR    
-                        inspln.OCB_LBL_INS_CODE LIKE '%{request.filter}%' OR
-                        inspln.CB_LBL_INS_CODE LIKE '%{request.filter}%' OR
-                        inspln.AUB_LBL_INS_CODE LIKE '%{request.filter}%' OR
-                        inspln.ACB_LBL_INS_CODE LIKE '%{request.filter}%')
+                    filter = @"AND (
+                        inspln.Item_Code LIKE @filter OR
+                        inspln.Lot_No LIKE @filter OR
+                        inspln.UB_LBL_INS_CODE LIKE @filter OR
+                        inspln.OUB_LBL_INS_CODE LIKE @filter OR
+                        inspln.OCB_LBL_INS_CODE LIKE @filter OR
+                        inspln.CB_LBL_INS_CODE LIKE @filter OR
+                        inspln.AUB_LBL_INS_CODE LIKE @filter OR
+                        inspln.ACB_LBL_INS_CODE LIKE @filter)
                     ";
+                    parameters.Add("@filter", $"%{request.filter}%");
                 }
 
                 var queryTotal = @$"SELECT COUNT(*) 
@@ -61,7 +63,12 @@ namespace LASYS.Application.Features.LabelProcessing.GetWorkOrders
                             ORDER BY inspln.history_datetime DESC
                 ";
 
-                var totalCount = await connection.ExecuteScalarAsync<int>(queryTotal);
+                var totalCount = await connection.ExecuteScalarAsync<int>(queryTotal, parameters);
+
+                int pageNo = Math.Max(1, request.pageNo);
+                int offset = (pageNo - 1) * request.pageSize;
+                parameters.Add("@pageSize", request.pageSize);
+                parameters.Add("@offset", offset);
 
                 var query = @$"SELECT inspln.Item_Code AS 'ItemCode',
 	                            inspln.Lot_No AS 'LotNo', 
@@ -131,10 +138,10 @@ namespace LASYS.Application.Features.LabelProcessing.GetWorkOrders
                             (inspln.CB_LBL_INS_STATUS IN (2,3) AND inspln.CB_LBL_INS_VERDICT = 2 AND inspln.CB_Lbl_Status IN ('Not Printed','Partially Printed','Completely Printed')) ) 
                             {filter}
                             ORDER BY inspln.history_datetime DESC
-                            LIMIT {request.pageSize} OFFSET {request.pageNo * request.pageSize}";
+                            LIMIT @pageSize OFFSET @offset";
 
-                var result = await connection.QueryAsync<GetWorkOrdersResult>(query);
-                return Result.Success(new PaginatedList<GetWorkOrdersResult>(result, totalCount, request.pageNo, request.pageSize));
+                var result = await connection.QueryAsync<GetWorkOrdersResult>(query, parameters);
+                return Result.Success(new PaginatedList<GetWorkOrdersResult>(result, totalCount, pageNo, request.pageSize));
             }
             catch(Exception ex)
             {

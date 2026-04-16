@@ -41,8 +41,8 @@ namespace LASYS.DesktopApp.Presenters
         private IEnumerable<LabelBoxType> BuildTypes(
             bool hasCaseLabel,
             bool hasUnitBox,
-            bool hasOuterUnitBox,
             bool hasAdditionalUnitBox,
+            bool hasOuterUnitBox,
             bool hasCartonBox,
             bool hasOuterCartonBox,
             bool hasAdditionalCartonBox)

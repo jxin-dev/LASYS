@@ -32,6 +32,8 @@ namespace LASYS.Infrastructure.Hardware.Printers.Sato
         public event EventHandler<PrinterStatusEventArgs>? PrinterStatusChanged;
         public event EventHandler<LabelEventArgs>? LabelStatusChanged;
 
+        public string FilePath => _prnFilePath;
+
         private void EnsureByteAvailableSubscription()
         {
             if (_printer == null || _isByteAvailableSubscribed)
