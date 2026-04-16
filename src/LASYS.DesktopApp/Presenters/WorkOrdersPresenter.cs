@@ -62,9 +62,6 @@ namespace LASYS.DesktopApp.Presenters
 
             if (result == null)
             {
-                _view.ShowNotification("No printable label instruction code is available for this work order.",
-                                       "No Printable Type",
-                                       MessageBoxIcon.Warning);
                 return;
             }
 
