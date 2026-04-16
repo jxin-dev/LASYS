@@ -42,6 +42,10 @@ namespace LASYS.DesktopApp.Extensions
             services.AddSingleton<IBarcodeScannerView, BarcodeScannerControl>();
             services.AddSingleton<BarcodeScannerPresenter>();
 
+            services.AddSingleton<ILabelBoxTypeView, LabelBoxTypeForm>();
+            services.AddSingleton<LabelBoxTypePresenter>();
+
+
             // Services
             services.AddSingleton<ICurrentUser, CurrentUser>();
 

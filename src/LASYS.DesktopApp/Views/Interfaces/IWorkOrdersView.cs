@@ -1,4 +1,5 @@
-﻿using LASYS.DesktopApp.Events;
+﻿using LASYS.Application.Features.LabelProcessing.GetWorkOrders;
+using LASYS.DesktopApp.Events;
 using LASYS.DesktopApp.Views.UserControls;
 
 namespace LASYS.DesktopApp.Views.Interfaces
@@ -9,6 +10,6 @@ namespace LASYS.DesktopApp.Views.Interfaces
         event EventHandler<int> PageNoChanged;
 
         void ShowNotification(string message, string caption, MessageBoxIcon icon);
-        void SetWorkOrders(List<SampleData> workOrders, int totalCount);
+        void SetWorkOrders(List<GetWorkOrdersResult> workOrders, int totalCount);
     }
 }

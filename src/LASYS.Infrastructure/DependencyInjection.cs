@@ -12,6 +12,7 @@ using LASYS.Infrastructure.Persistence.Repositories;
 using LASYS.Infrastructure.Services.Media;
 using LASYS.Infrastructure.Services.Security;
 using LASYS.Infrastructure.Services.Session;
+using LASYS.Infrastructure.Services.WorkOrder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -79,6 +80,7 @@ public static class DependencyInjection
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IHrUserRepository, HrUserRepository>();
         services.AddScoped<IWorkOrderRepository, WorkOrderRepository>();
+        services.AddScoped<WorkOrderService>();
 
         return services;
     }
