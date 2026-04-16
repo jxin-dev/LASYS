@@ -34,9 +34,19 @@ namespace LASYS.DesktopApp.Presenters
         private async void OnLabelPrintingRequested(object? sender, LabelPrintingRequestedEventArgs e)
         {
             var labelPrintingPresenter = _serviceProvider.GetRequiredService<LabelPrintingPresenter>();
-            //labelPrintingPresenter.SetWorkOrderId(e.WorkOrderId);
+
+            // Populate view with basic/placeholder data before loading (so controls aren't empty)
+            try
+            {
+                // Pass the full event args so the presenter can use ItemCode / LotNo / InstructionCode / LabelType
+                labelPrintingPresenter.SetWorkOrder(e);
+            }
+            catch { }
+
             _mainView?.LoadView(labelPrintingPresenter.View, false); //always new
-            await labelPrintingPresenter.InitializeTemplateAsync(e.WorkOrderId);
+
+            // Initialize template and other data using the full event args
+            await labelPrintingPresenter.InitializeTemplateAsync(e);
         }
 
         private async void OnPageNoChanged(object? sender, int pageNo)
@@ -44,23 +54,23 @@ namespace LASYS.DesktopApp.Presenters
             if (_isLoading) return;
 
             var result = await _mediator.Send(new GetWorkOrdersQuery("", 50, pageNo));
-            List<SampleData> data = result.Value.Items.Select(wo => new SampleData(
-                1,
-                wo.ItemCode,
-                wo.LotNo,
-                wo.ExpDate,
-                wo.PrintType,
-                wo.Verdict,
-                wo.DateApproved,
+
+            if(result.IsSuccess && result.Value?.Items == null) return;                                     
+
+            List<SampleData> data = result.Value!.Items.Select((wo, index) => new SampleData(
+                index + 1,
+                wo.ItemCode!,
+                wo.LotNo!,                                                                                                                                                           
+                wo.ExpDate!,
+                wo.PrintType!,
+                wo.Verdict!,
+                wo.DateApproved!,
                 wo.ProdQty,
                 wo.MasterLabelRevisionNo,
                 wo.LabelInsRevisionNo,
-                wo.UB_Qty.ToString(),
-                wo.UB_LI_Status,
-                wo.AUB_Qty.ToString(),
-                wo.AUB_LI_Status,
-                wo.OUB_Qty.ToString(),
-                wo.OUB_LI_Status
+                wo.UB_Qty.ToString(), wo.UB_LI_Status!,
+                wo.AUB_Qty.ToString(), wo.AUB_LI_Status!,
+                wo.OUB_Qty.ToString(), wo.OUB_LI_Status!
             )).ToList();
             if (data != null && data.Count > 0)
             {
@@ -71,23 +81,20 @@ namespace LASYS.DesktopApp.Presenters
         private async void LoadWorkOrdersAsync()
         {
             var result = await _mediator.Send(new GetWorkOrdersQuery("", 50, 1));
-            List<SampleData> data = result.Value.Items.Select(wo => new SampleData(
-                1,
-                wo.ItemCode,
-                wo.LotNo,
-                wo.ExpDate,
-                wo.PrintType,
-                wo.Verdict,
-                wo.DateApproved,
+            List<SampleData> data = result.Value!.Items.Select((wo, index) => new SampleData(
+                index + 1,
+                wo.ItemCode!,
+                wo.LotNo!,
+                wo.ExpDate!,
+                wo.PrintType!,
+                wo.Verdict!,
+                wo.DateApproved!,
                 wo.ProdQty,
                 wo.MasterLabelRevisionNo,
                 wo.LabelInsRevisionNo,
-                wo.UB_Qty.ToString(),
-                wo.UB_LI_Status,
-                wo.AUB_Qty.ToString(),
-                wo.AUB_LI_Status,
-                wo.OUB_Qty.ToString(),
-                wo.OUB_LI_Status
+                wo.UB_Qty.ToString(), wo.UB_LI_Status!,
+                wo.AUB_Qty.ToString(), wo.AUB_LI_Status!,
+                wo.OUB_Qty.ToString(), wo.OUB_LI_Status!
             )).ToList();
 
             if (data != null && data.Count > 0)
