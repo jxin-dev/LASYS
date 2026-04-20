@@ -470,7 +470,8 @@ namespace LASYS.DesktopApp.Views.UserControls
                 ForeColor = Color.FromArgb(0, 150, 136),   // teal text
                 FlatAppearance =
                 {
-                    BorderSize = 0,
+                    BorderSize = 1,
+                    BorderColor = Color.FromArgb(0, 150, 136),
                     MouseOverBackColor = Color.FromArgb(220, 240, 238),
                     MouseDownBackColor = Color.FromArgb(200, 230, 228)
                 },
@@ -710,7 +711,8 @@ namespace LASYS.DesktopApp.Views.UserControls
                 // remove borders
                 FlatAppearance =
                 {
-                    BorderSize = 0,
+                    BorderSize = 1,
+                    BorderColor = Color.FromArgb(0, 150, 136),
                     MouseOverBackColor = Color.FromArgb(220, 240, 238),
                     MouseDownBackColor = Color.FromArgb(200, 230, 228)
                 },
@@ -770,8 +772,9 @@ namespace LASYS.DesktopApp.Views.UserControls
 
                 // remove borders
                 FlatAppearance =
-                {
-                    BorderSize = 0,
+                {              
+                    BorderSize = 1,
+                    BorderColor = Color.FromArgb(0, 150, 136),
                     MouseOverBackColor = Color.FromArgb(220, 240, 238),
                     MouseDownBackColor = Color.FromArgb(200, 230, 228)
                 },
@@ -875,7 +878,8 @@ namespace LASYS.DesktopApp.Views.UserControls
                 ForeColor = Color.FromArgb(0, 150, 136),   // teal text
                 FlatAppearance =
                 {
-                    BorderSize = 0,
+                    BorderSize = 1,
+                    BorderColor = Color.FromArgb(0, 150, 136),
                     MouseOverBackColor = Color.FromArgb(220, 240, 238),
                     MouseDownBackColor = Color.FromArgb(200, 230, 228)
                 },
@@ -896,7 +900,8 @@ namespace LASYS.DesktopApp.Views.UserControls
                 ForeColor = Color.FromArgb(0, 150, 136),   // teal text
                 FlatAppearance =
                 {
-                    BorderSize = 0,
+                    BorderSize = 1,
+                    BorderColor = Color.FromArgb(0, 150, 136),
                     MouseOverBackColor = Color.FromArgb(220, 240, 238),
                     MouseDownBackColor = Color.FromArgb(200, 230, 228)
                 },
