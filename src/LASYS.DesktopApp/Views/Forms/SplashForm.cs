@@ -5,26 +5,61 @@ namespace LASYS.DesktopApp.Views.Forms
 {
     public partial class SplashForm : Form, ISplashView
     {
-        private readonly CustomProgressBar _progressBar;
+        private CustomProgressBar? _progressBar;
 
         public event EventHandler? ViewShown;
-
         public SplashForm()
         {
             InitializeComponent();
 
 
-            _progressBar = new CustomProgressBar
+            //_progressBar = new CustomProgressBar
+            //{
+            //    Dock = DockStyle.Bottom,
+            //    ProgressColor = Color.FromArgb(0, 166, 147), //Color.FromArgb(255, 0, 255, 255), //Color.FromArgb(0, 122, 204),
+            //    ProgressBackgroundColor = Color.LightGray,
+            //    ShowPercentage = false
+            //};
+
+            //pnlLoadingContainer.Controls.Add(_progressBar);
+
+            SetupLoadingUI();
+            UpdateCopyrightText();
+        }
+
+        private void SetupLoadingUI()
+        {
+            pnlLoadingContainer.Controls.Clear();
+
+            var table = new TableLayoutPanel
             {
-                Dock = DockStyle.Bottom,
-                ProgressColor = Color.FromArgb(0, 166, 147), //Color.FromArgb(255, 0, 255, 255), //Color.FromArgb(0, 122, 204),
-                ProgressBackgroundColor = Color.LightGray,
-                ShowPercentage = false
+                Dock = DockStyle.Fill,
+                ColumnCount = 3,
+                RowCount = 3
             };
 
-            pnlLoadingContainer.Controls.Add(_progressBar);
+            // center horizontally
+            table.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
+            table.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+            table.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
 
-            UpdateCopyrightText();
+            // center vertically
+            table.RowStyles.Add(new RowStyle(SizeType.Percent, 50));
+            table.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            table.RowStyles.Add(new RowStyle(SizeType.Percent, 50));
+
+            _progressBar = new CustomProgressBar
+            {
+                Width = 300,
+                ProgressColor = Color.FromArgb(0, 166, 147),
+                ProgressBackgroundColor = Color.LightGray,
+                ShowPercentage = false // since you already show status text
+            };
+
+            // center it
+            table.Controls.Add(_progressBar, 1, 1);
+
+            pnlLoadingContainer.Controls.Add(table);
         }
 
         private void UpdateCopyrightText()
