@@ -8,13 +8,15 @@ namespace LASYS.DesktopApp.Events
         public DrawingSize ImageSize { get; }
         public string ItemCode { get; }
         public int Revision { get; }
-        public CalibrationEventArgs(Rectangle roi, DrawingSize previewSize, DrawingSize imageSize, string itemCode, int revision)
+        public string BoxType { get; }
+        public CalibrationEventArgs(Rectangle roi, DrawingSize previewSize, DrawingSize imageSize, string itemCode, int revision, string boxType)
         {
             Roi = roi;
             PreviewSize = previewSize;
             ImageSize = imageSize;
             ItemCode = itemCode;
             Revision = revision;
+            BoxType = boxType;
         }
     }
 }

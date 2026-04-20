@@ -200,7 +200,7 @@ namespace LASYS.DesktopApp.Presenters
                 if (result == null)
                     throw new InvalidOperationException("Computed image region is null.");
 
-                await _calibrationService.AddOrUpdateAsync(result.ImageRegion, e.ImageSize, e.ItemCode, e.Revision);
+                await _calibrationService.AddOrUpdateAsync(result.ImageRegion, e.ImageSize, e.ItemCode, e.Revision, e.BoxType);
                 message = "Coordinates were saved successfully.";
                 isError = false;
             }

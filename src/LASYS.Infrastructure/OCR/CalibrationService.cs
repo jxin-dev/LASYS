@@ -60,7 +60,7 @@ namespace LASYS.Infrastructure.OCR
                 return new OCRConfig();
             }
         }
-        public async Task AddOrUpdateAsync(Rectangle imageRegion, Size imageSize, string itemCode, int revision)
+        public async Task AddOrUpdateAsync(Rectangle imageRegion, Size imageSize, string itemCode, int revision, string boxType)
         {
             var coordinates = new Coordinates
             {
@@ -69,13 +69,13 @@ namespace LASYS.Infrastructure.OCR
                 Width = imageRegion.Width,
                 Height = imageRegion.Height,
                 ImageWidth = imageSize.Width,
-                ImageHeight = imageSize.Height
+                ImageHeight = imageSize.Height,
             };
 
             var ocrConfig = await LoadAsync(); // Load existing config
             ocrConfig.Products ??= new List<Product>();  // Ensure list exists
 
-            var existingProduct = ocrConfig.Products.FirstOrDefault(p => p.ItemCode == itemCode && p.RevisionNo == revision);
+            var existingProduct = ocrConfig.Products.FirstOrDefault(p => p.ItemCode == itemCode && p.RevisionNo == revision && p.BoxType == boxType);
             if (existingProduct != null)
             {
                 //Update
@@ -89,6 +89,7 @@ namespace LASYS.Infrastructure.OCR
                 {
                     ItemCode = itemCode,
                     RevisionNo = revision,
+                    BoxType = boxType,
                     Coordinates = coordinates,
                     RegisteredAt = DateTime.UtcNow
                 });

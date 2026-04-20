@@ -119,7 +119,7 @@ namespace LASYS.DesktopApp.Views.UserControls
                 _drawing = true;
                 _startPoint = e.Location;
                 _resizablePanel.HidePanel();
-                ClearCoordinateFields();
+                //ClearCoordinateFields();
             };
             picCameraPreview.MouseMove += (sender, e) =>
             {
@@ -225,7 +225,7 @@ namespace LASYS.DesktopApp.Views.UserControls
 
                 if (_ocrPreviewRegion.HasValue)
                 {
-                    using var pen = new Pen(SystemColors.HotTrack, 2);
+                    using var pen = new Pen(Color.FromArgb(0, 150, 136), 2);
                     e.Graphics.DrawRectangle(pen, _ocrPreviewRegion.Value);
                 }
 
@@ -276,26 +276,38 @@ namespace LASYS.DesktopApp.Views.UserControls
                 [
                     new HeaderColumn { Text = "Item Code", ColSpan = 1 },
                     new HeaderColumn { Text = "Revision", ColSpan = 1 },
+                    new HeaderColumn { Text = "Box Type", ColSpan = 1 },
                     new HeaderColumn { Text = "Coordinates", ColSpan = 6 },
                     new HeaderColumn { Text = "Date Registered", ColSpan = 1 }
                 ],
-                ["Item Code", "Revision", "X", "Y", "Width", "Height", "Image Width", "Image Height", "Date Registered"]
+                ["Item Code", "Revision", "Box Type", "X", "Y", "Width", "Height", "Image Width", "Image Height", "Date Registered"]
             );
 
             _gridWithPagination.SetColumnWidths(
-                150, 80, 80, 80, 80, 80, 100, 100, 150
+                150, 80, 80, 80, 80, 80, 80, 100, 100, 150
             );
 
             _gridWithPagination.RowDoubleClicked += (sender, e) =>
             {
                 if (e is Product data)
                 {
+                    _resizablePanel.HidePanel();
                     OCRCalibrationPreview?.Invoke(this, new OCRCoordinatesEventArgs(data.Coordinates.X,
                                                                       data.Coordinates.Y,
                                                                       data.Coordinates.Width,
                                                                       data.Coordinates.Height,
                                                                       data.Coordinates.ImageWidth,
                                                                       data.Coordinates.ImageHeight));
+
+                    _txtItemCode.Text = data.ItemCode.Trim();
+                    _txtRevisionNumber.Text = data.RevisionNo.ToString();
+                    _txtBoxType.Text = data.BoxType;
+                    _txtX.Text = data.Coordinates.X.ToString();
+                    _txtY.Text = data.Coordinates.Y.ToString();
+                    _txtWidth.Text = data.Coordinates.Width.ToString();
+                    _txtHeight.Text = data.Coordinates.Height.ToString();
+                    _txtImgWidth.Text = data.Coordinates.ImageWidth.ToString();
+                    _txtImgHeight.Text = data.Coordinates.ImageHeight.ToString();
                 }
             };
 
@@ -909,11 +921,17 @@ namespace LASYS.DesktopApp.Views.UserControls
             };
             buttonPanel.Controls.Add(btnTestOcr, 1, 0);
 
+            //sample data
+            //_txtItemCode.Text = "SR*FF2032";
+            //_txtRevisionNumber.Text = "1";
+            //_txtBoxType.Text = "UB";
+            //
 
             btnSaveRegion.Click += delegate
             {
                 int revision = int.TryParse(_txtRevisionNumber.Text, out var r) ? r : 0;
-                SaveCalibrationClicked?.Invoke(this, new CalibrationEventArgs(_roi, picCameraPreview.Size, picCameraPreview.Image?.Size ?? Size.Empty, _txtItemCode.Text.Trim(), revision));
+                string boxType = _txtBoxType.Text.Trim();
+                SaveCalibrationClicked?.Invoke(this, new CalibrationEventArgs(_roi, picCameraPreview.Size, picCameraPreview.Image?.Size ?? Size.Empty, _txtItemCode.Text.Trim(), revision, boxType));
             };
 
             btnTestOcr.Click += delegate
@@ -1041,6 +1059,7 @@ namespace LASYS.DesktopApp.Views.UserControls
             [
                 p.ItemCode,
                 p.RevisionNo.ToString(),
+                p.BoxType,
                 p.Coordinates.X.ToString(),
                 p.Coordinates.Y.ToString(),
                 p.Coordinates.Width.ToString(),
