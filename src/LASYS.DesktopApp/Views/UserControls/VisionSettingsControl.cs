@@ -20,6 +20,8 @@ namespace LASYS.DesktopApp.Views.UserControls
         private TextBox? _txtHeight;
         private TextBox? _txtImgWidth;
         private TextBox? _txtImgHeight;
+        private TextBox? _txtBoxType;
+
 
         private Button? _printSampleLabelButton;
 
@@ -659,7 +661,7 @@ namespace LASYS.DesktopApp.Views.UserControls
 
             var labelInfoLayout = new TableLayoutPanel
             {
-                ColumnCount = 3,
+                ColumnCount = 5,
                 RowCount = 2,
                 AutoSize = true,
                 Dock = DockStyle.Top,
@@ -677,6 +679,8 @@ namespace LASYS.DesktopApp.Views.UserControls
 
             labelInfoLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 90));
             labelInfoLayout.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+            labelInfoLayout.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+            labelInfoLayout.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
             labelInfoLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 80));
 
 
@@ -689,6 +693,9 @@ namespace LASYS.DesktopApp.Views.UserControls
                 ReadOnly = true
             };
             labelInfoLayout.Controls.Add(_txtItemCode, 1, 0);
+            labelInfoLayout.SetColumnSpan(_txtItemCode, 3);
+
+
 
             var searchButton = new Button
             {
@@ -710,7 +717,7 @@ namespace LASYS.DesktopApp.Views.UserControls
 
                 Cursor = Cursors.Hand
             };
-            labelInfoLayout.Controls.Add(searchButton, 2, 0);
+            labelInfoLayout.Controls.Add(searchButton, 4, 0);
 
             var revisionNoLabel = new Label
             {
@@ -724,12 +731,32 @@ namespace LASYS.DesktopApp.Views.UserControls
 
             _txtRevisionNumber = new TextBox
             {
-                Width = 80,
+                Width = 50,
                 Margin = new Padding(0, 5, 15, 5),
                 ReadOnly = true,
                 Dock = DockStyle.Left
             };
             labelInfoLayout.Controls.Add(_txtRevisionNumber, 1, 1);
+
+
+            var boxTypeLabel = new Label
+            {
+                Text = "Box Type:",
+                AutoSize = true,
+                Anchor = AnchorStyles.Left,
+                Margin = new Padding(0, 5, 5, 5)
+            };
+            labelInfoLayout.Controls.Add(boxTypeLabel, 2, 1);
+
+
+            _txtBoxType = new TextBox
+            {
+                Width = 60,
+                Margin = new Padding(0, 5, 15, 5),
+                ReadOnly = true
+            };
+            labelInfoLayout.Controls.Add(_txtBoxType, 3, 1);
+
 
             _printSampleLabelButton = new Button
             {
@@ -752,7 +779,7 @@ namespace LASYS.DesktopApp.Views.UserControls
                 Cursor = Cursors.Hand
             };
 
-            labelInfoLayout.Controls.Add(_printSampleLabelButton, 2, 1);
+            labelInfoLayout.Controls.Add(_printSampleLabelButton, 4, 1);
 
             labelInfoLayout.Paint += (s, e) =>
             {
