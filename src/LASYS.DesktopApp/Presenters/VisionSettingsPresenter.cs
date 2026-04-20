@@ -285,6 +285,7 @@ namespace LASYS.DesktopApp.Presenters
 
                 await Task.WhenAll(tasks);
                 _view.InvokeOnUI(() => _view.DisplayOCRResult($"Stress test completed. Text detected: {ocrResults.Count}"));
+                _view.InvokeOnUI(() => _view.TestOCRTCompleted());
 
             }
             finally

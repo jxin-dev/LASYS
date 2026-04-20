@@ -931,6 +931,17 @@ namespace LASYS.DesktopApp.Views.UserControls
             {
                 int revision = int.TryParse(_txtRevisionNumber.Text, out var r) ? r : 0;
                 string boxType = _txtBoxType.Text.Trim();
+                if (_roi.IsEmpty)
+                {
+                    if (int.TryParse(_txtX.Text, out var x) &&
+                        int.TryParse(_txtY.Text, out var y) &&
+                        int.TryParse(_txtWidth.Text, out var width) &&
+                        int.TryParse(_txtHeight.Text, out var height))
+                    {
+                        _roi = new Rectangle(x, y, width, height);
+                    }
+                }
+
                 SaveCalibrationClicked?.Invoke(this, new CalibrationEventArgs(_roi, picCameraPreview.Size, picCameraPreview.Image?.Size ?? Size.Empty, _txtItemCode.Text.Trim(), revision, boxType));
             };
 
@@ -973,6 +984,9 @@ namespace LASYS.DesktopApp.Views.UserControls
 
         private void ClearCoordinateFields()
         {
+            _txtItemCode!.Text =
+            _txtRevisionNumber!.Text =  
+            _txtBoxType!.Text =
             _txtX!.Text =
             _txtY!.Text =
             _txtWidth!.Text =
@@ -1032,6 +1046,9 @@ namespace LASYS.DesktopApp.Views.UserControls
 
             _roi = Rectangle.Empty;
 
+            _ocrPreviewRegion = null;
+            _ocrViewerRegion = null;
+
             picCameraPreview.Invalidate();
 
             picCameraPreview.Controls.Remove(btnSaveCalibration);
@@ -1074,6 +1091,8 @@ namespace LASYS.DesktopApp.Views.UserControls
         {
             _richTextOCRResult!.AppendText(result + Environment.NewLine);
             _richTextOCRResult.ScrollToCaret();
+            _ocrPreviewRegion = null;
+            picCameraPreview.Invalidate();
         }
 
         public bool AskRestartConfirmation(string message, string title = "Restart Required")
@@ -1147,7 +1166,10 @@ namespace LASYS.DesktopApp.Views.UserControls
                 MessageBox.Show(message, caption, MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
-
+        public void TestOCRTCompleted()
+        {
+            picCameraPreview.Invalidate();
+        }
     }
 }
 public static class ControlExtensions
