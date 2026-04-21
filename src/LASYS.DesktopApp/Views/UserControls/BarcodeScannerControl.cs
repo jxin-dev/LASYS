@@ -61,5 +61,7 @@ namespace LASYS.DesktopApp.Views.UserControls
         {
             MessageBox.Show(message, caption, MessageBoxButtons.OK, icon);
         }
+
+     
     }
 }

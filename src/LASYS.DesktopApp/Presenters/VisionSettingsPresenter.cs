@@ -5,6 +5,7 @@ using LASYS.Application.Events;
 using LASYS.Application.Interfaces.Services;
 using LASYS.DesktopApp.Events;
 using LASYS.DesktopApp.Views.Interfaces;
+using Microsoft.Extensions.DependencyInjection;
 using OpenCvSharp;
 using DrawingSize = System.Drawing.Size;
 
@@ -17,8 +18,9 @@ namespace LASYS.DesktopApp.Presenters
         private readonly IOCRService _ocrService;
         private readonly ICalibrationService _calibrationService;
         private readonly ICameraService _cameraService;
+        private readonly IServiceProvider _serviceProvider;
 
-        public VisionSettingsPresenter(IVisionSettingsView view, ICameraService cameraService, IOCRService ocrService, ICalibrationService calibrationService)
+        public VisionSettingsPresenter(IVisionSettingsView view, ICameraService cameraService, IOCRService ocrService, ICalibrationService calibrationService, IServiceProvider serviceProvider)
         {
             _view = view;
             View = (UserControl)view;
@@ -26,6 +28,7 @@ namespace LASYS.DesktopApp.Presenters
             _cameraService = cameraService;
             _ocrService = ocrService;
             _calibrationService = calibrationService;
+            _serviceProvider = serviceProvider;
 
 
             _view.InitializeRequested += OnInitializeRequested;
@@ -50,6 +53,13 @@ namespace LASYS.DesktopApp.Presenters
             _view.CameraPreviewStateChanged += OnCameraPreviewStateChanged;
             _view.CameraConfigurationSaved += OnCameraConfigurationSaved;
 
+            _view.SelectOcrItemRequested += OnSelectOcrItemRequested;
+        }
+
+        private void OnSelectOcrItemRequested(object? sender, EventArgs e)
+        {
+            var ocrItemLookupPresenter = _serviceProvider.GetRequiredService<OcrItemLookupPresenter>();
+            ocrItemLookupPresenter.Show();
         }
 
         private void OnOCRRegionPreview(object? sender, OCRRegionEventArgs e)
@@ -200,7 +210,7 @@ namespace LASYS.DesktopApp.Presenters
                 if (result == null)
                     throw new InvalidOperationException("Computed image region is null.");
 
-                await _calibrationService.AddOrUpdateAsync(result.ImageRegion, e.ImageSize, e.ItemCode, e.Revision);
+                await _calibrationService.AddOrUpdateAsync(result.ImageRegion, e.ImageSize, e.ItemCode, e.Revision, e.BoxType);
                 message = "Coordinates were saved successfully.";
                 isError = false;
             }
@@ -285,6 +295,7 @@ namespace LASYS.DesktopApp.Presenters
 
                 await Task.WhenAll(tasks);
                 _view.InvokeOnUI(() => _view.DisplayOCRResult($"Stress test completed. Text detected: {ocrResults.Count}"));
+                _view.InvokeOnUI(() => _view.TestOCRTCompleted());
 
             }
             finally

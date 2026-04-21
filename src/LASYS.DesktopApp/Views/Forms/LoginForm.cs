@@ -28,6 +28,10 @@ namespace LASYS.DesktopApp.Views.Forms
 
             lnklblCheckUpdates.Text = AppVersionHelper.GetVersion();
             lnklblCheckUpdates.Click += (s, e) => CheckForUpdatesRequested?.Invoke(this, EventArgs.Empty);
+
+
+            cbxEnvironment.SelectedItem = "Production";
+            Shown += (s, e) => cbxEnvironment.Focus();
         }
 
         public void ShowMessage(string errorMessage)

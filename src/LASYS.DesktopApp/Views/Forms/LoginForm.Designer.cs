@@ -115,10 +115,10 @@
             // 
             // pictureBox1
             // 
-            pictureBox1.Image = Properties.Resources.terumo;
-            pictureBox1.Location = new Point(50, 47);
+            pictureBox1.Image = Properties.Resources.logo1;
+            pictureBox1.Location = new Point(-20, -38);
             pictureBox1.Name = "pictureBox1";
-            pictureBox1.Size = new Size(185, 170);
+            pictureBox1.Size = new Size(290, 287);
             pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
             pictureBox1.TabIndex = 7;
             pictureBox1.TabStop = false;
@@ -126,18 +126,18 @@
             // label2
             // 
             label2.AutoSize = true;
-            label2.Font = new Font("Segoe UI", 14.25F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            label2.Font = new Font("Segoe UI Semibold", 12F, FontStyle.Bold, GraphicsUnit.Point, 0);
             label2.ForeColor = Color.SeaGreen;
-            label2.Location = new Point(59, 182);
+            label2.Location = new Point(42, 130);
             label2.Name = "label2";
-            label2.Size = new Size(176, 25);
+            label2.Size = new Size(184, 21);
             label2.TabIndex = 8;
-            label2.Text = "LASYS Application";
+            label2.Text = "Label Assurance System";
             label2.TextAlign = ContentAlignment.TopCenter;
             // 
             // panel1
             // 
-            panel1.BackColor = Color.DarkRed;
+            panel1.BackColor = Color.FromArgb(0, 140, 125);
             panel1.Location = new Point(252, 51);
             panel1.Name = "panel1";
             panel1.Size = new Size(1, 170);

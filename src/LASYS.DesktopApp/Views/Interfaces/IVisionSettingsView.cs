@@ -12,6 +12,7 @@ namespace LASYS.DesktopApp.Views.Interfaces
         void ShowOCRRegion(Rectangle viewerRegion);
         void PreviewOCRRegion(Rectangle viewerRegion);
         void DisplayOCRResult(string result);
+        void TestOCRTCompleted();
         void DisplayFrame(Bitmap bitmap);
 
         event EventHandler<int> FocusValueChanged;
@@ -37,5 +38,7 @@ namespace LASYS.DesktopApp.Views.Interfaces
 
         void SelectCamera(string cameraName, string resolution, int focus);
         void ShowCameraNotification(string message, string caption, bool isError = false);
+
+        event EventHandler SelectOcrItemRequested;
     }
 }

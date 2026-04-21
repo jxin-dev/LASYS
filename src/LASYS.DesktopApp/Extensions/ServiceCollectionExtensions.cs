@@ -45,6 +45,8 @@ namespace LASYS.DesktopApp.Extensions
             services.AddSingleton<ILabelBoxTypeView, LabelBoxTypeForm>();
             services.AddSingleton<LabelBoxTypePresenter>();
 
+            services.AddTransient<IOcrItemLookupView, OcrItemLookupForm>();
+            services.AddTransient<OcrItemLookupPresenter>();
 
             // Services
             services.AddSingleton<ICurrentUser, CurrentUser>();

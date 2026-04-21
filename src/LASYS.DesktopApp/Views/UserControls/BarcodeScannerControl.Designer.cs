@@ -52,12 +52,12 @@
             pnlContent.Controls.Add(label4);
             pnlContent.Location = new Point(79, 85);
             pnlContent.Name = "pnlContent";
-            pnlContent.Size = new Size(585, 235);
+            pnlContent.Size = new Size(585, 219);
             pnlContent.TabIndex = 3;
             // 
             // lblBarcodeStatus
             // 
-            lblBarcodeStatus.Location = new Point(21, 187);
+            lblBarcodeStatus.Location = new Point(21, 169);
             lblBarcodeStatus.Name = "lblBarcodeStatus";
             lblBarcodeStatus.Size = new Size(544, 34);
             lblBarcodeStatus.TabIndex = 14;
@@ -65,29 +65,30 @@
             // 
             // btnSetManualMode
             // 
-            btnSetManualMode.BackColor = Color.DimGray;
+            btnSetManualMode.BackColor = Color.FromArgb(60, 60, 60);
             btnSetManualMode.FlatAppearance.BorderSize = 0;
             btnSetManualMode.FlatStyle = FlatStyle.Flat;
-            btnSetManualMode.Font = new Font("Segoe UI Semibold", 11.25F, FontStyle.Bold);
+            btnSetManualMode.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold, GraphicsUnit.Point, 0);
             btnSetManualMode.ForeColor = Color.White;
             btnSetManualMode.Image = Properties.Resources.rule_settings24;
-            btnSetManualMode.Location = new Point(210, 147);
+            btnSetManualMode.Location = new Point(210, 123);
             btnSetManualMode.Name = "btnSetManualMode";
             btnSetManualMode.Size = new Size(170, 37);
             btnSetManualMode.TabIndex = 13;
             btnSetManualMode.Text = "Set Manual Mode";
             btnSetManualMode.TextImageRelation = TextImageRelation.ImageBeforeText;
             btnSetManualMode.UseVisualStyleBackColor = false;
+            btnSetManualMode.Visible = false;
             // 
             // btnSaveBarcode
             // 
-            btnSaveBarcode.BackColor = SystemColors.HotTrack;
+            btnSaveBarcode.BackColor = Color.FromArgb(0, 140, 125);
             btnSaveBarcode.FlatAppearance.BorderSize = 0;
             btnSaveBarcode.FlatStyle = FlatStyle.Flat;
-            btnSaveBarcode.Font = new Font("Segoe UI Semibold", 11.25F, FontStyle.Bold);
+            btnSaveBarcode.Font = new Font("Segoe UI", 9F, FontStyle.Bold, GraphicsUnit.Point, 0);
             btnSaveBarcode.ForeColor = Color.White;
             btnSaveBarcode.Image = Properties.Resources.check_small24;
-            btnSaveBarcode.Location = new Point(21, 147);
+            btnSaveBarcode.Location = new Point(21, 123);
             btnSaveBarcode.Name = "btnSaveBarcode";
             btnSaveBarcode.Size = new Size(183, 37);
             btnSaveBarcode.TabIndex = 12;
@@ -100,7 +101,7 @@
             cbxPort.DropDownStyle = ComboBoxStyle.DropDownList;
             cbxPort.Font = new Font("Segoe UI", 12F, FontStyle.Regular, GraphicsUnit.Point, 0);
             cbxPort.FormattingEnabled = true;
-            cbxPort.Location = new Point(21, 112);
+            cbxPort.Location = new Point(21, 88);
             cbxPort.Name = "cbxPort";
             cbxPort.Size = new Size(183, 29);
             cbxPort.TabIndex = 9;
@@ -121,14 +122,14 @@
             label5.AutoSize = true;
             label5.Location = new Point(21, 44);
             label5.Name = "label5";
-            label5.Size = new Size(536, 30);
+            label5.Size = new Size(536, 15);
             label5.TabIndex = 8;
-            label5.Text = "Choose the scanner’s USB Virtual COM port and click Save Configuration to initialize the connection.\r\nUse Set Manual Mode to switch the scanner from continuous scanning to manual trigger mode.";
+            label5.Text = "Choose the scanner’s USB Virtual COM port and click Save Configuration to initialize the connection.";
             // 
             // label4
             // 
             label4.AutoSize = true;
-            label4.Location = new Point(21, 94);
+            label4.Location = new Point(21, 70);
             label4.Name = "label4";
             label4.Size = new Size(121, 15);
             label4.TabIndex = 7;
@@ -138,6 +139,7 @@
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
+            BackColor = Color.FromArgb(245, 248, 247);
             Controls.Add(pnlContent);
             Name = "BarcodeScannerControl";
             Size = new Size(749, 413);

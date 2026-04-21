@@ -1,6 +1,7 @@
 ﻿using System.Reflection;
 using LASYS.Application.Contracts;
 using LASYS.DesktopApp.Events;
+using LASYS.DesktopApp.Presenters;
 using LASYS.DesktopApp.Views.Interfaces;
 using LASYS.UIControls.Controls;
 
@@ -20,6 +21,8 @@ namespace LASYS.DesktopApp.Views.UserControls
         private TextBox? _txtHeight;
         private TextBox? _txtImgWidth;
         private TextBox? _txtImgHeight;
+        private TextBox? _txtBoxType;
+
 
         private Button? _printSampleLabelButton;
 
@@ -58,6 +61,7 @@ namespace LASYS.DesktopApp.Views.UserControls
         public event EventHandler? LoadCamerasRequested;
         public event EventHandler<string>? CameraResolutionSelected;
         public event EventHandler<OCRCoordinatesEventArgs>? OCRCalibrationPreview;
+        public event EventHandler? SelectOcrItemRequested;
 
         private Rectangle _roi;
         private Point _startPoint;
@@ -117,7 +121,7 @@ namespace LASYS.DesktopApp.Views.UserControls
                 _drawing = true;
                 _startPoint = e.Location;
                 _resizablePanel.HidePanel();
-                ClearCoordinateFields();
+                //ClearCoordinateFields();
             };
             picCameraPreview.MouseMove += (sender, e) =>
             {
@@ -223,7 +227,7 @@ namespace LASYS.DesktopApp.Views.UserControls
 
                 if (_ocrPreviewRegion.HasValue)
                 {
-                    using var pen = new Pen(SystemColors.HotTrack, 2);
+                    using var pen = new Pen(Color.FromArgb(0, 150, 136), 2);
                     e.Graphics.DrawRectangle(pen, _ocrPreviewRegion.Value);
                 }
 
@@ -274,26 +278,38 @@ namespace LASYS.DesktopApp.Views.UserControls
                 [
                     new HeaderColumn { Text = "Item Code", ColSpan = 1 },
                     new HeaderColumn { Text = "Revision", ColSpan = 1 },
+                    new HeaderColumn { Text = "Box Type", ColSpan = 1 },
                     new HeaderColumn { Text = "Coordinates", ColSpan = 6 },
                     new HeaderColumn { Text = "Date Registered", ColSpan = 1 }
                 ],
-                ["Item Code", "Revision", "X", "Y", "Width", "Height", "Image Width", "Image Height", "Date Registered"]
+                ["Item Code", "Revision", "Box Type", "X", "Y", "Width", "Height", "Image Width", "Image Height", "Date Registered"]
             );
 
             _gridWithPagination.SetColumnWidths(
-                150, 80, 80, 80, 80, 80, 100, 100, 150
+                150, 80, 80, 80, 80, 80, 80, 100, 100, 150
             );
 
             _gridWithPagination.RowDoubleClicked += (sender, e) =>
             {
                 if (e is Product data)
                 {
+                    _resizablePanel.HidePanel();
                     OCRCalibrationPreview?.Invoke(this, new OCRCoordinatesEventArgs(data.Coordinates.X,
                                                                       data.Coordinates.Y,
                                                                       data.Coordinates.Width,
                                                                       data.Coordinates.Height,
                                                                       data.Coordinates.ImageWidth,
                                                                       data.Coordinates.ImageHeight));
+
+                    _txtItemCode.Text = data.ItemCode.Trim();
+                    _txtRevisionNumber.Text = data.RevisionNo.ToString();
+                    _txtBoxType.Text = data.BoxType;
+                    _txtX.Text = data.Coordinates.X.ToString();
+                    _txtY.Text = data.Coordinates.Y.ToString();
+                    _txtWidth.Text = data.Coordinates.Width.ToString();
+                    _txtHeight.Text = data.Coordinates.Height.ToString();
+                    _txtImgWidth.Text = data.Coordinates.ImageWidth.ToString();
+                    _txtImgHeight.Text = data.Coordinates.ImageHeight.ToString();
                 }
             };
 
@@ -468,7 +484,8 @@ namespace LASYS.DesktopApp.Views.UserControls
                 ForeColor = Color.FromArgb(0, 150, 136),   // teal text
                 FlatAppearance =
                 {
-                    BorderSize = 0,
+                    BorderSize = 1,
+                    BorderColor = Color.FromArgb(0, 150, 136),
                     MouseOverBackColor = Color.FromArgb(220, 240, 238),
                     MouseDownBackColor = Color.FromArgb(200, 230, 228)
                 },
@@ -659,7 +676,7 @@ namespace LASYS.DesktopApp.Views.UserControls
 
             var labelInfoLayout = new TableLayoutPanel
             {
-                ColumnCount = 3,
+                ColumnCount = 5,
                 RowCount = 2,
                 AutoSize = true,
                 Dock = DockStyle.Top,
@@ -677,6 +694,8 @@ namespace LASYS.DesktopApp.Views.UserControls
 
             labelInfoLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 90));
             labelInfoLayout.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+            labelInfoLayout.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+            labelInfoLayout.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
             labelInfoLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 80));
 
 
@@ -689,6 +708,9 @@ namespace LASYS.DesktopApp.Views.UserControls
                 ReadOnly = true
             };
             labelInfoLayout.Controls.Add(_txtItemCode, 1, 0);
+            labelInfoLayout.SetColumnSpan(_txtItemCode, 3);
+
+
 
             var searchButton = new Button
             {
@@ -703,14 +725,20 @@ namespace LASYS.DesktopApp.Views.UserControls
                 // remove borders
                 FlatAppearance =
                 {
-                    BorderSize = 0,
+                    BorderSize = 1,
+                    BorderColor = Color.FromArgb(0, 150, 136),
                     MouseOverBackColor = Color.FromArgb(220, 240, 238),
                     MouseDownBackColor = Color.FromArgb(200, 230, 228)
                 },
 
                 Cursor = Cursors.Hand
             };
-            labelInfoLayout.Controls.Add(searchButton, 2, 0);
+            labelInfoLayout.Controls.Add(searchButton, 4, 0);
+
+            searchButton.Click += (sender, e) =>
+            {
+                SelectOcrItemRequested?.Invoke(this, EventArgs.Empty);
+            };
 
             var revisionNoLabel = new Label
             {
@@ -724,12 +752,32 @@ namespace LASYS.DesktopApp.Views.UserControls
 
             _txtRevisionNumber = new TextBox
             {
-                Width = 80,
+                Width = 50,
                 Margin = new Padding(0, 5, 15, 5),
                 ReadOnly = true,
                 Dock = DockStyle.Left
             };
             labelInfoLayout.Controls.Add(_txtRevisionNumber, 1, 1);
+
+
+            var boxTypeLabel = new Label
+            {
+                Text = "Box Type:",
+                AutoSize = true,
+                Anchor = AnchorStyles.Left,
+                Margin = new Padding(0, 5, 5, 5)
+            };
+            labelInfoLayout.Controls.Add(boxTypeLabel, 2, 1);
+
+
+            _txtBoxType = new TextBox
+            {
+                Width = 60,
+                Margin = new Padding(0, 5, 15, 5),
+                ReadOnly = true
+            };
+            labelInfoLayout.Controls.Add(_txtBoxType, 3, 1);
+
 
             _printSampleLabelButton = new Button
             {
@@ -743,8 +791,9 @@ namespace LASYS.DesktopApp.Views.UserControls
 
                 // remove borders
                 FlatAppearance =
-                {
-                    BorderSize = 0,
+                {              
+                    BorderSize = 1,
+                    BorderColor = Color.FromArgb(0, 150, 136),
                     MouseOverBackColor = Color.FromArgb(220, 240, 238),
                     MouseDownBackColor = Color.FromArgb(200, 230, 228)
                 },
@@ -752,7 +801,7 @@ namespace LASYS.DesktopApp.Views.UserControls
                 Cursor = Cursors.Hand
             };
 
-            labelInfoLayout.Controls.Add(_printSampleLabelButton, 2, 1);
+            labelInfoLayout.Controls.Add(_printSampleLabelButton, 4, 1);
 
             labelInfoLayout.Paint += (s, e) =>
             {
@@ -848,7 +897,8 @@ namespace LASYS.DesktopApp.Views.UserControls
                 ForeColor = Color.FromArgb(0, 150, 136),   // teal text
                 FlatAppearance =
                 {
-                    BorderSize = 0,
+                    BorderSize = 1,
+                    BorderColor = Color.FromArgb(0, 150, 136),
                     MouseOverBackColor = Color.FromArgb(220, 240, 238),
                     MouseDownBackColor = Color.FromArgb(200, 230, 228)
                 },
@@ -869,7 +919,8 @@ namespace LASYS.DesktopApp.Views.UserControls
                 ForeColor = Color.FromArgb(0, 150, 136),   // teal text
                 FlatAppearance =
                 {
-                    BorderSize = 0,
+                    BorderSize = 1,
+                    BorderColor = Color.FromArgb(0, 150, 136),
                     MouseOverBackColor = Color.FromArgb(220, 240, 238),
                     MouseDownBackColor = Color.FromArgb(200, 230, 228)
                 },
@@ -877,11 +928,28 @@ namespace LASYS.DesktopApp.Views.UserControls
             };
             buttonPanel.Controls.Add(btnTestOcr, 1, 0);
 
+            //sample data
+            //_txtItemCode.Text = "SR*FF2032";
+            //_txtRevisionNumber.Text = "1";
+            //_txtBoxType.Text = "UB";
+            //
 
             btnSaveRegion.Click += delegate
             {
                 int revision = int.TryParse(_txtRevisionNumber.Text, out var r) ? r : 0;
-                SaveCalibrationClicked?.Invoke(this, new CalibrationEventArgs(_roi, picCameraPreview.Size, picCameraPreview.Image?.Size ?? Size.Empty, _txtItemCode.Text.Trim(), revision));
+                string boxType = _txtBoxType.Text.Trim();
+                if (_roi.IsEmpty)
+                {
+                    if (int.TryParse(_txtX.Text, out var x) &&
+                        int.TryParse(_txtY.Text, out var y) &&
+                        int.TryParse(_txtWidth.Text, out var width) &&
+                        int.TryParse(_txtHeight.Text, out var height))
+                    {
+                        _roi = new Rectangle(x, y, width, height);
+                    }
+                }
+
+                SaveCalibrationClicked?.Invoke(this, new CalibrationEventArgs(_roi, picCameraPreview.Size, picCameraPreview.Image?.Size ?? Size.Empty, _txtItemCode.Text.Trim(), revision, boxType));
             };
 
             btnTestOcr.Click += delegate
@@ -923,6 +991,9 @@ namespace LASYS.DesktopApp.Views.UserControls
 
         private void ClearCoordinateFields()
         {
+            _txtItemCode!.Text =
+            _txtRevisionNumber!.Text =  
+            _txtBoxType!.Text =
             _txtX!.Text =
             _txtY!.Text =
             _txtWidth!.Text =
@@ -982,6 +1053,9 @@ namespace LASYS.DesktopApp.Views.UserControls
 
             _roi = Rectangle.Empty;
 
+            _ocrPreviewRegion = null;
+            _ocrViewerRegion = null;
+
             picCameraPreview.Invalidate();
 
             picCameraPreview.Controls.Remove(btnSaveCalibration);
@@ -1009,6 +1083,7 @@ namespace LASYS.DesktopApp.Views.UserControls
             [
                 p.ItemCode,
                 p.RevisionNo.ToString(),
+                p.BoxType,
                 p.Coordinates.X.ToString(),
                 p.Coordinates.Y.ToString(),
                 p.Coordinates.Width.ToString(),
@@ -1023,6 +1098,8 @@ namespace LASYS.DesktopApp.Views.UserControls
         {
             _richTextOCRResult!.AppendText(result + Environment.NewLine);
             _richTextOCRResult.ScrollToCaret();
+            _ocrPreviewRegion = null;
+            picCameraPreview.Invalidate();
         }
 
         public bool AskRestartConfirmation(string message, string title = "Restart Required")
@@ -1096,7 +1173,10 @@ namespace LASYS.DesktopApp.Views.UserControls
                 MessageBox.Show(message, caption, MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
-
+        public void TestOCRTCompleted()
+        {
+            picCameraPreview.Invalidate();
+        }
     }
 }
 public static class ControlExtensions

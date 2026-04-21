@@ -8,6 +8,7 @@
     {
         public string ItemCode { get; set; } = string.Empty;
         public int RevisionNo { get; set; } = 1;
+        public string BoxType { get; set; } = string.Empty;
         public Coordinates Coordinates { get; set; } = new();
         public DateTime RegisteredAt { get; set; } = DateTime.Now;
     }
