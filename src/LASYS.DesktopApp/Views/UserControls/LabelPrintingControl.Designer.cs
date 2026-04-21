@@ -416,11 +416,11 @@
             // 
             // lblLabelFile
             // 
-            lblLabelFile.AutoSize = true;
+            lblLabelFile.AutoEllipsis = true;
             lblLabelFile.Font = new Font("Segoe UI", 9.75F);
             lblLabelFile.Location = new Point(139, 113);
             lblLabelFile.Name = "lblLabelFile";
-            lblLabelFile.Size = new Size(64, 17);
+            lblLabelFile.Size = new Size(287, 34);
             lblLabelFile.TabIndex = 9;
             lblLabelFile.Text = "Loading...";
             // 
