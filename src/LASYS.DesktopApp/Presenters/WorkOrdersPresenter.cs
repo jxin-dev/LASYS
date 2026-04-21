@@ -4,6 +4,8 @@ using LASYS.DesktopApp.Events;
 using LASYS.DesktopApp.Views.Interfaces;
 using LASYS.DesktopApp.Views.UserControls;
 using LASYS.DesktopApp.Views.Forms;
+using LASYS.Application.Common.Messaging;
+using LASYS.Application.Interfaces.Services;
 using LASYS.Infrastructure.Services.WorkOrder;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
@@ -18,6 +20,7 @@ namespace LASYS.DesktopApp.Presenters
         private readonly IServiceProvider _serviceProvider;
         private readonly IMediator _mediator;
         private readonly WorkOrderService _workOrderService;
+        private readonly ILogService _logService;
         public UserControl View { get; }
         private bool _isLoading;
         private int _currentPage = 1;
@@ -27,7 +30,8 @@ namespace LASYS.DesktopApp.Presenters
                                    IMainView mainView,
                                    IServiceProvider serviceProvider,
                                    IMediator mediator,
-                                   WorkOrderService workOrderService)
+                                   WorkOrderService workOrderService,
+                                   ILogService logService)
         {
             View = (UserControl)view;
             _view = view;
@@ -35,6 +39,7 @@ namespace LASYS.DesktopApp.Presenters
             _serviceProvider = serviceProvider;
             _mediator = mediator;
             _workOrderService = workOrderService;
+            _logService = logService;
 
             _view.LabelPrintingRequested += OnLabelPrintingRequested;
             _view.PageNoChanged += OnPageNoChanged;
@@ -91,9 +96,6 @@ namespace LASYS.DesktopApp.Presenters
 
             if (result == null)
             {
-                _view.ShowNotification("No printable label instruction code is available for this work order.",
-                                       "No Printable Type",
-                                       MessageBoxIcon.Warning);
                 return;
             }
 
@@ -180,6 +182,11 @@ namespace LASYS.DesktopApp.Presenters
 
         private async void OnPageNoChanged(object? sender, int pageNo)
         {
+            _ = HandlePageNoChangedAsync(pageNo);
+        }
+
+        private async Task HandlePageNoChangedAsync(int pageNo)
+        {
             if (_isLoading) return;
 
             _isLoading = true;
@@ -220,6 +227,7 @@ namespace LASYS.DesktopApp.Presenters
                 {
                     _view.SetWorkOrders(result.Value.Items, result.Value.TotalPages);
                 }
+
             }
             finally
             {

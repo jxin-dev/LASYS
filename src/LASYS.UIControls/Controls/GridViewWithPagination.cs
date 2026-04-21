@@ -89,6 +89,28 @@
             _rows.Clear();
             _rowDataObjects.Clear();
 
+            if (data is ICollection<T> collection)
+            {
+                if (_rows.Capacity < collection.Count)
+                    _rows.Capacity = collection.Count;
+
+                if (_rowDataObjects.Capacity < collection.Count)
+                    _rowDataObjects.Capacity = collection.Count;
+            }
+
+            if (data is IList<T> list)
+            {
+                for (int i = 0; i < list.Count; i++)
+                {
+                    var item = list[i];
+                    _rowDataObjects.Add(item!);
+                    _rows.Add(displaySelector(item));
+                }
+
+                UpdateLayout();
+                return;
+            }
+
             foreach (var item in data)
             {
                 _rowDataObjects.Add(item!);
@@ -809,6 +831,12 @@
         private int _pageSize = 10;
         private List<object> _allRows = new(); // all row objects
         private List<object> _filteredRows = new(); // filtered by search
+        private int _rowsVersion;
+        private int _lastRenderedRowsVersion = -1;
+        private int _lastRenderedPage = -1;
+        private int _lastRenderedPageSize = -1;
+        private int _lastRenderedTotalPages = -1;
+        private bool _lastRenderedExternalData;
 
         private Func<object, string[]> _displaySelector = null!;
         private readonly global::System.Windows.Forms.Timer _searchDebounceTimer;
@@ -898,17 +926,27 @@
             };
             EnableDoubleBuffer(_paginationPanel);
 
-
-            // Container for buttons, centered horizontally
-            var buttonContainer = new FlowLayoutPanel
+            // Container for buttons (TableLayoutPanel)
+            var buttonContainer = new TableLayoutPanel
             {
                 AutoSize = true,
                 AutoSizeMode = AutoSizeMode.GrowAndShrink,
-                FlowDirection = FlowDirection.LeftToRight,
-                WrapContents = false,
-                Location = new Point((_paginationPanel.Width - 0) / 2, 5), // temporary X, will adjust later
+                ColumnCount = 5,
+                RowCount = 1,
+                Dock = DockStyle.None,
+                Anchor = AnchorStyles.Top,
+                Padding = new Padding(0),
+                Margin = new Padding(0)
             };
+
             EnableDoubleBuffer(buttonContainer);
+
+            // Define column styles (auto-size each)
+            buttonContainer.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize)); // First
+            buttonContainer.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize)); // Prev
+            buttonContainer.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize)); // Label
+            buttonContainer.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize)); // Next
+            buttonContainer.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize)); // Last
 
             // Initialize page label
             _lblPage = new Label
@@ -918,11 +956,12 @@
                 AutoSize = true,
                 ForeColor = Color.FromArgb(0, 140, 125), //Color.White,
                 TextAlign = ContentAlignment.MiddleCenter,
-                Height = 35,
+                Anchor = AnchorStyles.None,
+                Padding = new Padding(10, 8, 10, 8),
             };
             EnableDoubleBuffer(_lblPage);
 
-            // Initialize IconButtons
+            // Initialize buttons
             _btnFirst = CreateButton("First", @"Resources/first.png");
             _btnPrev = CreateButton("Prev", @"Resources/previous.png");
             _btnNext = CreateButton("Next", @"Resources/next.png");
@@ -933,12 +972,29 @@
             EnableDoubleBuffer(_btnNext);
             EnableDoubleBuffer(_btnLast);
 
-            // Add buttons to container
-            buttonContainer.Controls.AddRange([_btnFirst, _btnPrev, _lblPage, _btnNext, _btnLast]);
+            // Center content inside cells
+            _btnFirst.Anchor = AnchorStyles.None;
+            _btnPrev.Anchor = AnchorStyles.None;
+            _btnNext.Anchor = AnchorStyles.None;
+            _btnLast.Anchor = AnchorStyles.None;
+
+            // Add controls to table (column, row)
+            buttonContainer.Controls.Add(_btnFirst, 0, 0);
+            buttonContainer.Controls.Add(_btnPrev, 1, 0);
+            buttonContainer.Controls.Add(_lblPage, 2, 0);
+            buttonContainer.Controls.Add(_btnNext, 3, 0);
+            buttonContainer.Controls.Add(_btnLast, 4, 0);
+
+            // Center the whole container inside pagination panel
+            buttonContainer.Location = new Point(
+                (_paginationPanel.Width - buttonContainer.PreferredSize.Width) / 2,
+                5
+            );
 
             // Add container to panel
             _paginationPanel.Controls.Add(buttonContainer);
 
+            // Layout
             layout.Controls.Add(_searchPanel, 0, 0);
             layout.Controls.Add(_grid, 0, 1);
             layout.Controls.Add(_paginationPanel, 0, 2);
@@ -961,10 +1017,41 @@
             };
 
             // Wire button events
-            _btnFirst.Clicked += (s, e) => { _currentPage = 1; UpdatePage(); PageNoChanged?.Invoke(this, 1); };
-            _btnPrev.Clicked += (s, e) => { if (_currentPage > 1) { _currentPage--; PageNoChanged?.Invoke(this, _currentPage); } UpdatePage();  };
-            _btnNext.Clicked += (s, e) => { if (_currentPage < TotalPages) { _currentPage++; PageNoChanged?.Invoke(this, _currentPage); } UpdatePage(); };
-            _btnLast.Clicked += (s, e) => { _currentPage = TotalPages; UpdatePage(); PageNoChanged?.Invoke(this, TotalPages); };
+            _btnFirst.Clicked += (s, e) =>
+            {
+                _currentPage = 1;
+                PageNoChanged?.Invoke(this, 1);
+                if (!_isExternalData) UpdatePage();
+            };
+
+            _btnPrev.Clicked += (s, e) =>
+            {
+                if (_currentPage > 1)
+                {
+                    _currentPage--;
+                    PageNoChanged?.Invoke(this, _currentPage);
+                }
+
+                if (!_isExternalData) UpdatePage();
+            };
+
+            _btnNext.Clicked += (s, e) =>
+            {
+                if (_currentPage < TotalPages)
+                {
+                    _currentPage++;
+                    PageNoChanged?.Invoke(this, _currentPage);
+                }
+
+                if (!_isExternalData) UpdatePage();
+            };
+
+            _btnLast.Clicked += (s, e) =>
+            {
+                _currentPage = TotalPages;
+                PageNoChanged?.Invoke(this, TotalPages);
+                if (!_isExternalData) UpdatePage();
+            };
         }
 
 
@@ -981,7 +1068,7 @@
             return new IconButton
             {
                 ButtonText = text,
-                Width = 70,
+                Width = 80,
                 Height = 30,
                 DefaultBackColor = Color.White, //_paginationPanel.BackColor,
                 HoverBackColor = Color.FromArgb(200, 230, 225), //LightenColor(_paginationPanel.BackColor, 20),
@@ -1001,8 +1088,36 @@
         public int TotalPages;
         public void SetRows<T>(IEnumerable<T> rows, Func<T, string[]> displaySelector)
         {
-            _allRows = rows.Cast<object>().ToList();
-            _filteredRows = _allRows.ToList(); // reset filter
+            _rowsVersion++;
+            if (rows is ICollection<T> collection)
+            {
+                _allRows = new List<object>(collection.Count);
+                _filteredRows = new List<object>(collection.Count);
+            }
+            else
+            {
+                _allRows = new List<object>();
+                _filteredRows = new List<object>();
+            }
+
+            if (rows is IList<T> list)
+            {
+                for (int i = 0; i < list.Count; i++)
+                {
+                    var item = list[i];
+                    _allRows.Add(item!);
+                    _filteredRows.Add(item!);
+                }
+            }
+            else
+            {
+                foreach (var item in rows)
+                {
+                    _allRows.Add(item!);
+                    _filteredRows.Add(item!);
+                }
+            }
+
             _displaySelector = obj => displaySelector((T)obj);
 
             if (_isExternalData)
@@ -1046,36 +1161,68 @@
 
         private void UpdatePage()
         {
+            int currentRowsVersion = _rowsVersion;
+            int currentPage = _currentPage;
+            int pageSize = _pageSize;
+            int filteredCount = _filteredRows.Count;
+            int totalPages = filteredCount == 0 ? 0 : (filteredCount + pageSize - 1) / pageSize;
+
+            if (_lastRenderedRowsVersion == currentRowsVersion &&
+                _lastRenderedPage == currentPage &&
+                _lastRenderedPageSize == pageSize &&
+                _lastRenderedTotalPages == totalPages &&
+                _lastRenderedExternalData == _isExternalData)
+            {
+                return;
+            }
+
             if (_isExternalData)
             {
                 _grid.SetRows(_filteredRows, _displaySelector);
                 _grid.ClearSelection();
                 _btnFirst.Enabled = _btnPrev.Enabled = _currentPage > 1;
+                _lastRenderedRowsVersion = currentRowsVersion;
+                _lastRenderedPage = currentPage;
+                _lastRenderedPageSize = pageSize;
+                _lastRenderedTotalPages = TotalPages;
+                _lastRenderedExternalData = true;
                 return;
             }
 
-            if (_filteredRows.Count == 0)
+            if (filteredCount == 0)
             {
                 _grid.SetRows(Array.Empty<object>(), o => Array.Empty<string>());
                 _lblPage.Text = "Page 0 of 0";
+                _lastRenderedRowsVersion = currentRowsVersion;
+                _lastRenderedPage = currentPage;
+                _lastRenderedPageSize = pageSize;
+                _lastRenderedTotalPages = 0;
+                _lastRenderedExternalData = false;
                 return;
             }
 
-            int totalPages = (_filteredRows.Count + _pageSize - 1) / _pageSize;
-
-            var pageRows = _filteredRows
-                .Skip((_currentPage - 1) * _pageSize)
-                .Take(_pageSize)
-                .ToList();
+            var pageRows = new List<object>(Math.Min(pageSize, filteredCount));
+            int startIndex = (currentPage - 1) * pageSize;
+            int endIndex = Math.Min(startIndex + pageSize, filteredCount);
+            for (int i = startIndex; i < endIndex; i++)
+            {
+                pageRows.Add(_filteredRows[i]);
+            }
 
             _grid.SetRows(pageRows, _displaySelector);
             _grid.ClearSelection();
 
-            _lblPage.Text = $"Page {_currentPage} of {totalPages}";
+            _lblPage.Text = $"Page {currentPage} of {totalPages}";
 
             // Enable/disable buttons
-            _btnFirst.Enabled = _btnPrev.Enabled = _currentPage > 1;
-            _btnNext.Enabled = _btnLast.Enabled = _currentPage < totalPages;
+            _btnFirst.Enabled = _btnPrev.Enabled = currentPage > 1;
+            _btnNext.Enabled = _btnLast.Enabled = currentPage < totalPages;
+
+            _lastRenderedRowsVersion = currentRowsVersion;
+            _lastRenderedPage = currentPage;
+            _lastRenderedPageSize = pageSize;
+            _lastRenderedTotalPages = totalPages;
+            _lastRenderedExternalData = false;
 
         }
 
@@ -1099,6 +1246,8 @@
                 ? _allRows.ToList()
                 : _allRows.Where(o => _displaySelector(o).Any(s => s.ToLower().Contains(normalizedSearchTerm)))
                            .ToList();
+
+            _rowsVersion++;
 
             _currentPage = 1; // Reset to first page
             UpdatePage();

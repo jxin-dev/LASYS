@@ -14,7 +14,13 @@ namespace LASYS.DesktopApp.Views.UserControls
     {
         public event EventHandler<LabelPrintingRequestedEventArgs>? LabelPrintingRequested;
         public event EventHandler<int>? PageNoChanged;
+        public event EventHandler<string>? SearchTermChanged;
         private readonly GridViewWithPagination _gridWithPagination;
+        private readonly Panel _loadingCard;
+        private readonly Panel _loadingAccent;
+        private readonly Label _loadingLabel;
+        private readonly ProgressBar _loadingProgress;
+        private static readonly Func<GetWorkOrdersResult, string[]> _workOrderRowSelector = ProjectWorkOrderRow;
 
         public WorkOrdersControl()
         {
@@ -90,10 +96,59 @@ namespace LASYS.DesktopApp.Views.UserControls
                 PageNoChanged?.Invoke(this, e);
             };
 
+            _gridWithPagination.SearchTermChanged += (sender, e) =>
+            {
+                SearchTermChanged?.Invoke(this, e);
+            };
+
+            _gridWithPagination.Resize += (_, _) => LayoutLoadingCard();
+
             // Enable external data mode for pagination (presenter handles paging)
             _gridWithPagination.SetExternalDataMode(true);
 
             pnlContent.Controls.Add(_gridWithPagination);
+
+            _loadingCard = new Panel
+            {
+                BackColor = Color.White,
+                BorderStyle = BorderStyle.FixedSingle,
+                Width = 320,
+                Height = 110,
+                Visible = false
+            };
+
+            _loadingAccent = new Panel
+            {
+                Dock = DockStyle.Top,
+                Height = 5,
+                BackColor = Color.FromArgb(0, 110, 100)
+            };
+
+            _loadingLabel = new Label
+            {
+                AutoSize = true,
+                Font = new Font("Segoe UI", 11F, FontStyle.Bold),
+                ForeColor = Color.FromArgb(0, 110, 100),
+                Text = "Loading work orders..."
+            };
+
+            _loadingProgress = new ProgressBar
+            {
+                Style = ProgressBarStyle.Marquee,
+                MarqueeAnimationSpeed = 30,
+                Width = 240,
+                Height = 18,
+                ForeColor = Color.FromArgb(0, 140, 125)
+            };
+
+            _loadingCard.Controls.Add(_loadingAccent);
+            _loadingCard.Controls.Add(_loadingLabel);
+            _loadingCard.Controls.Add(_loadingProgress);
+
+            pnlContent.Controls.Add(_loadingCard);
+            pnlContent.Controls.SetChildIndex(_loadingCard, 0);
+            pnlContent.Resize += (_, _) => LayoutLoadingCard();
+            LayoutLoadingCard();
         }
 
         public void ShowNotification(string message, string caption, MessageBoxIcon icon)
@@ -101,24 +156,79 @@ namespace LASYS.DesktopApp.Views.UserControls
             MessageBox.Show(message, caption, MessageBoxButtons.OK, icon);
         }
 
+        public void SetLoading(bool isLoading)
+        {
+            if (InvokeRequired)
+            {
+                BeginInvoke(new Action(() => SetLoading(isLoading)));
+                return;
+            }
+
+            _gridWithPagination.Enabled = !isLoading;
+            _loadingCard.Visible = isLoading;
+            if (isLoading)
+            {
+                LayoutLoadingCard();
+                _loadingCard.BringToFront();
+            }
+        }
+
         public void SetWorkOrders(List<GetWorkOrdersResult> workOrders, int totalPages)
         {
             _gridWithPagination.SetTotalPages(totalPages);
-            _gridWithPagination.SetRows(workOrders, item => new string[]
+            _gridWithPagination.SetRows(workOrders, _workOrderRowSelector);
+        }
+
+        private static string[] ProjectWorkOrderRow(GetWorkOrdersResult item)
+        {
+            var itemCode = item.ItemCode ?? string.Empty;
+            var lotNo = item.LotNo ?? string.Empty;
+            var expDate = item.ExpDate ?? string.Empty;
+            var printType = item.PrintType ?? string.Empty;
+            var verdict = item.Verdict ?? string.Empty;
+            var dateApproved = item.DateApproved ?? string.Empty;
+            var ubStatus = item.UB_LI_Status ?? string.Empty;
+            var aubStatus = item.AUB_LI_Status ?? string.Empty;
+            var oubStatus = item.OUB_LI_Status ?? string.Empty;
+
+            var row = new string[15];
+            row[0] = itemCode;
+            row[1] = lotNo;
+            row[2] = expDate;
+            row[3] = printType;
+            row[4] = verdict;
+            row[5] = dateApproved;
+            row[6] = item.ProdQty.ToString();
+            row[7] = item.MasterLabelRevisionNo.ToString();
+            row[8] = item.LabelInsRevisionNo.ToString();
+            row[9] = item.UB_Qty.ToString();
+            row[10] = ubStatus;
+            row[11] = item.AUB_Qty.ToString();
+            row[12] = aubStatus;
+            row[13] = item.OUB_Qty.ToString();
+            row[14] = oubStatus;
+            return row;
+        }
+
+        private void LayoutLoadingCard()
+        {
+            if (pnlContent.ClientSize.Width <= 0 || pnlContent.ClientSize.Height <= 0 || _loadingCard == null)
             {
-                item.ItemCode!,
-                item.LotNo!,
-                item.ExpDate!,
-                item.PrintType!,
-                item.Verdict!,
-                item.DateApproved!,
-                item.ProdQty.ToString(),
-                item.MasterLabelRevisionNo.ToString(),
-                item.LabelInsRevisionNo.ToString(),
-                item.UB_Qty.ToString(), item.UB_LI_Status!,
-                item.AUB_Qty.ToString(), item.AUB_LI_Status!,
-                item.OUB_Qty.ToString(), item.OUB_LI_Status!
-            });
+                return;
+            }
+
+            var contentHeight = _loadingCard.Height;
+            var top = Math.Max(0, (_gridWithPagination.Top + (_gridWithPagination.Height - contentHeight) / 2));
+            var left = Math.Max(0, (_gridWithPagination.Left + (_gridWithPagination.Width - _loadingCard.Width) / 2));
+
+            _loadingCard.Left = left;
+            _loadingCard.Top = top;
+
+            _loadingLabel.Left = Math.Max(0, (_loadingCard.Width - _loadingLabel.Width) / 2);
+            _loadingLabel.Top = 28;
+
+            _loadingProgress.Left = Math.Max(0, (_loadingCard.Width - _loadingProgress.Width) / 2);
+            _loadingProgress.Top = _loadingLabel.Bottom + 16;
         }
     }
 
