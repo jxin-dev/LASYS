@@ -69,10 +69,10 @@
             // 
             // btnTestPrint
             // 
-            btnTestPrint.BackColor = Color.DimGray;
+            btnTestPrint.BackColor = Color.FromArgb(60, 60, 60);
             btnTestPrint.FlatAppearance.BorderSize = 0;
             btnTestPrint.FlatStyle = FlatStyle.Flat;
-            btnTestPrint.Font = new Font("Segoe UI Semibold", 11.25F, FontStyle.Bold);
+            btnTestPrint.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold, GraphicsUnit.Point, 0);
             btnTestPrint.ForeColor = Color.White;
             btnTestPrint.Image = Properties.Resources.print24;
             btnTestPrint.Location = new Point(210, 206);
@@ -85,10 +85,10 @@
             // 
             // btnSavePrinter
             // 
-            btnSavePrinter.BackColor = SystemColors.HotTrack;
+            btnSavePrinter.BackColor = Color.FromArgb(0, 140, 125);
             btnSavePrinter.FlatAppearance.BorderSize = 0;
             btnSavePrinter.FlatStyle = FlatStyle.Flat;
-            btnSavePrinter.Font = new Font("Segoe UI Semibold", 11.25F, FontStyle.Bold);
+            btnSavePrinter.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold, GraphicsUnit.Point, 0);
             btnSavePrinter.ForeColor = Color.White;
             btnSavePrinter.Image = Properties.Resources.check_small24;
             btnSavePrinter.Location = new Point(21, 206);
