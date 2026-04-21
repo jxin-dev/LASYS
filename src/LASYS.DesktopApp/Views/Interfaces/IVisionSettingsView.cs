@@ -38,5 +38,7 @@ namespace LASYS.DesktopApp.Views.Interfaces
 
         void SelectCamera(string cameraName, string resolution, int focus);
         void ShowCameraNotification(string message, string caption, bool isError = false);
+
+        event EventHandler SelectOcrItemRequested;
     }
 }

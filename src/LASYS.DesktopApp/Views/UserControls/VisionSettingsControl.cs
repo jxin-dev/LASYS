@@ -1,6 +1,7 @@
 ﻿using System.Reflection;
 using LASYS.Application.Contracts;
 using LASYS.DesktopApp.Events;
+using LASYS.DesktopApp.Presenters;
 using LASYS.DesktopApp.Views.Interfaces;
 using LASYS.UIControls.Controls;
 
@@ -60,6 +61,7 @@ namespace LASYS.DesktopApp.Views.UserControls
         public event EventHandler? LoadCamerasRequested;
         public event EventHandler<string>? CameraResolutionSelected;
         public event EventHandler<OCRCoordinatesEventArgs>? OCRCalibrationPreview;
+        public event EventHandler? SelectOcrItemRequested;
 
         private Rectangle _roi;
         private Point _startPoint;
@@ -732,6 +734,11 @@ namespace LASYS.DesktopApp.Views.UserControls
                 Cursor = Cursors.Hand
             };
             labelInfoLayout.Controls.Add(searchButton, 4, 0);
+
+            searchButton.Click += (sender, e) =>
+            {
+                SelectOcrItemRequested?.Invoke(this, EventArgs.Empty);
+            };
 
             var revisionNoLabel = new Label
             {
