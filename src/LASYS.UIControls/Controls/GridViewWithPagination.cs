@@ -338,7 +338,7 @@
                     g.DrawRectangle(gridPen, x, 0, width, HeaderHeight * 2);
                     g.DrawString(top.Text, HeaderFont, headerTextBrush,
                         new RectangleF(x, 0, width, HeaderHeight * 2),
-                        StringFormat.GenericTypographic);
+                        new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center });
                 }
                 else
                 {
@@ -347,7 +347,7 @@
                     g.DrawRectangle(gridPen, x, 0, width, HeaderHeight);
                     g.DrawString(top.Text, HeaderFont, headerTextBrush,
                         new RectangleF(x, 0, width, HeaderHeight),
-                        StringFormat.GenericTypographic);
+                        new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center });
 
                     // Sub-headers row
                     int subX = x;
@@ -367,7 +367,7 @@
                         g.DrawRectangle(gridPen, subX, HeaderHeight, colWidth, HeaderHeight);
                         g.DrawString(_subHeaders[subIndex + i], subHeaderFont, headerTextBrush,
                             new RectangleF(subX, HeaderHeight, colWidth, HeaderHeight),
-                            StringFormat.GenericTypographic);
+                            new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center });
 
                         subX += colWidth;
                     }
