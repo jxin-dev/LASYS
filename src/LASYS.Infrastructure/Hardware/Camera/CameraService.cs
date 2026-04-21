@@ -467,7 +467,6 @@ namespace LASYS.Infrastructure.Hardware.Camera
             }
         }
 
-
         public void Dispose()
         {
             if (_disposed)

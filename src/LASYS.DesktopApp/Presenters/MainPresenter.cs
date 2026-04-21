@@ -80,8 +80,11 @@ namespace LASYS.DesktopApp.Presenters
 
         private void OnWorkOrderRequested(object? sender, EventArgs e)
         {
+            _logService.Log("WorkOrderRequested received in MainPresenter.", MessageType.Info);
             var workOrdersPresenter = _serviceProvider.GetRequiredService<WorkOrdersPresenter>();
+            _logService.Log($"Resolved WorkOrdersPresenter (HashCode={workOrdersPresenter.GetHashCode()}).", MessageType.Info);
             _view?.LoadView(workOrdersPresenter.View, false); //always new
+            _logService.Log("Loaded WorkOrders view into MainForm.", MessageType.Info);
         }
 
         private void OnOVisionSettingsRequested(object? sender, EventArgs e)

@@ -189,7 +189,7 @@ namespace LASYS.DesktopApp.Presenters
         {
             if (_isLoading) return;
 
-            _isLoading = true;
+            //_isLoading = true;
             _view.SetLoading(true);
             _currentPage = pageNo;
 
@@ -206,7 +206,7 @@ namespace LASYS.DesktopApp.Presenters
             }
             finally
             {
-                _isLoading = false;
+                //_isLoading = false;
                 _view.SetLoading(false);
             }
         }
