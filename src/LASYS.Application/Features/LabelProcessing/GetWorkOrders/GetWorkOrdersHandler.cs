@@ -21,6 +21,7 @@ namespace LASYS.Application.Features.LabelProcessing.GetWorkOrders
                 using var connection = await _factory.CreateConnectionAsync();
                 var parameters = new DynamicParameters();
                 var filterClause = string.Empty;
+                var totalFilterClause = string.Empty;
 
                 if (!string.IsNullOrWhiteSpace(request.filter))
                 {
@@ -34,11 +35,44 @@ namespace LASYS.Application.Features.LabelProcessing.GetWorkOrders
                         inspln.AUB_LBL_INS_CODE LIKE @filter OR
                         inspln.ACB_LBL_INS_CODE LIKE @filter)";
 
+                    totalFilterClause = @"AND (
+                        i.Item_Code LIKE @filter OR
+                        i.Lot_No LIKE @filter OR
+                        i.UB_LBL_INS_CODE LIKE @filter OR
+                        i.OUB_LBL_INS_CODE LIKE @filter OR
+                        i.OCB_LBL_INS_CODE LIKE @filter OR
+                        i.CB_LBL_INS_CODE LIKE @filter OR
+                        i.AUB_LBL_INS_CODE LIKE @filter OR
+                        i.ACB_LBL_INS_CODE LIKE @filter)";
+
+
                     parameters.Add("@filter", $"%{request.filter}%");
                 }
 
                 var baseSql = @$"
                     FROM ppt_lbl_instructn_plns_hst inspln
+                        -- Added this subquery for MySQL 5.1 compatibility
+                        CROSS JOIN (
+                            SELECT COUNT(*) AS TotalCount 
+                            FROM ppt_lbl_instructn_plns_hst i
+                            INNER JOIN (
+                                SELECT item_code, lot_no, MAX(label_ins_rev_number) AS max_ins_rev 
+                                FROM ppt_lbl_instructn_plns_hst 
+                                GROUP BY item_code, lot_no
+                            ) f ON i.item_code = f.item_code 
+                               AND i.lot_no = f.lot_no 
+                               AND i.label_ins_rev_number = f.max_ins_rev
+                            INNER JOIN pre_tpc_products_tcl p ON i.item_code = p.item_code 
+                               AND i.master_label_revision_number = p.masterlabel_revision_number
+                            WHERE p.active_flag = '' 
+                              AND (
+                                  (i.UB_LBL_INS_STATUS IN (2,3) AND i.UB_LBL_INS_VERDICT = 2) OR  
+                                  (i.OUB_LBL_INS_STATUS IN (2,3) AND i.OUB_LBL_INS_VERDICT = 2) OR  
+                                  (i.OCB_LBL_INS_STATUS IN (2,3) AND i.OCB_LBL_INS_VERDICT = 2) OR  
+                                  (i.CB_LBL_INS_STATUS IN (2,3) AND i.CB_LBL_INS_VERDICT = 2)
+                              )
+                            {totalFilterClause}
+                        ) AS totals
                         INNER JOIN pre_masterlabels_tcl mstlbltcl
                             ON mstlbltcl.item_code = inspln.item_code
                            AND mstlbltcl.masterlabel_revision_number = inspln.master_label_revision_number
@@ -69,7 +103,7 @@ namespace LASYS.Application.Features.LabelProcessing.GetWorkOrders
                 parameters.Add("@offset", offset);
 
                 var query = @$"
-                    SELECT COUNT(*) OVER() AS 'TotalCount',
+                    SELECT totals.TotalCount, -- Replaced COUNT(*) OVER(),
                            inspln.Item_Code AS 'ItemCode',
                            inspln.Lot_No AS 'LotNo',
                            IF (mstlbltcl.UDI = 1,
