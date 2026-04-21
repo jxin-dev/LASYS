@@ -2,6 +2,7 @@
 {
     public class GetWorkOrdersResult
     {
+        public int TotalCount { get; set; }
         public string? ItemCode { get; set; }
         public string? LotNo { get; set; }
         public string? ExpDate { get; set; }

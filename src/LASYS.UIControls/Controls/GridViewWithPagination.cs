@@ -13,6 +13,18 @@
         private List<string> _subHeaders = new();
         private List<string[]> _rows = new();
         private int[] _columnWidths = Array.Empty<int>();
+        private int[] _headerSegmentWidths = Array.Empty<int>();
+        private int _totalContentWidth;
+        private Font? _subHeaderFont;
+        private Pen? _gridLinePen;
+        private Pen? _headerDividerPen;
+        private Pen? _accentPen;
+        private SolidBrush? _headerBackBrush;
+        private SolidBrush? _headerTextBrush;
+        private SolidBrush? _rowBackBrush;
+        private SolidBrush? _altRowBackBrush;
+        private SolidBrush? _rowTextBrush;
+        private SolidBrush? _accentBrush;
 
         public int RowHeight { get; set; } = 28;
         public int HeaderHeight { get; set; } = 32;
@@ -77,6 +89,28 @@
             _rows.Clear();
             _rowDataObjects.Clear();
 
+            if (data is ICollection<T> collection)
+            {
+                if (_rows.Capacity < collection.Count)
+                    _rows.Capacity = collection.Count;
+
+                if (_rowDataObjects.Capacity < collection.Count)
+                    _rowDataObjects.Capacity = collection.Count;
+            }
+
+            if (data is IList<T> list)
+            {
+                for (int i = 0; i < list.Count; i++)
+                {
+                    var item = list[i];
+                    _rowDataObjects.Add(item!);
+                    _rows.Add(displaySelector(item));
+                }
+
+                UpdateLayout();
+                return;
+            }
+
             foreach (var item in data)
             {
                 _rowDataObjects.Add(item!);
@@ -91,8 +125,17 @@
 
         private void UpdateLayout()
         {
-            using var g = CreateGraphics();
-            CalculateColumnWidths(g);
+            if (_customColumnWidths == null)
+            {
+                using var g = CreateGraphics();
+                CalculateColumnWidths(g);
+            }
+            else
+            {
+                _columnWidths = (int[])_customColumnWidths.Clone();
+            }
+
+            CacheLayoutMetrics();
             UpdateScrollBars();
             Invalidate();
         }
@@ -122,6 +165,36 @@
             }
         }
 
+        private void CacheLayoutMetrics()
+        {
+            _totalContentWidth = 0;
+            for (int i = 0; i < _columnWidths.Length; i++)
+            {
+                _totalContentWidth += _columnWidths[i];
+            }
+
+            if (_topHeaders.Count == 0 || _columnWidths.Length == 0)
+            {
+                _headerSegmentWidths = Array.Empty<int>();
+                return;
+            }
+
+            _headerSegmentWidths = new int[_topHeaders.Count];
+            for (int topIndex = 0, subIndex = 0; topIndex < _topHeaders.Count; topIndex++)
+            {
+                var top = _topHeaders[topIndex];
+                int width = 0;
+
+                for (int i = 0; i < top.ColSpan && subIndex + i < _columnWidths.Length; i++)
+                {
+                    width += _columnWidths[subIndex + i];
+                }
+
+                _headerSegmentWidths[topIndex] = width;
+                subIndex += top.ColSpan;
+            }
+        }
+
         private void UpdateScrollBars()
         {
             int headerTotal = HeaderHeight * 2;
@@ -143,7 +216,7 @@
                 _vScroll.Value = 0;
             }
 
-            int totalContentWidth = _columnWidths.Sum();
+            int totalContentWidth = _totalContentWidth;
             int viewportWidth = Math.Max(0, Width - _vScroll.Width);
             if (totalContentWidth > viewportWidth)
             {
@@ -241,11 +314,12 @@
 
         private void DrawMergedHeaders(Graphics g, int xOffset)
         {
-            using var gridPen = new Pen(GridLineColor);
-            using var headerBrush = new SolidBrush(HeaderBackColor);
-            using var headerTextBrush = new SolidBrush(HeaderForeColor);
-
-            using var subHeaderFont = new Font("Segoe UI", 8F, FontStyle.Bold);
+            var gridPen = GetGridLinePen();
+            var headerBrush = GetHeaderBackBrush();
+            var headerTextBrush = GetHeaderTextBrush();
+            var subHeaderFont = GetSubHeaderFont();
+            var dividerPen = GetHeaderDividerPen();
+            var accentPen = GetAccentPen();
 
             int x = xOffset;
 
@@ -253,7 +327,9 @@
             for (int topIndex = 0, subIndex = 0; topIndex < _topHeaders.Count; topIndex++)
             {
                 var top = _topHeaders[topIndex];
-                int width = _columnWidths.Skip(subIndex).Take(top.ColSpan).Sum();
+                int width = topIndex < _headerSegmentWidths.Length
+                    ? _headerSegmentWidths[topIndex]
+                    : GetSegmentWidth(subIndex, top.ColSpan);
 
                 if (top.ColSpan == 1)
                 {
@@ -262,7 +338,7 @@
                     g.DrawRectangle(gridPen, x, 0, width, HeaderHeight * 2);
                     g.DrawString(top.Text, HeaderFont, headerTextBrush,
                         new RectangleF(x, 0, width, HeaderHeight * 2),
-                        new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center });
+                        StringFormat.GenericTypographic);
                 }
                 else
                 {
@@ -271,40 +347,42 @@
                     g.DrawRectangle(gridPen, x, 0, width, HeaderHeight);
                     g.DrawString(top.Text, HeaderFont, headerTextBrush,
                         new RectangleF(x, 0, width, HeaderHeight),
-                        new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center });
+                        StringFormat.GenericTypographic);
 
                     // Sub-headers row
                     int subX = x;
                     for (int i = 0; i < top.ColSpan; i++)
                     {
                         int colWidth = _columnWidths[subIndex + i];
+                        if (subX + colWidth < 0)
+                        {
+                            subX += colWidth;
+                            continue;
+                        }
+
+                        if (subX > Width - _vScroll.Width)
+                            break;
+
                         g.FillRectangle(headerBrush, subX, HeaderHeight, colWidth, HeaderHeight);
                         g.DrawRectangle(gridPen, subX, HeaderHeight, colWidth, HeaderHeight);
-                        //g.DrawString(_subHeaders[subIndex + i], HeaderFont, headerTextBrush,
-                        //    new RectangleF(subX, HeaderHeight, colWidth, HeaderHeight),
-                        //    new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center });
                         g.DrawString(_subHeaders[subIndex + i], subHeaderFont, headerTextBrush,
                             new RectangleF(subX, HeaderHeight, colWidth, HeaderHeight),
-                            new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center });
+                            StringFormat.GenericTypographic);
 
                         subX += colWidth;
                     }
                 }
 
                 x += width;
-                using (var dividerPen = new Pen(Color.FromArgb(180, 200, 195), 2))
-                {
-                    g.DrawLine(dividerPen, x - 1, 0, x - 1, HeaderHeight * 2);
-                }
+                g.DrawLine(dividerPen, x - 1, 0, x - 1, HeaderHeight * 2);
                 subIndex += top.ColSpan;
             }
-            using var accentPen = new Pen(Color.FromArgb(0, 166, 147), 2);
             g.DrawLine(accentPen, 0, HeaderHeight * 2 - 1, Width, HeaderHeight * 2 - 1);
         }
 
         private void DrawDataRow(Graphics g, string[] row, int rowIndex, int y, int xOffset, int viewportWidth)
         {
-            int totalWidth = _columnWidths.Sum();
+            int totalWidth = _totalContentWidth;
             var backColor = (rowIndex % 2 == 0) ? RowBackColor : AltRowBackColor;
 
             bool isSelected = rowIndex == _selectedRowIndex;
@@ -313,25 +391,25 @@
                 backColor = Color.FromArgb(220, 245, 240); // soft green highlight
             }
 
-            using (var b = new SolidBrush(backColor))
-            {
-                g.FillRectangle(b, -_hScroll.Value, y, totalWidth, RowHeight);
-            }
+            var backBrush = GetRowBackBrush(backColor);
+            g.FillRectangle(backBrush, -_hScroll.Value, y, totalWidth, RowHeight);
 
             var textColor = isSelected
                 ? Color.FromArgb(0, 80, 70) // darker green text when selected
                 : ForeColor;
 
             // 2) Text and grid lines
-            using var f = new SolidBrush(ForeColor);
-            using var gridPen = new Pen(GridLineColor);
+            var f = GetRowTextBrush();
+            var gridPen = GetGridLinePen();
 
             int x = xOffset;
             for (int c = 0; c < row.Length && c < _columnWidths.Length; c++)
             {
                 int colWidth = _columnWidths[c];
-                g.DrawString(row[c], RowFont, f,
-                    new RectangleF(x + 6, y + 4, colWidth - 12, RowHeight - 8));
+                TextRenderer.DrawText(g, row[c], RowFont,
+                    new Rectangle(x + 6, y + 4, colWidth - 12, RowHeight - 8),
+                    textColor,
+                    TextFormatFlags.Left | TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis | TextFormatFlags.SingleLine | TextFormatFlags.NoPadding);
 
                 g.DrawRectangle(gridPen, x, y, colWidth, RowHeight);
                 x += colWidth;
@@ -339,12 +417,149 @@
 
             if (isSelected)
             {
-                using var accentBrush = new SolidBrush(Color.FromArgb(0, 166, 147));
-                g.FillRectangle(accentBrush, -_hScroll.Value, y, 4, RowHeight);
+                g.FillRectangle(GetAccentBrush(), -_hScroll.Value, y, 4, RowHeight);
             }
 
             
 
+        }
+
+        private int GetSegmentWidth(int startIndex, int colSpan)
+        {
+            int width = 0;
+            for (int i = 0; i < colSpan && startIndex + i < _columnWidths.Length; i++)
+            {
+                width += _columnWidths[startIndex + i];
+            }
+
+            return width;
+        }
+
+        private Font GetSubHeaderFont()
+        {
+            _subHeaderFont ??= new Font("Segoe UI", 8F, FontStyle.Bold);
+            return _subHeaderFont;
+        }
+
+        private Pen GetGridLinePen()
+        {
+            if (_gridLinePen == null || _gridLinePen.Color != GridLineColor)
+            {
+                _gridLinePen?.Dispose();
+                _gridLinePen = new Pen(GridLineColor);
+            }
+
+            return _gridLinePen;
+        }
+
+        private Pen GetHeaderDividerPen()
+        {
+            var color = Color.FromArgb(180, 200, 195);
+            if (_headerDividerPen == null || _headerDividerPen.Color != color)
+            {
+                _headerDividerPen?.Dispose();
+                _headerDividerPen = new Pen(color, 2);
+            }
+
+            return _headerDividerPen;
+        }
+
+        private Pen GetAccentPen()
+        {
+            var color = Color.FromArgb(0, 166, 147);
+            if (_accentPen == null || _accentPen.Color != color)
+            {
+                _accentPen?.Dispose();
+                _accentPen = new Pen(color, 2);
+            }
+
+            return _accentPen;
+        }
+
+        private SolidBrush GetHeaderBackBrush()
+        {
+            if (_headerBackBrush == null || _headerBackBrush.Color != HeaderBackColor)
+            {
+                _headerBackBrush?.Dispose();
+                _headerBackBrush = new SolidBrush(HeaderBackColor);
+            }
+
+            return _headerBackBrush;
+        }
+
+        private SolidBrush GetHeaderTextBrush()
+        {
+            if (_headerTextBrush == null || _headerTextBrush.Color != HeaderForeColor)
+            {
+                _headerTextBrush?.Dispose();
+                _headerTextBrush = new SolidBrush(HeaderForeColor);
+            }
+
+            return _headerTextBrush;
+        }
+
+        private SolidBrush GetRowBackBrush(Color color)
+        {
+            if (color == RowBackColor)
+            {
+                if (_rowBackBrush == null || _rowBackBrush.Color != color)
+                {
+                    _rowBackBrush?.Dispose();
+                    _rowBackBrush = new SolidBrush(color);
+                }
+
+                return _rowBackBrush;
+            }
+
+            if (_altRowBackBrush == null || _altRowBackBrush.Color != color)
+            {
+                _altRowBackBrush?.Dispose();
+                _altRowBackBrush = new SolidBrush(color);
+            }
+
+            return _altRowBackBrush;
+        }
+
+        private SolidBrush GetRowTextBrush()
+        {
+            if (_rowTextBrush == null || _rowTextBrush.Color != ForeColor)
+            {
+                _rowTextBrush?.Dispose();
+                _rowTextBrush = new SolidBrush(ForeColor);
+            }
+
+            return _rowTextBrush;
+        }
+
+        private SolidBrush GetAccentBrush()
+        {
+            var color = Color.FromArgb(0, 166, 147);
+            if (_accentBrush == null || _accentBrush.Color != color)
+            {
+                _accentBrush?.Dispose();
+                _accentBrush = new SolidBrush(color);
+            }
+
+            return _accentBrush;
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                _subHeaderFont?.Dispose();
+                _gridLinePen?.Dispose();
+                _headerDividerPen?.Dispose();
+                _accentPen?.Dispose();
+                _headerBackBrush?.Dispose();
+                _headerTextBrush?.Dispose();
+                _rowBackBrush?.Dispose();
+                _altRowBackBrush?.Dispose();
+                _rowTextBrush?.Dispose();
+                _accentBrush?.Dispose();
+            }
+
+            base.Dispose(disposing);
         }
 
         protected override void OnMouseMove(MouseEventArgs e)
@@ -357,6 +572,7 @@
                 int newWidth = Math.Max(20, _resizeStartWidth + delta);
                 _columnWidths[_resizeColumnIndex] = newWidth;
                 _customColumnWidths = (int[])_columnWidths.Clone(); // store custom widths
+                CacheLayoutMetrics();
                 UpdateScrollBars();
                 Invalidate();
                 return;
@@ -615,8 +831,16 @@
         private int _pageSize = 10;
         private List<object> _allRows = new(); // all row objects
         private List<object> _filteredRows = new(); // filtered by search
+        private int _rowsVersion;
+        private int _lastRenderedRowsVersion = -1;
+        private int _lastRenderedPage = -1;
+        private int _lastRenderedPageSize = -1;
+        private int _lastRenderedTotalPages = -1;
+        private bool _lastRenderedExternalData;
 
         private Func<object, string[]> _displaySelector = null!;
+        private readonly global::System.Windows.Forms.Timer _searchDebounceTimer;
+        private string _pendingSearchTerm = string.Empty;
 
         private void EnableDoubleBuffer(Control c)
         {
@@ -630,6 +854,13 @@
             this.DoubleBuffered = true;
             this.SetStyle(ControlStyles.OptimizedDoubleBuffer | ControlStyles.AllPaintingInWmPaint, true);
             this.UpdateStyles();
+
+            _searchDebounceTimer = new global::System.Windows.Forms.Timer { Interval = 1000 };
+            _searchDebounceTimer.Tick += (_, _) =>
+            {
+                _searchDebounceTimer.Stop();
+                ApplySearchTerm(_pendingSearchTerm);
+            };
 
 
             SuspendLayout();
@@ -671,16 +902,9 @@
 
             _txtSearch.TextChanged += (sender, e) =>
             {
-                string searchTerm = _txtSearch.Text.Trim().ToLower();
-
-                _filteredRows = string.IsNullOrEmpty(searchTerm)
-                    ? _allRows.ToList()
-                    : _allRows.Where(o => _displaySelector(o).Any(s => s.ToLower().Contains(searchTerm)))
-                               .ToList();
-
-                _currentPage = 1; // Reset to first page
-                UpdatePage();
-
+                _pendingSearchTerm = _txtSearch.Text.Trim();
+                _searchDebounceTimer.Stop();
+                _searchDebounceTimer.Start();
             };
 
             _searchPanel.Controls.Add(_txtSearch);
@@ -730,7 +954,7 @@
                 Font = new Font("Segoe UI", 10F, FontStyle.Bold),
                 Text = "Page 1 of 1",
                 AutoSize = true,
-                ForeColor = Color.FromArgb(0, 140, 125),
+                ForeColor = Color.FromArgb(0, 140, 125), //Color.White,
                 TextAlign = ContentAlignment.MiddleCenter,
                 Anchor = AnchorStyles.None,
                 Padding = new Padding(10, 8, 10, 8),
@@ -793,10 +1017,41 @@
             };
 
             // Wire button events
-            _btnFirst.Clicked += (s, e) => { _currentPage = 1; UpdatePage(); PageNoChanged?.Invoke(this, 1); };
-            _btnPrev.Clicked += (s, e) => { if (_currentPage > 1) { _currentPage--; PageNoChanged?.Invoke(this, _currentPage); } UpdatePage();  };
-            _btnNext.Clicked += (s, e) => { if (_currentPage < TotalPages) { _currentPage++; PageNoChanged?.Invoke(this, _currentPage); } UpdatePage(); };
-            _btnLast.Clicked += (s, e) => { _currentPage = TotalPages; UpdatePage(); PageNoChanged?.Invoke(this, TotalPages); };
+            _btnFirst.Clicked += (s, e) =>
+            {
+                _currentPage = 1;
+                PageNoChanged?.Invoke(this, 1);
+                if (!_isExternalData) UpdatePage();
+            };
+
+            _btnPrev.Clicked += (s, e) =>
+            {
+                if (_currentPage > 1)
+                {
+                    _currentPage--;
+                    PageNoChanged?.Invoke(this, _currentPage);
+                }
+
+                if (!_isExternalData) UpdatePage();
+            };
+
+            _btnNext.Clicked += (s, e) =>
+            {
+                if (_currentPage < TotalPages)
+                {
+                    _currentPage++;
+                    PageNoChanged?.Invoke(this, _currentPage);
+                }
+
+                if (!_isExternalData) UpdatePage();
+            };
+
+            _btnLast.Clicked += (s, e) =>
+            {
+                _currentPage = TotalPages;
+                PageNoChanged?.Invoke(this, TotalPages);
+                if (!_isExternalData) UpdatePage();
+            };
         }
 
 
@@ -813,7 +1068,7 @@
             return new IconButton
             {
                 ButtonText = text,
-                Width = 70,
+                Width = 80,
                 Height = 30,
                 DefaultBackColor = Color.White, //_paginationPanel.BackColor,
                 HoverBackColor = Color.FromArgb(200, 230, 225), //LightenColor(_paginationPanel.BackColor, 20),
@@ -833,8 +1088,36 @@
         public int TotalPages;
         public void SetRows<T>(IEnumerable<T> rows, Func<T, string[]> displaySelector)
         {
-            _allRows = rows.Cast<object>().ToList();
-            _filteredRows = _allRows.ToList(); // reset filter
+            _rowsVersion++;
+            if (rows is ICollection<T> collection)
+            {
+                _allRows = new List<object>(collection.Count);
+                _filteredRows = new List<object>(collection.Count);
+            }
+            else
+            {
+                _allRows = new List<object>();
+                _filteredRows = new List<object>();
+            }
+
+            if (rows is IList<T> list)
+            {
+                for (int i = 0; i < list.Count; i++)
+                {
+                    var item = list[i];
+                    _allRows.Add(item!);
+                    _filteredRows.Add(item!);
+                }
+            }
+            else
+            {
+                foreach (var item in rows)
+                {
+                    _allRows.Add(item!);
+                    _filteredRows.Add(item!);
+                }
+            }
+
             _displaySelector = obj => displaySelector((T)obj);
 
             if (_isExternalData)
@@ -874,45 +1157,100 @@
         }
 
         public event EventHandler<int>? PageNoChanged;
+        public event EventHandler<string>? SearchTermChanged;
 
         private void UpdatePage()
         {
+            int currentRowsVersion = _rowsVersion;
+            int currentPage = _currentPage;
+            int pageSize = _pageSize;
+            int filteredCount = _filteredRows.Count;
+            int totalPages = filteredCount == 0 ? 0 : (filteredCount + pageSize - 1) / pageSize;
+
+            if (_lastRenderedRowsVersion == currentRowsVersion &&
+                _lastRenderedPage == currentPage &&
+                _lastRenderedPageSize == pageSize &&
+                _lastRenderedTotalPages == totalPages &&
+                _lastRenderedExternalData == _isExternalData)
+            {
+                return;
+            }
+
             if (_isExternalData)
             {
                 _grid.SetRows(_filteredRows, _displaySelector);
                 _grid.ClearSelection();
                 _btnFirst.Enabled = _btnPrev.Enabled = _currentPage > 1;
+                _lastRenderedRowsVersion = currentRowsVersion;
+                _lastRenderedPage = currentPage;
+                _lastRenderedPageSize = pageSize;
+                _lastRenderedTotalPages = TotalPages;
+                _lastRenderedExternalData = true;
                 return;
             }
 
-            if (_filteredRows.Count == 0)
+            if (filteredCount == 0)
             {
                 _grid.SetRows(Array.Empty<object>(), o => Array.Empty<string>());
                 _lblPage.Text = "Page 0 of 0";
+                _lastRenderedRowsVersion = currentRowsVersion;
+                _lastRenderedPage = currentPage;
+                _lastRenderedPageSize = pageSize;
+                _lastRenderedTotalPages = 0;
+                _lastRenderedExternalData = false;
                 return;
             }
 
-            int totalPages = (_filteredRows.Count + _pageSize - 1) / _pageSize;
-
-            var pageRows = _filteredRows
-                .Skip((_currentPage - 1) * _pageSize)
-                .Take(_pageSize)
-                .ToList();
+            var pageRows = new List<object>(Math.Min(pageSize, filteredCount));
+            int startIndex = (currentPage - 1) * pageSize;
+            int endIndex = Math.Min(startIndex + pageSize, filteredCount);
+            for (int i = startIndex; i < endIndex; i++)
+            {
+                pageRows.Add(_filteredRows[i]);
+            }
 
             _grid.SetRows(pageRows, _displaySelector);
             _grid.ClearSelection();
 
-            _lblPage.Text = $"Page {_currentPage} of {totalPages}";
+            _lblPage.Text = $"Page {currentPage} of {totalPages}";
 
             // Enable/disable buttons
-            _btnFirst.Enabled = _btnPrev.Enabled = _currentPage > 1;
-            _btnNext.Enabled = _btnLast.Enabled = _currentPage < totalPages;
+            _btnFirst.Enabled = _btnPrev.Enabled = currentPage > 1;
+            _btnNext.Enabled = _btnLast.Enabled = currentPage < totalPages;
+
+            _lastRenderedRowsVersion = currentRowsVersion;
+            _lastRenderedPage = currentPage;
+            _lastRenderedPageSize = pageSize;
+            _lastRenderedTotalPages = totalPages;
+            _lastRenderedExternalData = false;
 
         }
 
         public void SetExternalDataMode(bool isExternal)
         {
             _isExternalData = isExternal;
+        }
+
+        private void ApplySearchTerm(string searchTerm)
+        {
+            // skip filtering if data is external (handled by caller)
+            if (_isExternalData)
+            {
+                SearchTermChanged?.Invoke(this, searchTerm);
+                return;
+            }
+
+            string normalizedSearchTerm = searchTerm.ToLowerInvariant();
+
+            _filteredRows = string.IsNullOrEmpty(normalizedSearchTerm)
+                ? _allRows.ToList()
+                : _allRows.Where(o => _displaySelector(o).Any(s => s.ToLower().Contains(normalizedSearchTerm)))
+                           .ToList();
+
+            _rowsVersion++;
+
+            _currentPage = 1; // Reset to first page
+            UpdatePage();
         }
     }
 }

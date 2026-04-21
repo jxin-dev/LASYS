@@ -4,6 +4,8 @@ using LASYS.DesktopApp.Events;
 using LASYS.DesktopApp.Views.Interfaces;
 using LASYS.DesktopApp.Views.UserControls;
 using LASYS.DesktopApp.Views.Forms;
+using LASYS.Application.Common.Messaging;
+using LASYS.Application.Interfaces.Services;
 using LASYS.Infrastructure.Services.WorkOrder;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
@@ -18,14 +20,18 @@ namespace LASYS.DesktopApp.Presenters
         private readonly IServiceProvider _serviceProvider;
         private readonly IMediator _mediator;
         private readonly WorkOrderService _workOrderService;
+        private readonly ILogService _logService;
         public UserControl View { get; }
-        private bool _isLoading = true;
+        private bool _isLoading;
+        private int _currentPage = 1;
+        private string _searchTerm = string.Empty;
 
         public WorkOrdersPresenter(IWorkOrdersView view,
                                    IMainView mainView,
                                    IServiceProvider serviceProvider,
                                    IMediator mediator,
-                                   WorkOrderService workOrderService)
+                                   WorkOrderService workOrderService,
+                                   ILogService logService)
         {
             View = (UserControl)view;
             _view = view;
@@ -33,13 +39,41 @@ namespace LASYS.DesktopApp.Presenters
             _serviceProvider = serviceProvider;
             _mediator = mediator;
             _workOrderService = workOrderService;
+            _logService = logService;
 
             _view.LabelPrintingRequested += OnLabelPrintingRequested;
             _view.PageNoChanged += OnPageNoChanged;
+            _view.SearchTermChanged += OnSearchTermChanged;
 
-            LoadWorkOrdersAsync();
+            _ = LoadWorkOrdersAsync();
         }
 
+        private async void OnSearchTermChanged(object? sender, string e)
+        {
+            if (_isLoading) return;
+
+            _searchTerm = e?.Trim() ?? string.Empty;
+            _currentPage = 1;
+            _isLoading = true;
+            _view.SetLoading(true);
+
+            try
+            {
+                var result = await _mediator.Send(new GetWorkOrdersQuery(_searchTerm, 50, _currentPage));
+
+                if (result.IsSuccess && result.Value?.Items == null) return;
+
+                if (result.Value?.Items != null && result.Value.Items.Count > 0)
+                {
+                    _view.SetWorkOrders(result.Value.Items, result.Value.TotalPages);
+                }
+            }
+            finally
+            {
+                _isLoading = false;
+                _view.SetLoading(false);
+            }
+        }
 
         private async void OnLabelPrintingRequested(object? sender, LabelPrintingRequestedEventArgs e)
         {
@@ -148,43 +182,58 @@ namespace LASYS.DesktopApp.Presenters
 
         private async void OnPageNoChanged(object? sender, int pageNo)
         {
+            _ = HandlePageNoChangedAsync(pageNo);
+        }
+
+        private async Task HandlePageNoChangedAsync(int pageNo)
+        {
             if (_isLoading) return;
 
-            var result = await _mediator.Send(new GetWorkOrdersQuery("", 50, pageNo));
+            _isLoading = true;
+            _view.SetLoading(true);
+            _currentPage = pageNo;
 
-            if(result.IsSuccess && result.Value?.Items == null) return;                                     
-
-            //List<SampleData> data = result.Value!.Items.Select((wo, index) => new SampleData(
-            //    index + 1,
-            //    wo.ItemCode!,
-            //    wo.LotNo!,                                                                                                                                                            
-            //    wo.ExpDate!,
-            //    wo.PrintType!,
-            //    wo.Verdict!,
-            //    wo.DateApproved!,
-            //    wo.ProdQty,
-            //    wo.MasterLabelRevisionNo,
-            //    wo.LabelInsRevisionNo,
-            //    wo.UB_Qty.ToString(), wo.UB_LI_Status!,
-            //    wo.AUB_Qty.ToString(), wo.AUB_LI_Status!,
-            //    wo.OUB_Qty.ToString(), wo.OUB_LI_Status!
-            //)).ToList();
-            if (result.Value?.Items != null && result.Value.Items.Count > 0)
+            try
             {
-                _view.SetWorkOrders(result.Value.Items, result.Value.TotalPages);
+                var result = await _mediator.Send(new GetWorkOrdersQuery(_searchTerm, 50, pageNo));
+
+                if (result.IsSuccess && result.Value?.Items == null) return;
+
+                if (result.Value?.Items != null && result.Value.Items.Count > 0)
+                {
+                    _view.SetWorkOrders(result.Value.Items, result.Value.TotalPages);
+                }
+            }
+            finally
+            {
+                _isLoading = false;
+                _view.SetLoading(false);
             }
         }
 
-        private async void LoadWorkOrdersAsync()
+        private async Task LoadWorkOrdersAsync()
         {
-            var result = await _mediator.Send(new GetWorkOrdersQuery("", 50, 1));
+            if (_isLoading)
+                return;
 
-            if (result.Value?.Items != null && result.Value.Items.Count > 0)
+            _isLoading = true;
+            _view.SetLoading(true);
+
+            try
             {
-                _view.SetWorkOrders(result.Value.Items, result.Value.TotalPages);
-            }
+                var result = await _mediator.Send(new GetWorkOrdersQuery(_searchTerm, 50, 1));
 
-            _isLoading = false;
+                if (result.Value?.Items != null && result.Value.Items.Count > 0)
+                {
+                    _view.SetWorkOrders(result.Value.Items, result.Value.TotalPages);
+                }
+
+            }
+            finally
+            {
+                _isLoading = false;
+                _view.SetLoading(false);
+            }
         }
     }
 }
