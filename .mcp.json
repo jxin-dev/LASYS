@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "mysql": {
+      "command": "uvx",
+      "args": [
+        "mysql-mcp-server"
+      ],
+      "env": {
+        "MYSQL_URL": "mysql://admin:Passw0rd@localhost:3306/otpclasysdb"
+      }
+    }
+  }
+}

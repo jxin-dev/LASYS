@@ -8,7 +8,5 @@
         public string Notes { get; set; }
 
         public override string ToString() => $"{Width}x{Height} ({AspectRatio})";
-
-
     }
 }

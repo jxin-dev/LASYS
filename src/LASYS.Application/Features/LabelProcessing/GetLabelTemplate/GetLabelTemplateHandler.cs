@@ -23,7 +23,7 @@ namespace LASYS.Application.Features.LabelProcessing.LoadLabelTemplate
             //    return Result.Failure<string>($"No template path found for WorkOrderId: {request.WorkOrderId}");
            
             //var templatePath = ‪@"C:\Users\ITC - JAYSON OLICIA\Desktop\SRFF2032_ub_w manufacturedate.lbl";
-            var templatePath = @"C:\Users\ITC - JAYSON OLICIA\Desktop\SRFF2032_ub_w manufacturedate.lbl";
+            var templatePath = @"D:\ITC\LASYS\prn_template.prn";
            
             return Result.Success(templatePath);
         }

@@ -51,49 +51,53 @@ namespace LASYS.Application.Features.LabelProcessing.GetWorkOrders
 
                 var baseSql = @$"
                     FROM ppt_lbl_instructn_plns_hst inspln
-                        -- Added this subquery for MySQL 5.1 compatibility
-                        CROSS JOIN (
-                            SELECT COUNT(*) AS TotalCount 
-                            FROM ppt_lbl_instructn_plns_hst i
-                            INNER JOIN (
-                                SELECT item_code, lot_no, MAX(label_ins_rev_number) AS max_ins_rev 
-                                FROM ppt_lbl_instructn_plns_hst 
-                                GROUP BY item_code, lot_no
-                            ) f ON i.item_code = f.item_code 
-                               AND i.lot_no = f.lot_no 
-                               AND i.label_ins_rev_number = f.max_ins_rev
-                            INNER JOIN pre_tpc_products_tcl p ON i.item_code = p.item_code 
-                               AND i.master_label_revision_number = p.masterlabel_revision_number
-                            WHERE p.active_flag = '' 
-                              AND (
-                                  (i.UB_LBL_INS_STATUS IN (2,3) AND i.UB_LBL_INS_VERDICT = 2) OR  
-                                  (i.OUB_LBL_INS_STATUS IN (2,3) AND i.OUB_LBL_INS_VERDICT = 2) OR  
-                                  (i.OCB_LBL_INS_STATUS IN (2,3) AND i.OCB_LBL_INS_VERDICT = 2) OR  
-                                  (i.CB_LBL_INS_STATUS IN (2,3) AND i.CB_LBL_INS_VERDICT = 2)
-                              )
-                            {totalFilterClause}
-                        ) AS totals
-                        INNER JOIN pre_masterlabels_tcl mstlbltcl
-                            ON mstlbltcl.item_code = inspln.item_code
-                           AND mstlbltcl.masterlabel_revision_number = inspln.master_label_revision_number
-                        INNER JOIN pre_tpc_products_tcl prdct
-                            ON prdct.item_code = inspln.item_code
-                           AND prdct.masterlabel_revision_number = mstlbltcl.masterlabel_revision_number
+                    -- Added this subquery for MySQL 5.1 compatibility
+                    CROSS JOIN (
+                        SELECT COUNT(*) AS TotalCount
+                        FROM  ppt_lbl_instructn_plns_hst i
                         INNER JOIN (
-                            SELECT item_code, lot_no, MAX(label_ins_rev_number) AS max_ins_rev
-                            FROM ppt_lbl_instructn_plns_hst
-                            GROUP BY item_code, lot_no
-                        ) finalinspln
-                            ON finalinspln.item_code = inspln.item_code
-                           AND finalinspln.lot_no = inspln.lot_no
-                           AND finalinspln.max_ins_rev = inspln.label_ins_rev_number
+		                    SELECT item_code, lot_no, MAX(label_ins_rev_number) AS max_ins_rev
+		                    FROM ppt_lbl_instructn_plns_hst
+		                    GROUP BY item_code, lot_no
+	                    ) f ON i.item_code = f.item_code 
+                            AND i.lot_no = f.lot_no 
+                            AND i.label_ins_rev_number = f.max_ins_rev
+	                    INNER JOIN pre_masterlabels_tcl m 
+		                    ON m.item_code = i.item_code 
+		                    AND m.masterlabel_revision_number = i.master_label_revision_number
+                        INNER JOIN pre_tpc_products_tcl p 
+		                    ON p.item_code = i.item_code 
+		                    AND p.masterlabel_revision_number = m.masterlabel_revision_number
+	                    WHERE p.active_flag = '' 
+	                    AND (
+		                    (i.UB_LBL_INS_STATUS IN (2,3) AND i.UB_LBL_INS_VERDICT = 2 AND i.UB_Lbl_Status IN ('Not Printed','Partially Printed','Completely Printed')) OR
+		                    (i.OUB_LBL_INS_STATUS IN (2,3) AND i.OUB_LBL_INS_VERDICT = 2 AND i.OUB_Lbl_Status IN ('Not Printed','Partially Printed','Completely Printed')) OR
+		                    (i.OCB_LBL_INS_STATUS IN (2,3) AND i.OCB_LBL_INS_VERDICT = 2 AND i.OCB_Lbl_Status IN ('Not Printed','Partially Printed','Completely Printed')) OR
+		                    (i.CB_LBL_INS_STATUS IN (2,3) AND i.CB_LBL_INS_VERDICT = 2 AND i.CB_Lbl_Status IN ('Not Printed','Partially Printed','Completely Printed'))
+	                    )
+                        {totalFilterClause}
+                    ) AS totals
+                    INNER JOIN (
+                        SELECT item_code, lot_no, MAX(label_ins_rev_number) AS max_ins_rev
+                        FROM ppt_lbl_instructn_plns_hst
+                        GROUP BY item_code, lot_no
+                    ) finalinspln 
+                        ON inspln.item_code = finalinspln.item_code 
+                        AND inspln.lot_no = finalinspln.lot_no 
+                        AND inspln.label_ins_rev_number = finalinspln.max_ins_rev
+                    INNER JOIN pre_masterlabels_tcl mstlbltcl 
+                        ON mstlbltcl.item_code = inspln.item_code 
+                        AND mstlbltcl.masterlabel_revision_number = inspln.master_label_revision_number
+                    INNER JOIN pre_tpc_products_tcl prdct 
+                        ON prdct.item_code = inspln.item_code 
+                        AND prdct.masterlabel_revision_number = mstlbltcl.masterlabel_revision_number
                     WHERE prdct.active_flag = ''
                       AND (
                             (inspln.UB_LBL_INS_STATUS IN (2,3) AND inspln.UB_LBL_INS_VERDICT = 2 AND inspln.UB_Lbl_Status IN ('Not Printed','Partially Printed','Completely Printed')) OR
                             (inspln.OUB_LBL_INS_STATUS IN (2,3) AND inspln.OUB_LBL_INS_VERDICT = 2 AND inspln.OUB_Lbl_Status IN ('Not Printed','Partially Printed','Completely Printed')) OR
                             (inspln.OCB_LBL_INS_STATUS IN (2,3) AND inspln.OCB_LBL_INS_VERDICT = 2 AND inspln.OCB_Lbl_Status IN ('Not Printed','Partially Printed','Completely Printed')) OR
                             (inspln.CB_LBL_INS_STATUS IN (2,3) AND inspln.CB_LBL_INS_VERDICT = 2 AND inspln.CB_Lbl_Status IN ('Not Printed','Partially Printed','Completely Printed'))
-                          )
+                      )
                       {filterClause}";
 
                 int pageNo = Math.Max(1, request.pageNo);
@@ -103,7 +107,7 @@ namespace LASYS.Application.Features.LabelProcessing.GetWorkOrders
                 parameters.Add("@offset", offset);
 
                 var query = @$"
-                    SELECT totals.TotalCount, -- Replaced COUNT(*) OVER(),
+                    SELECT totals.TotalCount,
                            inspln.Item_Code AS 'ItemCode',
                            inspln.Lot_No AS 'LotNo',
                            IF (mstlbltcl.UDI = 1,
