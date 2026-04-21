@@ -40,7 +40,7 @@
             Icon = (Icon)resources.GetObject("$this.Icon");
             Name = "MainForm";
             StartPosition = FormStartPosition.CenterScreen;
-            Text = "MainForm";
+            Text = "Main Dashboard";
             WindowState = FormWindowState.Maximized;
             ResumeLayout(false);
         }
