@@ -9,6 +9,7 @@ namespace LASYS.DesktopApp.Views.Forms
         public OcrItemLookupForm()
         {
             InitializeComponent();
+            this.ShowInTaskbar = false;
 
             _gridWithPagination = new GridViewWithPagination
             {
