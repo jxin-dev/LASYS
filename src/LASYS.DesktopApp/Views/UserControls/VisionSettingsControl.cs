@@ -4,7 +4,6 @@ using LASYS.Application.Features.OCRCalibration.GetOcrSupportedItems;
 using LASYS.DesktopApp.Events;
 using LASYS.DesktopApp.Views.Interfaces;
 using LASYS.UIControls.Controls;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace LASYS.DesktopApp.Views.UserControls
 {
@@ -27,6 +26,7 @@ namespace LASYS.DesktopApp.Views.UserControls
         private string _selectedFilePath = string.Empty;
 
         private Button? _printSampleLabelButton;
+        private Button? _btnTestOcr;
 
         private RichTextBox? _richTextOCRResult;
 
@@ -323,6 +323,8 @@ namespace LASYS.DesktopApp.Views.UserControls
             base.OnLoad(e);
             LoadCamerasRequested?.Invoke(this, EventArgs.Empty);
         }
+
+
 
         private void CameraSettings()
         {
@@ -625,6 +627,10 @@ namespace LASYS.DesktopApp.Views.UserControls
             _focusOverlay.Top = 10;
         }
 
+        public void SetTestButtonText(string text)
+        {
+            _btnTestOcr!.Text = text;
+        }
         private void OCRRegionCalibration()
         {
             var container = new Panel
@@ -908,9 +914,9 @@ namespace LASYS.DesktopApp.Views.UserControls
             buttonPanel.Controls.Add(btnSaveRegion, 0, 0);
 
             // OCR Read button
-            var btnTestOcr = new Button
+            _btnTestOcr = new Button
             {
-                Text = "Test OCR",
+                Text = "Run OCR",
                 Width = 120,
                 Height = 35,
                 AutoSize = true,
@@ -927,7 +933,7 @@ namespace LASYS.DesktopApp.Views.UserControls
                 },
                 Cursor = Cursors.Hand
             };
-            buttonPanel.Controls.Add(btnTestOcr, 1, 0);
+            buttonPanel.Controls.Add(_btnTestOcr, 1, 0);
 
             //sample data
             //_txtItemCode.Text = "SR*FF2032";
@@ -953,7 +959,7 @@ namespace LASYS.DesktopApp.Views.UserControls
                 SaveCalibrationClicked?.Invoke(this, new CalibrationEventArgs(_roi, picCameraPreview.Size, picCameraPreview.Image?.Size ?? Size.Empty, _txtItemCode.Text.Trim(), revision, boxType));
             };
 
-            btnTestOcr.Click += delegate
+            _btnTestOcr.Click += delegate
             {
 
                 // Try to parse the coordinate values from the textboxes
@@ -1202,6 +1208,8 @@ namespace LASYS.DesktopApp.Views.UserControls
         {
             MessageBox.Show(message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
+
+      
     }
 }
 public static class ControlExtensions

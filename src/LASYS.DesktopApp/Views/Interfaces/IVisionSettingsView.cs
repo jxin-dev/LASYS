@@ -14,6 +14,7 @@ namespace LASYS.DesktopApp.Views.Interfaces
         void PreviewOCRRegion(Rectangle viewerRegion);
         void DisplayOCRResult(string result);
         void TestOCRTCompleted();
+        void SetTestButtonText(string text);
         void DisplayFrame(Bitmap bitmap);
 
         event EventHandler<int> FocusValueChanged;

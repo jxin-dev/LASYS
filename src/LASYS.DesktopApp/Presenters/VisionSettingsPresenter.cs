@@ -279,60 +279,95 @@ namespace LASYS.DesktopApp.Presenters
 
         }
 
-        private readonly SemaphoreSlim _ocrLock = new(1, 1);
-        private async void OnOCRTriggered(object? sender, OCRCoordinatesEventArgs e)
-        {
-            if (!await _ocrLock.WaitAsync(0))
-            {
-                _view.InvokeOnUI(() => _view.DisplayOCRResult("OCR is already running. Please wait..."));
-                return;
-            }
+        private CancellationTokenSource? _ocrCts;
 
+        private async Task RunOcrTest(OCRCoordinatesEventArgs e, CancellationToken token)
+        {
             try
             {
-                ConcurrentBag<string> ocrResults = new();
-                int ocrCounter = 0;
-
-
-                var tasks = new List<Task>();
+                var summary = new ConcurrentDictionary<string, int>();
+                int counter = 0;
 
                 for (int i = 0; i < 50; i++)
                 {
+                    token.ThrowIfCancellationRequested();
+
                     var snapshot = _cameraService.GetSnapshot();
                     if (snapshot == null)
                         continue;
 
-                    tasks.Add(Task.Run(async () =>
-                    {
-                        var result = await _ocrService.ReadTextAsync(
-                            snapshot,
-                            _view.PictureBoxSize,
-                            e.X, e.Y, e.Width, e.Height,
-                            e.ImageWidth, e.ImageHeight);
+                    var result = await _ocrService.ReadTextAsync(
+                        snapshot,
+                        _view.PictureBoxSize,
+                        e.X, e.Y, e.Width, e.Height,
+                        e.ImageWidth, e.ImageHeight);
 
-                        var count = Interlocked.Increment(ref ocrCounter);
-                        if (!string.IsNullOrWhiteSpace(result))
-                        {
-                            ocrResults.Add(result);
-                            _view.InvokeOnUI(() => _view.DisplayOCRResult($"[{count}] {result}"));
-                        }
-                        else
-                        {
-                            _view.InvokeOnUI(() => _view.DisplayOCRResult($"[{count}] No text detected"));
-                        }
-                    }));
+                    var count = Interlocked.Increment(ref counter);
 
-                    await Task.Delay(1000);
+                    var key = string.IsNullOrWhiteSpace(result)
+                        ? "No text detected"
+                        : result.Trim();
+
+                    summary.AddOrUpdate(key, 1, (_, old) => old + 1);
+
+                    _view.InvokeOnUI(() =>
+                        _view.DisplayOCRResult($"[{count}] {key}")
+                    );
+
+                    await Task.Delay(1000, token); // cancellable delay
                 }
 
-                await Task.WhenAll(tasks);
-                _view.InvokeOnUI(() => _view.DisplayOCRResult($"Stress test completed. Text detected: {ocrResults.Count}"));
-                _view.InvokeOnUI(() => _view.TestOCRTCompleted());
+                // SUMMARY OUTPUT
+                _view.InvokeOnUI(() =>
+                {
+                    _view.DisplayOCRResult("----- SUMMARY -----");
 
+                    foreach (var item in summary
+                        .OrderByDescending(x => x.Value) 
+                        .ThenBy(x => x.Key))             
+                    {
+                        _view.DisplayOCRResult($"{item.Key} → {item.Value}");
+                    }
+
+                    _view.DisplayOCRResult($"Total Runs: {counter}");
+                });
+            }
+            catch (OperationCanceledException)
+            {
+                _view.InvokeOnUI(() =>
+                    _view.DisplayOCRResult("OCR test cancelled."));
             }
             finally
             {
-                _ocrLock.Release();
+                _view.InvokeOnUI(() =>
+                    _view.TestOCRTCompleted());
+            }
+        }
+        private async void OnOCRTriggered(object? sender, OCRCoordinatesEventArgs e)
+        {
+            if (e.X == 0 || e.Y == 0 || e.Width == 0 || e.Height == 0 || e.ImageWidth == 0 || e.ImageHeight == 0)
+            {
+                _view.DisplayOCRResult("OCR failed: No coordinates selected.");
+                return;
+            }
+
+            if (_ocrCts != null)
+            {
+                _ocrCts.Cancel();
+                return;
+            }
+
+            _ocrCts = new CancellationTokenSource();
+            _view.InvokeOnUI(() => _view.SetTestButtonText("Cancel OCR"));
+
+            try
+            {
+                await RunOcrTest(e, _ocrCts.Token);
+            }
+            finally
+            {
+                _ocrCts = null;
+                _view.SetTestButtonText("Run OCR");
             }
 
         }
