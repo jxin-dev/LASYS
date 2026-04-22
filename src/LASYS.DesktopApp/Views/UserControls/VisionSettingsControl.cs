@@ -4,6 +4,7 @@ using LASYS.Application.Features.OCRCalibration.GetOcrSupportedItems;
 using LASYS.DesktopApp.Events;
 using LASYS.DesktopApp.Views.Interfaces;
 using LASYS.UIControls.Controls;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace LASYS.DesktopApp.Views.UserControls
 {
@@ -305,16 +306,6 @@ namespace LASYS.DesktopApp.Views.UserControls
 
 
                     OcrItemChosen?.Invoke(data);
-
-                    _txtItemCode.Text = data.ItemCode.Trim();
-                    _txtRevisionNumber.Text = data.RevisionNo.ToString();
-                    _txtBoxType.Text = data.BoxType;
-                    _txtX.Text = data.Coordinates.X.ToString();
-                    _txtY.Text = data.Coordinates.Y.ToString();
-                    _txtWidth.Text = data.Coordinates.Width.ToString();
-                    _txtHeight.Text = data.Coordinates.Height.ToString();
-                    _txtImgWidth.Text = data.Coordinates.ImageWidth.ToString();
-                    _txtImgHeight.Text = data.Coordinates.ImageHeight.ToString();
                 }
             };
 
@@ -1189,12 +1180,22 @@ namespace LASYS.DesktopApp.Views.UserControls
             picCameraPreview.Invalidate();
         }
 
-        public void SetSelectedOcrItem(OcrSupportedItemDto selected)
+        public void SetSelectedOcrItem(OcrSupportedItemDto selected, Coordinates? coordinates = null)
         {
             _txtItemCode!.Text = selected.ItemCode.Trim();
             _txtRevisionNumber!.Text = selected.RevisionNumber.ToString();
             _txtBoxType!.Text = selected.BoxType;
             _selectedFilePath = selected.FilePath;
+            
+            if (coordinates != null)
+            {
+                _txtX!.Text = coordinates.X.ToString();
+                _txtY!.Text = coordinates.Y.ToString();
+                _txtWidth!.Text = coordinates.Width.ToString();
+                _txtHeight!.Text = coordinates.Height.ToString();
+                _txtImgWidth!.Text = coordinates.ImageWidth.ToString();
+                _txtImgHeight!.Text = coordinates.ImageHeight.ToString();
+            }
         }
 
         public void ShowError(string message)

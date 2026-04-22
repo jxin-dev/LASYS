@@ -80,7 +80,7 @@ namespace LASYS.DesktopApp.Presenters
                 return;
             }
 
-            _view.SetSelectedOcrItem(new(product.ItemCode, (uint)product.RevisionNo, product.BoxType, filePath));
+            _view.SetSelectedOcrItem(new(product.ItemCode, (uint)product.RevisionNo, product.BoxType, filePath), product.Coordinates);
 
         }
 
@@ -90,7 +90,7 @@ namespace LASYS.DesktopApp.Presenters
             var selected = ocrItemLookupPresenter.Show();
             if (selected != null)
             {
-                _view.InvokeOnUI(() => _view.SetSelectedOcrItem(selected));
+                _view.InvokeOnUI(() => _view.SetSelectedOcrItem(selected, null));
             }
         }
 
