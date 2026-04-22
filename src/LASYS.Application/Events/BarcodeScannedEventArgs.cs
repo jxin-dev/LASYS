@@ -8,7 +8,7 @@
         public BarcodeScannedEventArgs(string value)
         {
             Value = value;
-            Timestamp = DateTime.UtcNow;
+            Timestamp = DateTime.Now;
         }
 
     }

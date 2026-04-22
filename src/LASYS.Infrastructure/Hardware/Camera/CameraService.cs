@@ -191,8 +191,8 @@ namespace LASYS.Infrastructure.Hardware.Camera
             _streamingTask = Task.Factory.StartNew(() =>
             {
                 var frameInterval = TimeSpan.FromMilliseconds(100);
-                var lastUpdate = DateTime.UtcNow;
-
+                var lastUpdate = DateTime.Now;
+                    
                 while (!token.IsCancellationRequested)
                 {
                     if (!IsCameraReady())
@@ -220,11 +220,11 @@ namespace LASYS.Infrastructure.Hardware.Camera
                         continue;
                     }
 
-                    var elapsed = DateTime.UtcNow - lastUpdate;
+                    var elapsed = DateTime.Now - lastUpdate;
                     if (elapsed < frameInterval)
                         Thread.Sleep(frameInterval - elapsed);
 
-                    lastUpdate = DateTime.UtcNow;
+                    lastUpdate = DateTime.Now;
 
                     var targetSize = getTargetResolution();
                     Cv2.Resize(frame, resized, new OpenCvSharp.Size(targetSize.Width, targetSize.Height));

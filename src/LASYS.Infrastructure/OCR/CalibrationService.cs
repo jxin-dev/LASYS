@@ -80,7 +80,7 @@ namespace LASYS.Infrastructure.OCR
             {
                 //Update
                 existingProduct.Coordinates = coordinates;
-                existingProduct.RegisteredAt = DateTime.UtcNow;
+                existingProduct.RegisteredAt = DateTime.Now;
             }
             else
             {
@@ -91,7 +91,7 @@ namespace LASYS.Infrastructure.OCR
                     RevisionNo = revision,
                     BoxType = boxType,
                     Coordinates = coordinates,
-                    RegisteredAt = DateTime.UtcNow
+                    RegisteredAt = DateTime.Now
                 });
             }
 

@@ -275,7 +275,7 @@ namespace LASYS.Application.Features.LabelProcessing.Services
                                     barcodeResult: scannedBarcode),
                                 token);
 
-                            _decisionHistory.Add(new OperatorDecisionLog(currentSequence, "Barcode Validation", decision, DateTime.UtcNow));
+                            _decisionHistory.Add(new OperatorDecisionLog(currentSequence, "Barcode Validation", decision, DateTime.Now));
 
                             if (decision == OperatorDecision.Retry)
                                 continue;
@@ -364,8 +364,8 @@ namespace LASYS.Application.Features.LabelProcessing.Services
                                         sequenceNo: formattedSequence,
                                         ocrResult: ocrResult),
                                     token);
-
-                                _decisionHistory.Add(new OperatorDecisionLog(currentSequence, "OCR Validation", decision, DateTime.UtcNow));
+                                    
+                                _decisionHistory.Add(new OperatorDecisionLog(currentSequence, "OCR Validation", decision, DateTime.Now));
 
                                 if (decision == OperatorDecision.Retry)
                                     continue;
