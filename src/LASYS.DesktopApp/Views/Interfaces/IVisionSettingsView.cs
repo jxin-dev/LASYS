@@ -1,4 +1,5 @@
 ﻿using LASYS.Application.Contracts;
+using LASYS.Application.Features.OCRCalibration.GetOcrSupportedItems;
 using LASYS.DesktopApp.Events;
 using DrawingSize = System.Drawing.Size;
 
@@ -40,5 +41,9 @@ namespace LASYS.DesktopApp.Views.Interfaces
         void ShowCameraNotification(string message, string caption, bool isError = false);
 
         event EventHandler SelectOcrItemRequested;
+        void SetSelectedOcrItem(OcrSupportedItemDto selected);
+
+        event Action<Product> OcrItemChosen;
+        void ShowError(string message);
     }
 }

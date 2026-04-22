@@ -1,7 +1,7 @@
 ﻿using System.Reflection;
 using LASYS.Application.Contracts;
+using LASYS.Application.Features.OCRCalibration.GetOcrSupportedItems;
 using LASYS.DesktopApp.Events;
-using LASYS.DesktopApp.Presenters;
 using LASYS.DesktopApp.Views.Interfaces;
 using LASYS.UIControls.Controls;
 
@@ -23,6 +23,7 @@ namespace LASYS.DesktopApp.Views.UserControls
         private TextBox? _txtImgHeight;
         private TextBox? _txtBoxType;
 
+        private string _selectedFilePath = string.Empty;
 
         private Button? _printSampleLabelButton;
 
@@ -62,6 +63,7 @@ namespace LASYS.DesktopApp.Views.UserControls
         public event EventHandler<string>? CameraResolutionSelected;
         public event EventHandler<OCRCoordinatesEventArgs>? OCRCalibrationPreview;
         public event EventHandler? SelectOcrItemRequested;
+        public event Action<Product>? OcrItemChosen;
 
         private Rectangle _roi;
         private Point _startPoint;
@@ -300,6 +302,9 @@ namespace LASYS.DesktopApp.Views.UserControls
                                                                       data.Coordinates.Height,
                                                                       data.Coordinates.ImageWidth,
                                                                       data.Coordinates.ImageHeight));
+
+
+                    OcrItemChosen?.Invoke(data);
 
                     _txtItemCode.Text = data.ItemCode.Trim();
                     _txtRevisionNumber.Text = data.RevisionNo.ToString();
@@ -803,6 +808,11 @@ namespace LASYS.DesktopApp.Views.UserControls
 
             labelInfoLayout.Controls.Add(_printSampleLabelButton, 4, 1);
 
+            _printSampleLabelButton.Click += (sender, e) => 
+            {
+                MessageBox.Show(_selectedFilePath);
+            };
+
             labelInfoLayout.Paint += (s, e) =>
             {
                 if (s is not TableLayoutPanel panel)
@@ -966,6 +976,7 @@ namespace LASYS.DesktopApp.Views.UserControls
                 OCRTriggered?.Invoke(this, new OCRCoordinatesEventArgs(x, y, width, height, imgWidth, imgHeight));
             };
         }
+
 
         public void UpdateCoordinateFields(Rectangle imageRegion, Size imageSize)
         {
@@ -1176,6 +1187,19 @@ namespace LASYS.DesktopApp.Views.UserControls
         public void TestOCRTCompleted()
         {
             picCameraPreview.Invalidate();
+        }
+
+        public void SetSelectedOcrItem(OcrSupportedItemDto selected)
+        {
+            _txtItemCode!.Text = selected.ItemCode.Trim();
+            _txtRevisionNumber!.Text = selected.RevisionNumber.ToString();
+            _txtBoxType!.Text = selected.BoxType;
+            _selectedFilePath = selected.FilePath;
+        }
+
+        public void ShowError(string message)
+        {
+            MessageBox.Show(message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }
 }

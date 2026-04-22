@@ -2,9 +2,11 @@
 using System.Diagnostics;
 using LASYS.Application.Contracts;
 using LASYS.Application.Events;
+using LASYS.Application.Features.OCRCalibration.GetOcrLabelFilePath;
 using LASYS.Application.Interfaces.Services;
 using LASYS.DesktopApp.Events;
 using LASYS.DesktopApp.Views.Interfaces;
+using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using OpenCvSharp;
 using DrawingSize = System.Drawing.Size;
@@ -19,8 +21,9 @@ namespace LASYS.DesktopApp.Presenters
         private readonly ICalibrationService _calibrationService;
         private readonly ICameraService _cameraService;
         private readonly IServiceProvider _serviceProvider;
+        private readonly IMediator _mediator;
 
-        public VisionSettingsPresenter(IVisionSettingsView view, ICameraService cameraService, IOCRService ocrService, ICalibrationService calibrationService, IServiceProvider serviceProvider)
+        public VisionSettingsPresenter(IVisionSettingsView view, ICameraService cameraService, IOCRService ocrService, ICalibrationService calibrationService, IServiceProvider serviceProvider, IMediator mediator)
         {
             _view = view;
             View = (UserControl)view;
@@ -29,6 +32,7 @@ namespace LASYS.DesktopApp.Presenters
             _ocrService = ocrService;
             _calibrationService = calibrationService;
             _serviceProvider = serviceProvider;
+            _mediator = mediator;
 
 
             _view.InitializeRequested += OnInitializeRequested;
@@ -54,12 +58,40 @@ namespace LASYS.DesktopApp.Presenters
             _view.CameraConfigurationSaved += OnCameraConfigurationSaved;
 
             _view.SelectOcrItemRequested += OnSelectOcrItemRequested;
+            _view.OcrItemChosen += OnOcrItemChosen;
+        }
+
+        private async void OnOcrItemChosen(Product product)
+        {
+            var result = await _mediator.Send(new GetOcrLabelFilePathQuery(
+                product.ItemCode,(uint)product.RevisionNo,product.BoxType));
+
+            if (!result.IsSuccess)
+            {
+                _view.ShowError(result.ErrorOrDefault ?? "No file path found.");
+                return;
+            }
+
+            var filePath = result.Value;
+
+            if (string.IsNullOrWhiteSpace(filePath))
+            {
+                _view.ShowError("Invalid file path.");
+                return;
+            }
+
+            _view.SetSelectedOcrItem(new(product.ItemCode, (uint)product.RevisionNo, product.BoxType, filePath));
+
         }
 
         private void OnSelectOcrItemRequested(object? sender, EventArgs e)
         {
             var ocrItemLookupPresenter = _serviceProvider.GetRequiredService<OcrItemLookupPresenter>();
-            ocrItemLookupPresenter.Show();
+            var selected = ocrItemLookupPresenter.Show();
+            if (selected != null)
+            {
+                _view.InvokeOnUI(() => _view.SetSelectedOcrItem(selected));
+            }
         }
 
         private void OnOCRRegionPreview(object? sender, OCRRegionEventArgs e)
@@ -302,7 +334,7 @@ namespace LASYS.DesktopApp.Presenters
             {
                 _ocrLock.Release();
             }
-         
+
         }
 
         private async void OnLoadRegisteredOcrItemsRequested(object? sender, EventArgs e)
@@ -352,6 +384,6 @@ namespace LASYS.DesktopApp.Presenters
                 Debug.WriteLine(ex);
             }
         }
-        
+
     }
 }
