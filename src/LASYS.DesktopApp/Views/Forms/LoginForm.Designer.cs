@@ -128,11 +128,11 @@
             label2.AutoSize = true;
             label2.Font = new Font("Segoe UI Semibold", 12F, FontStyle.Bold, GraphicsUnit.Point, 0);
             label2.ForeColor = Color.SeaGreen;
-            label2.Location = new Point(42, 130);
+            label2.Location = new Point(63, 130);
             label2.Name = "label2";
-            label2.Size = new Size(184, 21);
+            label2.Size = new Size(144, 21);
             label2.TabIndex = 8;
-            label2.Text = "Label Assurance System";
+            label2.Text = "LASYS Application";
             label2.TextAlign = ContentAlignment.TopCenter;
             // 
             // panel1
