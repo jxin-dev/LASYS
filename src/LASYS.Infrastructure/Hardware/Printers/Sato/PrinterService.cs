@@ -440,7 +440,7 @@ namespace LASYS.Infrastructure.Hardware.Printers.Sato
                 }
 
                 _label.PrinterName = _printerName;
-                _label.PrinterPort = dirPrn; // LabelGallery uses this as the output directory for file printing
+                _label.PrinterPort = dirPrn;
 
                 return RunFuncWithRetry(() =>
                 {

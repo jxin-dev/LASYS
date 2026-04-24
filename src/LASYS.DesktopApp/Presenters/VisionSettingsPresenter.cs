@@ -3,6 +3,7 @@ using System.Diagnostics;
 using LASYS.Application.Contracts;
 using LASYS.Application.Events;
 using LASYS.Application.Features.OCRCalibration.GetOcrLabelFilePath;
+using LASYS.Application.Features.OCRCalibration.PrintLabel;
 using LASYS.Application.Interfaces.Services;
 using LASYS.DesktopApp.Events;
 using LASYS.DesktopApp.Views.Interfaces;
@@ -59,6 +60,13 @@ namespace LASYS.DesktopApp.Presenters
 
             _view.SelectOcrItemRequested += OnSelectOcrItemRequested;
             _view.OcrItemChosen += OnOcrItemChosen;
+            _view.PrintLabelRequested += OnPrintLabelRequested;
+        }
+
+        private void OnPrintLabelRequested(object? sender, PrintLabelEventArgs e)
+        {
+            var result = _mediator.Send(new PrintLabelCommand(e.ItemCode, e.RevisionNumber, e.BoxType, e.FilePath));
+
         }
 
         private async void OnOcrItemChosen(Product product)

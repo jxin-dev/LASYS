@@ -1,4 +1,5 @@
 ﻿using LASYS.Application.Contracts;
+using LASYS.Application.Events;
 using LASYS.Application.Features.OCRCalibration.GetOcrSupportedItems;
 using LASYS.DesktopApp.Events;
 using DrawingSize = System.Drawing.Size;
@@ -46,5 +47,6 @@ namespace LASYS.DesktopApp.Views.Interfaces
 
         event Action<Product> OcrItemChosen;
         void ShowError(string message);
+        event EventHandler<PrintLabelEventArgs> PrintLabelRequested;
     }
 }

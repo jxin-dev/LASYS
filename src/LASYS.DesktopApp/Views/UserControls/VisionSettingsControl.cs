@@ -1,5 +1,6 @@
 ﻿using System.Reflection;
 using LASYS.Application.Contracts;
+using LASYS.Application.Events;
 using LASYS.Application.Features.OCRCalibration.GetOcrSupportedItems;
 using LASYS.DesktopApp.Events;
 using LASYS.DesktopApp.Views.Interfaces;
@@ -65,6 +66,7 @@ namespace LASYS.DesktopApp.Views.UserControls
         public event EventHandler<OCRCoordinatesEventArgs>? OCRCalibrationPreview;
         public event EventHandler? SelectOcrItemRequested;
         public event Action<Product>? OcrItemChosen;
+        public event EventHandler<PrintLabelEventArgs>? PrintLabelRequested;
 
         private Rectangle _roi;
         private Point _startPoint;
@@ -257,8 +259,6 @@ namespace LASYS.DesktopApp.Views.UserControls
             };
 
         }
-
-
 
         private void LoadRegisteredItem()
         {
@@ -807,7 +807,7 @@ namespace LASYS.DesktopApp.Views.UserControls
 
             _printSampleLabelButton.Click += (sender, e) => 
             {
-                MessageBox.Show(_selectedFilePath);
+                PrintLabelRequested?.Invoke(this, new PrintLabelEventArgs(_txtItemCode!.Text.Trim(), int.Parse(_txtRevisionNumber!.Text.Trim()), _txtBoxType!.Text.Trim(), _selectedFilePath));
             };
 
             labelInfoLayout.Paint += (s, e) =>
