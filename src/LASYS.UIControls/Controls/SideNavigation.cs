@@ -138,15 +138,17 @@ namespace LASYS.UIControls.Controls
 
             if (item.SubItems != null && item.SubItems.Any())
             {
-                foreach (var sub in item.SubItems)
+                foreach (var sub in item.SubItems.AsEnumerable().Reverse())
                 {
                     var subButton = CreateButton(sub, isSub: true);
                     subButton.Visible = false;
 
                     subList.Add((sub, subButton));
-                    //Controls.Add(subButton);
+
+                    int parentIndex = _menuPanel.Controls.GetChildIndex(mainButton);
+
                     _menuPanel.Controls.Add(subButton);
-                    _menuPanel.Controls.SetChildIndex(subButton, 0);
+                    _menuPanel.Controls.SetChildIndex(subButton, parentIndex);
 
                 }
 
@@ -154,7 +156,6 @@ namespace LASYS.UIControls.Controls
             }
 
             RearrangeButtons();
-            //Controls.SetChildIndex(_profilePanel, 0);
         }
 
         private NavButton CreateButton(NavItem item, bool isSub = false)
