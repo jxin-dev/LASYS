@@ -1,6 +1,6 @@
 ﻿namespace LASYS.Application.Common.Enums
 {
-    public enum PrintingState
+    public enum PrintJobState
     {
         Initializing,
         Idle,
