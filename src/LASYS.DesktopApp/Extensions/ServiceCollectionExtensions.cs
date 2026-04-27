@@ -3,6 +3,7 @@ using LASYS.Application.Interfaces;
 using LASYS.Application.Interfaces.Context;
 using LASYS.DesktopApp.Presenters;
 using LASYS.DesktopApp.Services.Context;
+using LASYS.DesktopApp.State.Printing;
 using LASYS.DesktopApp.Views.Forms;
 using LASYS.DesktopApp.Views.Interfaces;
 using LASYS.DesktopApp.Views.UserControls;
@@ -50,6 +51,8 @@ namespace LASYS.DesktopApp.Extensions
 
             // Services
             services.AddSingleton<ICurrentUser, CurrentUser>();
+
+            services.AddSingleton<IPrintingState, PrintingState>();
 
 
             return services;

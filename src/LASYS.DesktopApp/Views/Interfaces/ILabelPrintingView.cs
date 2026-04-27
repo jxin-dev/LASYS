@@ -18,7 +18,7 @@ namespace LASYS.DesktopApp.Views.Interfaces
         void InvokeOnUI(Action action);
         void AddLog(MessageType type, DateTime timeStamp, string message);
 
-        void SetPrintingState(PrintingState state);
+        void SetPrintingState(PrintJobState state);
         void UpdateWorkOrderData(WorkOrderDto workOrderDto);
         void UpdatePrintData(PrintData printData);
 

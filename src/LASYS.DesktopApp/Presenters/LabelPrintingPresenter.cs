@@ -13,6 +13,7 @@ using Microsoft.Extensions.DependencyInjection;
 using LASYS.DesktopApp.Events;
 using LASYS.Application.Common.Models;
 using LASYS.Application.Interfaces.Services;
+using LASYS.DesktopApp.State.Printing;
 
 namespace LASYS.DesktopApp.Presenters
 {
@@ -25,6 +26,7 @@ namespace LASYS.DesktopApp.Presenters
         private readonly IMediator _mediator;
         private readonly ILabelProcessingService _labelProcessingService;
         private readonly IPrinterService _printerService;
+        private readonly IPrintingState _printingState;
 
         private PrintData _printData;
 
@@ -33,7 +35,8 @@ namespace LASYS.DesktopApp.Presenters
                                       IServiceProvider services,
                                       IMediator mediator,
                                       ILabelProcessingService labelProcessingService,
-                                      IPrinterService printerService)
+                                      IPrinterService printerService,
+                                      IPrintingState printingState)
         {
             _view = view;
             _mainView = mainView;
@@ -42,6 +45,10 @@ namespace LASYS.DesktopApp.Presenters
             _labelProcessingService = labelProcessingService;
 
             View = (UserControl)view;
+
+            _printerService = printerService;
+            _printingState = printingState;
+
 
             _view.BackToWorkOrdersRequested += OnBackToWorkOrdersRequested;
             _view.PrintRequested += OnPrintRequested;
@@ -53,7 +60,7 @@ namespace LASYS.DesktopApp.Presenters
             _labelProcessingService.LogGenerated += OnLogGenerated;
             _labelProcessingService.PrintControlsStateChanged += OnPrintControlsStateChanged;
             _labelProcessingService.DeviceStatusChanged += OnDeviceStatusChanged;
-            _printerService = printerService;
+         
         }
 
         private void OnDeviceStatusChanged(object? sender, DeviceStatusEventArgs e)
@@ -74,7 +81,7 @@ namespace LASYS.DesktopApp.Presenters
             }
         }
 
-        private void OnPrintControlsStateChanged(object? sender, PrintingState e)
+        private void OnPrintControlsStateChanged(object? sender, PrintJobState e)
         {
             _view.InvokeOnUI(() => _view.SetPrintingState(e));
         }
@@ -151,8 +158,15 @@ namespace LASYS.DesktopApp.Presenters
 
         private void OnBackToWorkOrdersRequested(object? sender, EventArgs e)
         {
+            if (_printingState.Status is PrintingStatus.Printing or PrintingStatus.Paused)
+            {
+                _mainView.ShowNavigationBlocked("Cannot navigate while printing is in progress.");
+                return;
+            }
+
             var workOrdersPresenter = _services.GetRequiredService<WorkOrdersPresenter>();
             _mainView?.LoadView(workOrdersPresenter.View, false); //always new
+            _mainView?.SetActiveNavigation(_mainView.WorkOrdersNavItem);
         }
 
         private void OnStopPrintingRequested(object? sender, EventArgs e)
@@ -172,6 +186,7 @@ namespace LASYS.DesktopApp.Presenters
 
         private async void OnPrintRequested(object? sender, EventArgs e)
         {
+            _printingState.SetPrinting(PrintingStatus.Printing);
             try
             {
                 if (_printData == null)

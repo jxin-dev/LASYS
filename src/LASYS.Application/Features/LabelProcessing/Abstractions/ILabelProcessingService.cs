@@ -16,10 +16,10 @@ namespace LASYS.Application.Features.LabelProcessing.Abstractions
         void Stop();
 
         event EventHandler<LogEventArgs> LogGenerated;
-        event EventHandler<PrintingState> PrintControlsStateChanged;
+        event EventHandler<PrintJobState> PrintControlsStateChanged;
         event EventHandler<OperatorDecisionRequiredEventArgs> DecisionRequired;
         event EventHandler<DeviceStatusEventArgs> DeviceStatusChanged;
-        void NotifyStatus(PrintingState status);
+        void NotifyStatus(PrintJobState status);
 
         IEnumerable<DeviceStatusEventArgs> GetCurrentDeviceStatuses();
     }

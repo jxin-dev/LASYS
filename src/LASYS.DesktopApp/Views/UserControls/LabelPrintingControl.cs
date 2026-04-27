@@ -22,7 +22,7 @@ namespace LASYS.DesktopApp.Views.UserControls
         public event EventHandler? ResumePrintingRequested;
         public event EventHandler? StopPrintingRequested;
 
-        private PrintingState _currentState = PrintingState.Initializing;
+        private PrintJobState _currentState = PrintJobState.Initializing;
 
         private readonly DraggableResizerPanel _resizablePanel;
 
@@ -81,7 +81,7 @@ namespace LASYS.DesktopApp.Views.UserControls
 
             btnPrint.Click += (_, _) =>
             {
-                if (_currentState == PrintingState.Idle)
+                if (_currentState == PrintJobState.Idle)
                 {
                     PrintRequested?.Invoke(this, EventArgs.Empty);
                 }
@@ -94,11 +94,11 @@ namespace LASYS.DesktopApp.Views.UserControls
 
             btnPauseResume.Click += (_, _) =>
             {
-                if (_currentState == PrintingState.Printing)
+                if (_currentState == PrintJobState.Printing)
                 {
                     PausePrintingRequested?.Invoke(this, EventArgs.Empty);
                 }
-                else if (_currentState == PrintingState.Paused)
+                else if (_currentState == PrintJobState.Paused)
                 {
                     ResumePrintingRequested?.Invoke(this, EventArgs.Empty);
                 }
@@ -481,20 +481,20 @@ namespace LASYS.DesktopApp.Views.UserControls
             };
         }
 
-        public void SetPrintingState(PrintingState state)
+        public void SetPrintingState(PrintJobState state)
         {
             _currentState = state;
             switch (state)
             {
-                case PrintingState.Initializing:
+                case PrintJobState.Initializing:
                     btnPrint.Visible = false;
                     btnPauseResume.Visible = false;
                     ClearLogs();
 
                     break;
-                case PrintingState.Idle:
-                case PrintingState.Stopped:
-                case PrintingState.Completed:
+                case PrintJobState.Idle:
+                case PrintJobState.Stopped:
+                case PrintJobState.Completed:
                     btnPauseResume.Visible = false;
                     btnPrint.Visible = true;
                     btnPrint.Text = "Start Print";
@@ -503,7 +503,7 @@ namespace LASYS.DesktopApp.Views.UserControls
                     btnPrint.BackColor = Color.SeaGreen;
                     break;
 
-                case PrintingState.Printing:
+                case PrintJobState.Printing:
                     btnPauseResume.Visible = true;
                     btnPauseResume.Text = "Pause";
                     btnPauseResume.Image = _pauseIcon;
@@ -516,19 +516,19 @@ namespace LASYS.DesktopApp.Views.UserControls
                     btnPrint.BackColor = Color.Crimson;
                     break;
 
-                case PrintingState.Paused:
+                case PrintJobState.Paused:
                     btnPauseResume.Visible = true;
                     btnPauseResume.Text = "Resume";
                     btnPauseResume.Image = _resumeIcon;
                     btnPauseResume.BackColor = Color.SeaGreen;
                     break;
-                case PrintingState.Resumed:
+                case PrintJobState.Resumed:
                     btnPauseResume.Visible = true;
                     btnPauseResume.Text = "Pause";
                     btnPauseResume.Image = _pauseIcon;
                     btnPauseResume.BackColor = Color.DarkOrange;
                     break;
-                case PrintingState.Disabled:
+                case PrintJobState.Disabled:
                     btnPrint.Visible = false;
                     btnPauseResume.Visible = false;
                     break;

@@ -27,7 +27,7 @@ namespace LASYS.Application.Features.LabelProcessing.Services
         public event EventHandler<OperatorDecisionRequiredEventArgs>? DecisionRequired;
 
         public event EventHandler<LogEventArgs>? LogGenerated;
-        public event EventHandler<PrintingState>? PrintControlsStateChanged;
+        public event EventHandler<PrintJobState>? PrintControlsStateChanged;
         public event EventHandler<DeviceStatusEventArgs>? DeviceStatusChanged;
 
         private volatile bool _isPaused;
@@ -139,11 +139,11 @@ namespace LASYS.Application.Features.LabelProcessing.Services
             switch (e.Status)
             {
                 case LabelStatus.TemplateLoaded:
-                    PrintControlsStateChanged?.Invoke(this, PrintingState.Idle);
+                    PrintControlsStateChanged?.Invoke(this, PrintJobState.Idle);
                     LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Info, e.Description));
                     break;
                 case LabelStatus.TemplateLoadFailed:
-                    PrintControlsStateChanged?.Invoke(this, PrintingState.Disabled);
+                    PrintControlsStateChanged?.Invoke(this, PrintJobState.Disabled);
                     LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Error, e.Description));
                     break;
                 default:
@@ -154,7 +154,7 @@ namespace LASYS.Application.Features.LabelProcessing.Services
 
         public void LoadLabelTemplateAsync(string templatePath)
         {
-            PrintControlsStateChanged?.Invoke(this, PrintingState.Initializing);
+            PrintControlsStateChanged?.Invoke(this, PrintJobState.Initializing);
             try
             {
                 _printerService.LoadLabelTemplate(templatePath);
@@ -163,7 +163,7 @@ namespace LASYS.Application.Features.LabelProcessing.Services
             {
                 LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Error, ex.Message));
             }
-            PrintControlsStateChanged?.Invoke(this, PrintingState.Idle); //temporary - for testing only
+            PrintControlsStateChanged?.Invoke(this, PrintJobState.Idle); //temporary - for testing only
         }
         private async Task WaitIfPausedAsync(CancellationToken token)
         {
@@ -236,7 +236,7 @@ namespace LASYS.Application.Features.LabelProcessing.Services
                         return;
                     }
 
-                    PrintControlsStateChanged?.Invoke(this, PrintingState.Printing);
+                    PrintControlsStateChanged?.Invoke(this, PrintJobState.Printing);
                     _printerService.Print();
                     await Task.Delay(150, token);
 
@@ -386,17 +386,17 @@ namespace LASYS.Application.Features.LabelProcessing.Services
                     currentSequence++;
                 }
                 LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Info, "Print completed successfully."));
-                PrintControlsStateChanged?.Invoke(this, PrintingState.Completed);
+                PrintControlsStateChanged?.Invoke(this, PrintJobState.Completed);
             }
             catch (OperationCanceledException)
             {
                 LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Warning, "Operation stopped by operator."));
-                PrintControlsStateChanged?.Invoke(this, PrintingState.Stopped);
+                PrintControlsStateChanged?.Invoke(this, PrintJobState.Stopped);
             }
             finally
             {
                 _lock.Release();
-                PrintControlsStateChanged?.Invoke(this, PrintingState.Idle);
+                PrintControlsStateChanged?.Invoke(this, PrintJobState.Idle);
             }
 
         }
@@ -469,7 +469,7 @@ namespace LASYS.Application.Features.LabelProcessing.Services
             _isPaused = true;
             _pauseTcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
             LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Warning, "Operation paused by operator."));
-            PrintControlsStateChanged?.Invoke(this, PrintingState.Paused);
+            PrintControlsStateChanged?.Invoke(this, PrintJobState.Paused);
         }
 
         public void Resume()
@@ -480,7 +480,7 @@ namespace LASYS.Application.Features.LabelProcessing.Services
             _isPaused = false;
             _pauseTcs?.TrySetResult(true);
             LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Warning, "Operation resumed by operator."));
-            PrintControlsStateChanged?.Invoke(this, PrintingState.Resumed);
+            PrintControlsStateChanged?.Invoke(this, PrintJobState.Resumed);
         }
 
         public void Stop()
@@ -488,7 +488,7 @@ namespace LASYS.Application.Features.LabelProcessing.Services
             _printingCts?.Cancel();
         }
 
-        public void NotifyStatus(PrintingState status)
+        public void NotifyStatus(PrintJobState status)
         {
             throw new NotImplementedException();
         }

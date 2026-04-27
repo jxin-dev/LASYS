@@ -18,6 +18,10 @@ namespace LASYS.DesktopApp.Views.Forms
         public event EventHandler? LogoutRequested;
 
         private NavItem? _workOrders;
+        private NavItem? _visionSettings;
+        private NavItem? _printerManagement;
+        private NavItem? _barcode;
+        private NavItem? _logout;
         public MainForm()
         {
             InitializeComponent();
@@ -55,34 +59,35 @@ namespace LASYS.DesktopApp.Views.Forms
             // Define main menu items
             _workOrders = new NavItem { Text = "Work Orders" };
             var deviceSetup = new NavItem { Text = "Device Settings" };
-            var logOut = new NavItem { Text = "Log Out" };
+            _logout = new NavItem { Text = "Log Out" };
             // Define sub-items
-            deviceSetup.SubItems.Add(new NavItem { Text = "Vision Settings" });
-            deviceSetup.SubItems.Add(new NavItem { Text = "Printer Management" });
-            deviceSetup.SubItems.Add(new NavItem { Text = "Barcode Scanner" });
+            _visionSettings = new NavItem { Text = "Vision Settings" };
+            _printerManagement = new NavItem { Text = "Printer Management" };
+            _barcode = new NavItem { Text = "Barcode Scanner" };
+            // Add sub-items
+            deviceSetup.SubItems.Add(_visionSettings);
+            deviceSetup.SubItems.Add(_printerManagement);
+            deviceSetup.SubItems.Add(_barcode);
+
             // Add to navigation
             _sideNav.AddItem(_workOrders);
             _sideNav.AddItem(deviceSetup);
-            //_sideNav.AddItem(endToEndTest);
-            _sideNav.AddItem(logOut);
+            _sideNav.AddItem(_logout);
 
 
             _workOrders.Clicked += delegate { WorkOrderRequested?.Invoke(this, EventArgs.Empty); };
-
-            deviceSetup.SubItems[0].Clicked += delegate { VisionSettingsRequested?.Invoke(this, EventArgs.Empty); };
-
-            deviceSetup.SubItems[1].Clicked += delegate { PrinterManagementRequested?.Invoke(this, EventArgs.Empty); };
-
-            deviceSetup.SubItems[2].Clicked += delegate { BarcodeDeviceSetupRequested?.Invoke(this, EventArgs.Empty); };
-
-            logOut.Clicked += (_, _) => LogoutRequested?.Invoke(this, EventArgs.Empty);
+            _visionSettings.Clicked += (_, _) => VisionSettingsRequested?.Invoke(this, EventArgs.Empty);
+            _printerManagement.Clicked += (_, _) => PrinterManagementRequested?.Invoke(this, EventArgs.Empty);
+            _barcode.Clicked += (_, _) => BarcodeDeviceSetupRequested?.Invoke(this, EventArgs.Empty);
+            _logout.Clicked += (_, _) => LogoutRequested?.Invoke(this, EventArgs.Empty);
         }
 
         protected override void OnLoad(EventArgs e)
         {
             base.OnLoad(e);
             //WorkOrderRequested?.Invoke(this, EventArgs.Empty);
-            _sideNav.SelectItem(_workOrders);
+            _sideNav.SetActiveItem(_workOrders);
+            WorkOrderRequested?.Invoke(this, EventArgs.Empty);
         }
         public void CloseView() => Close();
 
@@ -125,6 +130,27 @@ namespace LASYS.DesktopApp.Views.Forms
         public void ShowUserInfo(string fullName, string sectionName, string? imagePath)
         {
             _sideNav.SetProfile(fullName, sectionName, imagePath);
+        }
+
+        public void ShowNavigationBlocked(string message)
+        {
+            MessageBox.Show(message, "Navigation Blocked", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        }
+
+        private NavItem? _lastSelected;
+        public NavItem WorkOrdersNavItem => _workOrders!;
+        public NavItem VisionSettingsNavItem => _visionSettings!;
+        public NavItem PrinterManagementNavItem => _printerManagement!;
+        public NavItem BarcodeNavItem => _barcode!;
+
+        public void SetActiveNavigation(NavItem? item)
+        {
+            _lastSelected = item;
+            _sideNav.SetActiveItem(item);
+        }
+        public void RestorePreviousNavigation()
+        {
+            _sideNav.SetActiveItem(_lastSelected);
         }
     }
 }
