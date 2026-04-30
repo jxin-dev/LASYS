@@ -25,7 +25,7 @@ namespace LASYS.Application.Features.OCRCalibration.PrintLabel
             var boxType = request.BoxType;
             var filePath = request.FilePath;
 
-            await _printerService.InitializeAsync();
+            //await _printerService.InitializeAsync();
 
             //if (string.IsNullOrWhiteSpace(request.FilePath) || !File.Exists(request.FilePath))
             //{

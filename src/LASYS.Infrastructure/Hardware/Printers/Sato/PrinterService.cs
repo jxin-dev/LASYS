@@ -440,7 +440,7 @@ namespace LASYS.Infrastructure.Hardware.Printers.Sato
                 }
 
                 _label.PrinterName = _printerName;
-                _label.PrinterPort = dirPrn;
+                _label.PrinterPort = _prnFilePath;
 
                 return RunFuncWithRetry(() =>
                 {
