@@ -32,7 +32,6 @@
             label1 = new Label();
             panel1 = new Panel();
             pnlContent = new Panel();
-            textBox1 = new TextBox();
             pnlHeader.SuspendLayout();
             panel1.SuspendLayout();
             SuspendLayout();
@@ -63,7 +62,6 @@
             panel1.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             panel1.BackColor = Color.White;
             panel1.Controls.Add(pnlContent);
-            panel1.Controls.Add(textBox1);
             panel1.Location = new Point(3, 57);
             panel1.Name = "panel1";
             panel1.Size = new Size(745, 348);
@@ -72,21 +70,10 @@
             // pnlContent
             // 
             pnlContent.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-            pnlContent.Location = new Point(12, 50);
+            pnlContent.Location = new Point(12, 9);
             pnlContent.Name = "pnlContent";
-            pnlContent.Size = new Size(721, 272);
+            pnlContent.Size = new Size(721, 306);
             pnlContent.TabIndex = 1;
-            // 
-            // textBox1
-            // 
-            textBox1.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
-            textBox1.Font = new Font("Segoe UI", 14.25F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            textBox1.Location = new Point(12, 11);
-            textBox1.Name = "textBox1";
-            textBox1.PlaceholderText = "Scan Barcode";
-            textBox1.Size = new Size(721, 33);
-            textBox1.TabIndex = 0;
-            textBox1.TextAlign = HorizontalAlignment.Center;
             // 
             // WorkOrdersControl
             // 
@@ -100,7 +87,6 @@
             pnlHeader.ResumeLayout(false);
             pnlHeader.PerformLayout();
             panel1.ResumeLayout(false);
-            panel1.PerformLayout();
             ResumeLayout(false);
         }
 
@@ -109,7 +95,6 @@
         private Panel pnlHeader;
         private Label label1;
         private Panel panel1;
-        private TextBox textBox1;
         private Panel pnlContent;
     }
 }
