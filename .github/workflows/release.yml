@@ -70,7 +70,7 @@ jobs:
 
           vpk pack `
             --packId "InnovaThinkCorporation" `
-            --packTitle "New LASYS" `
+            --packTitle "LASYS Application" `
             --packVersion $version `
             --packDir ./publish `
             --mainExe "LASYS.DesktopApp.exe" `
