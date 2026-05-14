@@ -31,12 +31,9 @@ jobs:
         run: dotnet tool install -g vpk
 
       # ───────────────────────────────────────────────
-      # Restore & Build
-      - name: Restore dependencies
-        run: dotnet restore
-
-      - name: Build all projects (32-bit)
-        run: dotnet build --configuration Release -p:Platform=x86
+      # Restore Desktop App
+      - name: Restore Desktop App
+        run: dotnet restore src/LASYS.DesktopApp/LASYS.DesktopApp.csproj
 
       # ───────────────────────────────────────────────
       # Publish Desktop App + include resource subfolders
@@ -57,8 +54,8 @@ jobs:
             -o publish
 
           # Copy additional resource folders if they exist
-          if (Test-Path "src/LASYS.DesktopApp/Resources") { Copy-Item "src/LASYS.DesktopApp/Resources" -Recurse -Destination publish/Resources }
-          if (Test-Path "src/LASYS.DesktopApp/Data")      { Copy-Item "src/LASYS.DesktopApp/Data"      -Recurse -Destination publish/Data }
+          if (Test-Path "src/LASYS.DesktopApp/Resources") { Copy-Item "src/LASYS.DesktopApp/Resources" -Recurse -Destination "publish/Resources" -Force }
+          if (Test-Path "src/LASYS.DesktopApp/Data")      { Copy-Item "src/LASYS.DesktopApp/Data"      -Recurse -Destination "publish/Data" -Force }
 
       # ───────────────────────────────────────────────
       - name: List publish folder (debug)
