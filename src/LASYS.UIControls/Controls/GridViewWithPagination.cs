@@ -1244,8 +1244,15 @@
 
             _filteredRows = string.IsNullOrEmpty(normalizedSearchTerm)
                 ? _allRows.ToList()
-                : _allRows.Where(o => _displaySelector(o).Any(s => s.ToLower().Contains(normalizedSearchTerm)))
-                           .ToList();
+                : _allRows
+                    .Where(o => _displaySelector(o)
+                        .Any(s => !string.IsNullOrEmpty(s) &&
+                                   s.ToLower().Contains(normalizedSearchTerm)))
+                    .ToList();
+
+            TotalPages = _filteredRows.Count == 0
+                ? 0
+                : (_filteredRows.Count + _pageSize - 1) / _pageSize;
 
             _rowsVersion++;
 
