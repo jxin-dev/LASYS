@@ -1,5 +1,4 @@
-﻿using LASYS.Application.Features.LabelProcessing.Abstractions;
-using LASYS.Application.Features.LabelProcessing.Services;
+﻿using LASYS.Application.Features.BatchPrinting.Services;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace LASYS.Application;
@@ -10,13 +9,15 @@ public static class DependencyInjection
     {
         services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(DependencyInjection).Assembly));
 
-        services.AddLabelServices();
+        services.AddBatchPrinting();
         return services;
     }
-    private static IServiceCollection AddLabelServices(this IServiceCollection services)
+    public static IServiceCollection AddBatchPrinting(this IServiceCollection services)
     {
-        services.AddSingleton<ILabelProcessingService, LabelProcessingService>();
+        services.AddSingleton<IPrintJobController, PrintJobController>();
+        services.AddSingleton<IBatchPrintProcessService, BatchPrintProcessService>();
         return services;
     }
+
 
 }

@@ -3,11 +3,14 @@ using System.Management;
 using System.Runtime.InteropServices;
 using System.Text.Json;
 using Interop.LabelGalleryPlus3WR;
-using LASYS.Application.Common.Enums;
 using LASYS.Application.Common.Extensions;
 using LASYS.Application.Common.Messaging;
 using LASYS.Application.Contracts;
 using LASYS.Application.Events;
+using LASYS.Application.Features.Devices.Enums;
+using LASYS.Application.Features.Devices.Events;
+using LASYS.Application.Features.Devices.Factories;
+using LASYS.Application.Features.Devices.Models;
 using LASYS.Application.Interfaces.Services;
 using LASYS.Application.Models.Hardware.Printer;
 using SATOPrinterAPI;
@@ -24,15 +27,30 @@ namespace LASYS.Infrastructure.Hardware.Printers.Sato
         private Printer? _printer;
         private bool _disposed;
         private string? _printerName;
+        public string? PrinterName => _printerName;
         private string _prnFilePath = string.Empty;
         private bool _isByteAvailableSubscribed;
 
         public event EventHandler<PrinterNotificationEventArgs>? PrinterNotification;
-
-        public event EventHandler<PrinterStatusEventArgs>? PrinterStatusChanged;
+        public event EventHandler<DeviceStatusChangedEventArgs>? DeviceStatusChanged;
         public event EventHandler<LabelEventArgs>? LabelStatusChanged;
 
         public string FilePath => _prnFilePath;
+
+        public DeviceStatus CurrentStatus { get; private set; } = 
+            DeviceStatusFactory.Create(DeviceType.Printer, DeviceStatusCode.NotConfigured);
+
+        private void SetStatus(DeviceStatusCode statusCode, string? descriptionOverride = null)
+        {
+            CurrentStatus = DeviceStatusFactory.Create(
+                DeviceType.Printer,
+                statusCode,
+                descriptionOverride);
+
+            DeviceStatusChanged?.Invoke(
+                this,
+                new DeviceStatusChangedEventArgs(CurrentStatus));
+        }
 
         private void EnsureByteAvailableSubscription()
         {
@@ -42,21 +60,19 @@ namespace LASYS.Infrastructure.Hardware.Printers.Sato
             _printer.ByteAvailable += AsynDataIn;
             _isByteAvailableSubscribed = true;
         }
-        private readonly Dictionary<char, PrinterStatus> _printerControlStatusMap = new()
+
+        private readonly Dictionary<char, DeviceStatusCode> _printerControlStatusMap = new()
         {
-            { '\x11', PrinterStatus.PrintStarted },  // DC1
-            { '\x13', PrinterStatus.PrinterPaused },    // DC3
+            { '\x11', DeviceStatusCode.Started },  // DC1
+            { '\x13', DeviceStatusCode.Paused },    // DC3
             // You can add more single-char mappings here
         };
         private void AppendSendText(byte[] data)
         {
             string smsg = ControlCharConvert(Utils.ByteArrayToString(data));
 
-            PrinterStatusChanged?.Invoke(this,
-                new PrinterStatusEventArgs(
-                    PrinterStatus.PrinterDataSent,
-                    $"{DateTime.Now:HH:mm:ss.fff} | TX {data.Length} bytes | {smsg}"
-                ));
+            SetStatus(DeviceStatusCode.DataSent, $"{DateTime.Now:HH:mm:ss.fff} | TX {data.Length} bytes | {smsg}");
+
         }
         private void AsynDataIn(object? sender, Printer.ByteAvailableEventArgs e)
         {
@@ -67,7 +83,8 @@ namespace LASYS.Infrastructure.Hardware.Printers.Sato
                 if (_printerControlStatusMap.TryGetValue(ch, out var status))
                 {
                     // Raise event with default message
-                    PrinterStatusChanged?.Invoke(this, new PrinterStatusEventArgs(status));
+                    //PrinterStatusChanged?.Invoke(this, new PrinterStatusEventArgs(status));
+                    SetStatus(status);
                 }
             }
             // Check multi-byte sequence: ESC+@ (0x1B, 0x40) for Offline
@@ -75,7 +92,8 @@ namespace LASYS.Infrastructure.Hardware.Printers.Sato
             {
                 if (e.Data[i] == 0x1B && e.Data[i + 1] == 0x40)
                 {
-                    PrinterStatusChanged?.Invoke(this, new PrinterStatusEventArgs(PrinterStatus.PrinterOffline));
+                    //PrinterStatusChanged?.Invoke(this, new PrinterStatusEventArgs(PrinterStatus.PrinterOffline));
+                    SetStatus(DeviceStatusCode.Offline);
                 }
             }
 
@@ -85,7 +103,8 @@ namespace LASYS.Infrastructure.Hardware.Printers.Sato
         {
             // Convert bytes to string
             string smsg = ControlCharConvert(Utils.ByteArrayToString(data));
-            PrinterStatusChanged?.Invoke(this, new PrinterStatusEventArgs(PrinterStatus.PrinterDataReceived, $"{DateTime.Now:HH:mm:ss.fff} | RX {data.Length} bytes | {smsg}"));
+            //PrinterStatusChanged?.Invoke(this, new PrinterStatusEventArgs(PrinterStatus.PrinterDataReceived, $"{DateTime.Now:HH:mm:ss.fff} | RX {data.Length} bytes | {smsg}"));
+            SetStatus(DeviceStatusCode.DataReceived, $"{DateTime.Now:HH:mm:ss.fff} | RX {data.Length} bytes | {smsg}");
         }
 
         private static readonly Dictionary<char, string> _controlCharMap = ControlCharList().ToDictionary(x => x.Value, x => x.Key);
@@ -203,11 +222,13 @@ namespace LASYS.Infrastructure.Hardware.Printers.Sato
 
                 if (config?.SatoPrinter is SerialPrinterConnection serial)
                 {
-                    PrinterStatusChanged?.Invoke(this, new PrinterStatusEventArgs(PrinterStatus.PrinterConfigurationLoaded, $"Printer configuration loaded successfully.\nCommunication will use serial interface on port {serial.ComPort} with settings {serial.Parameters} at {serial.BaudRate} baud."));
+                    //PrinterStatusChanged?.Invoke(this, new PrinterStatusEventArgs(PrinterStatus.PrinterConfigurationLoaded, $"Printer configuration loaded successfully.\nCommunication will use serial interface on port {serial.ComPort} with settings {serial.Parameters} at {serial.BaudRate} baud."));
+                    SetStatus(DeviceStatusCode.ConfigurationLoaded, $"Printer configuration loaded successfully.\nCommunication will use serial interface on port {serial.ComPort} with settings {serial.Parameters} at {serial.BaudRate} baud.");
                 }
                 else if (config?.SatoPrinter is UsbPrinterConnection usb)
                 {
-                    PrinterStatusChanged?.Invoke(this, new PrinterStatusEventArgs(PrinterStatus.PrinterConfigurationLoaded, $"Printer configuration loaded successfully.\nCommunication will use the USB interface with device ID {usb.UsbId.Ellipsis(18)}"));
+                    //PrinterStatusChanged?.Invoke(this, new PrinterStatusEventArgs(PrinterStatus.PrinterConfigurationLoaded, $"Printer configuration loaded successfully.\nCommunication will use the USB interface with device ID {usb.UsbId.Ellipsis(18)}"));
+                    SetStatus(DeviceStatusCode.ConfigurationLoaded, $"Printer configuration loaded successfully.\nCommunication will use the USB interface with device ID {usb.UsbId.Ellipsis(18)}");
                 }
                 await Task.Delay(3000);
                 return config;
@@ -249,7 +270,8 @@ namespace LASYS.Infrastructure.Hardware.Printers.Sato
             var config = await LoadAsync();
             if (config == null)
             {
-                PrinterStatusChanged?.Invoke(this, new PrinterStatusEventArgs(PrinterStatus.PrinterNotConfigured));
+                //PrinterStatusChanged?.Invoke(this, new PrinterStatusEventArgs(PrinterStatus.PrinterNotConfigured));
+                SetStatus(DeviceStatusCode.NotConfigured);
                 return;
             }
 
@@ -270,14 +292,16 @@ namespace LASYS.Infrastructure.Hardware.Printers.Sato
                 _printerName = GetPrinterNameByComPort(_printer.COMPort);
                 if (_printerName == null)
                 {
-                    PrinterStatusChanged?.Invoke(this, new PrinterStatusEventArgs(PrinterStatus.PrinterNotDetected, $"No printer detected on COM port {_printer.COMPort}."));
+                    //PrinterStatusChanged?.Invoke(this, new PrinterStatusEventArgs(PrinterStatus.PrinterNotDetected, $"No printer detected on COM port {_printer.COMPort}."));
+                    SetStatus(DeviceStatusCode.NotDetected, $"No printer detected on COM port {_printer.COMPort}.");
                     return;
                 }
 
                 try
                 {
                     _printer.Connect();
-                    PrinterStatusChanged?.Invoke(this, new PrinterStatusEventArgs(PrinterStatus.PrinterConnected, $"Serial COM printer connected: {_printerName} (Port: {serial.ComPort})"));
+                    //PrinterStatusChanged?.Invoke(this, new PrinterStatusEventArgs(PrinterStatus.PrinterConnected, $"Serial COM printer connected: {_printerName} (Port: {serial.ComPort})"));
+                    SetStatus(DeviceStatusCode.Connected, $"Serial COM printer connected: {_printerName} (Port: {serial.ComPort})");
                 }
                 catch (IOException ex)
                 {
@@ -295,11 +319,13 @@ namespace LASYS.Infrastructure.Hardware.Printers.Sato
                 {
                     _printerName = usbPrinter.Name; // Get the friendly name
                     _printer.Connect();
-                    PrinterStatusChanged?.Invoke(this, new PrinterStatusEventArgs(PrinterStatus.PrinterConnected, $"USB printer connected: {_printerName}"));
+                    //PrinterStatusChanged?.Invoke(this, new PrinterStatusEventArgs(PrinterStatus.PrinterConnected, $"USB printer connected: {_printerName}"));
+                    SetStatus(DeviceStatusCode.Connected, $"USB printer connected: {_printerName}");
                 }
                 else
                 {
-                    PrinterStatusChanged?.Invoke(this, new PrinterStatusEventArgs(PrinterStatus.PrinterDisconnected, $"USB printer {usb.UsbId} not connected."));
+                    //PrinterStatusChanged?.Invoke(this, new PrinterStatusEventArgs(PrinterStatus.PrinterDisconnected, $"USB printer {usb.UsbId} not connected."));
+                    SetStatus(DeviceStatusCode.Disconnected, $"USB printer {usb.UsbId} not connected.");
                     return;
                 }
             }
@@ -368,7 +394,8 @@ namespace LASYS.Infrastructure.Hardware.Printers.Sato
         {
             if (_printer is null)
             {
-                PrinterStatusChanged?.Invoke(this, new PrinterStatusEventArgs(PrinterStatus.PrinterNotConfigured, "Printer not initialized."));
+                //PrinterStatusChanged?.Invoke(this, new PrinterStatusEventArgs(PrinterStatus.PrinterNotConfigured, "Printer not initialized."));
+                SetStatus(DeviceStatusCode.NotConfigured);
                 return;
             }
             try
@@ -377,123 +404,130 @@ namespace LASYS.Infrastructure.Hardware.Printers.Sato
             }
             catch (Exception ex)
             {
-                PrinterStatusChanged?.Invoke(this,
-                    new PrinterStatusEventArgs(PrinterStatus.PrinterError,
-                    ex.Message));
+                //PrinterStatusChanged?.Invoke(this,
+                //    new PrinterStatusEventArgs(PrinterStatus.PrinterError,
+                //    ex.Message));
+
+                SetStatus(DeviceStatusCode.Error, $"Test print failed: {ex.Message}");
             }
         }
-        public void LoadLabelTemplate(string templatePath) //First step of printing is to load the label template, then fill data and print
+        //public void LoadLabelTemplate(string templatePath) //First step of printing is to load the label template, then fill data and print
+        //{
+        //    if (!File.Exists(templatePath))
+        //    {
+        //        LabelStatusChanged?.Invoke(this, new LabelEventArgs(LabelStatus.TemplateLoadFailed, $"Label template not found: {templatePath}"));
+        //        return;
+        //    }
+
+        //    _app ??= new LGApp();
+        //    _label = _app.LabelOpenEx(templatePath);
+        //    LabelStatusChanged?.Invoke(this, new LabelEventArgs(LabelStatus.TemplateLoaded, $"Label template loaded: {Path.GetFileName(templatePath)}"));
+        //}
+        //public void SetLabelVariables(Dictionary<string, string> data)
+        //{
+        //    if (_label == null) return;
+
+        //    foreach (var (key, value) in data)
+        //    {
+        //        var variable = _label.Variables.FindByName(key);
+        //        variable?.SetValue(value);
+        //    }
+        //}
+        //public bool PrintLabelWithPreview(string filename, int previewWidth = 800, int previewHeight = 600)
+        //{
+        //    bool RunFuncWithRetry(Func<bool> action, int maxRetry = 3, int delayMs = 500)
+        //    {
+        //        for (int i = 0; i < maxRetry; i++)
+        //        {
+        //            if (action()) return true;
+        //            if (i < maxRetry - 1) Thread.Sleep(delayMs);
+        //        }
+        //        return false;
+        //    }
+
+        //    try
+        //    {
+        //        string baseDir = AppDomain.CurrentDomain.BaseDirectory;
+        //        string dirPrn = Path.Combine(baseDir, "prns");
+        //        string dirImage = Path.Combine(baseDir, "images");
+
+        //        Directory.CreateDirectory(dirPrn);
+        //        Directory.CreateDirectory(dirImage);
+
+        //        _prnFilePath = Path.Combine(dirPrn, $"{filename}.prn");
+        //        var imgPath = Path.Combine(dirImage, $"{filename}.png");
+
+        //        if (_label == null)
+        //        {
+        //            LabelStatusChanged?.Invoke(this, new LabelEventArgs(LabelStatus.TemplateLoadFailed));
+        //            return false;
+        //        }
+        //        if (string.IsNullOrWhiteSpace(_printerName))
+        //        {
+        //            //PrinterStatusChanged?.Invoke(this, new PrinterStatusEventArgs(PrinterStatus.PrinterNotConfigured));
+        //            SetStatus(DeviceStatusCode.NotConfigured);
+        //            return false;
+        //        }
+
+        //        _label.PrinterName = _printerName;
+        //        _label.PrinterPort = _prnFilePath;
+
+        //        return RunFuncWithRetry(() =>
+        //        {
+        //            // Print("1") generates the PRN file in the PrinterPort directory
+        //            bool printed = _label.Print("1");
+        //            bool previewed = _label.GetLabelPreview(imgPath, previewWidth, previewHeight);
+        //            return printed && previewed;
+        //        });
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        //PrinterStatusChanged?.Invoke(this, new PrinterStatusEventArgs(PrinterStatus.PrinterError, $"Error during print process: {ex.Message}"));
+        //        SetStatus(DeviceStatusCode.Error, $"Error during print process: {ex.Message}");
+        //        return false;
+        //    }
+        //}
+        public void Print(string prnFilePath, int timeoutSeconds = 300)
         {
-            if (!File.Exists(templatePath))
+            if (!File.Exists(prnFilePath))
             {
-                LabelStatusChanged?.Invoke(this, new LabelEventArgs(LabelStatus.TemplateLoadFailed, $"Label template not found: {templatePath}"));
-                return;
-            }
-
-            _app ??= new LGApp();
-            _label = _app.LabelOpenEx(templatePath);
-            LabelStatusChanged?.Invoke(this, new LabelEventArgs(LabelStatus.TemplateLoaded, $"Label template loaded: {Path.GetFileName(templatePath)}"));
-        }
-        public void SetLabelVariables(Dictionary<string, string> data)
-        {
-            if (_label == null) return;
-
-            foreach (var (key, value) in data)
-            {
-                var variable = _label.Variables.FindByName(key);
-                variable?.SetValue(value);
-            }
-        }
-        public bool PrintLabelWithPreview(string filename, int previewWidth = 800, int previewHeight = 600)
-        {
-            bool RunFuncWithRetry(Func<bool> action, int maxRetry = 3, int delayMs = 500)
-            {
-                for (int i = 0; i < maxRetry; i++)
-                {
-                    if (action()) return true;
-                    if (i < maxRetry - 1) Thread.Sleep(delayMs);
-                }
-                return false;
-            }
-
-            try
-            {
-                string baseDir = AppDomain.CurrentDomain.BaseDirectory;
-                string dirPrn = Path.Combine(baseDir, "prns");
-                string dirImage = Path.Combine(baseDir, "images");
-
-                Directory.CreateDirectory(dirPrn);
-                Directory.CreateDirectory(dirImage);
-
-                _prnFilePath = Path.Combine(dirPrn, $"{filename}.prn");
-                var imgPath = Path.Combine(dirImage, $"{filename}.png");
-
-                if (_label == null)
-                {
-                    LabelStatusChanged?.Invoke(this, new LabelEventArgs(LabelStatus.TemplateLoadFailed));
-                    return false;
-                }
-                if (string.IsNullOrWhiteSpace(_printerName))
-                {
-                    PrinterStatusChanged?.Invoke(this, new PrinterStatusEventArgs(PrinterStatus.PrinterNotConfigured));
-                    return false;
-                }
-
-                _label.PrinterName = _printerName;
-                _label.PrinterPort = _prnFilePath;
-
-                return RunFuncWithRetry(() =>
-                {
-                    // Print("1") generates the PRN file in the PrinterPort directory
-                    bool printed = _label.Print("1");
-                    bool previewed = _label.GetLabelPreview(imgPath, previewWidth, previewHeight);
-                    return printed && previewed;
-                });
-            }
-            catch (Exception ex)
-            {
-                PrinterStatusChanged?.Invoke(this, new PrinterStatusEventArgs(PrinterStatus.PrinterError, $"Error during print process: {ex.Message}"));
-                return false;
-            }
-        }
-        public void Print(int timeoutSeconds = 300)
-        {
-            if (!File.Exists(_prnFilePath))
-            {
-                PrinterStatusChanged?.Invoke(this, new PrinterStatusEventArgs(PrinterStatus.PrinterError, $"PRN file not found: {_prnFilePath}."));
+                //PrinterStatusChanged?.Invoke(this, new PrinterStatusEventArgs(PrinterStatus.PrinterError, $"PRN file not found: {_prnFilePath}."));
+                SetStatus(DeviceStatusCode.Error, $"PRN file not found: {prnFilePath}.");
                 return;
             }
 
             if (_printer is null)
             {
-                PrinterStatusChanged?.Invoke(this, new PrinterStatusEventArgs(PrinterStatus.PrinterNotConfigured, "Printer not initialized. Please initialize the printer before printing."));
+                //PrinterStatusChanged?.Invoke(this, new PrinterStatusEventArgs(PrinterStatus.PrinterNotConfigured, "Printer not initialized. Please initialize the printer before printing."));
+                SetStatus(DeviceStatusCode.NotConfigured, "Printer not initialized. Please initialize the printer before printing.");
                 return;
             }
 
             try
             {
-                byte[] prnData = File.ReadAllBytes(_prnFilePath);
+                byte[] prnData = File.ReadAllBytes(prnFilePath);
                 _printWaitHandle.Reset(); // reset before sending
                 AppendSendText(prnData);   // TX log
                 _printer.Send(prnData);
 
-                PrinterStatusChanged?.Invoke(this, new PrinterStatusEventArgs(PrinterStatus.PrintStarted, $"PRN file sent to printer: {_printerName}. Waiting for response..."));
-
+                //PrinterStatusChanged?.Invoke(this, new PrinterStatusEventArgs(PrinterStatus.PrintStarted, $"PRN file sent to printer: {_printerName}. Waiting for response..."));
+                SetStatus(DeviceStatusCode.Started, $"PRN file sent to printer: {_printerName}. Waiting for response...");
                 bool signaled = _printWaitHandle.Wait(TimeSpan.FromSeconds(timeoutSeconds));
 
                 if (!signaled)
                 {
-                    PrinterStatusChanged?.Invoke(this, new PrinterStatusEventArgs(PrinterStatus.PrintFailed, $"Printer did not respond within {timeoutSeconds} seconds."));
-                    throw new TimeoutException("Printer did not respond in time.");
+                    SetStatus(DeviceStatusCode.Timeout, $"Printer did not respond within {timeoutSeconds} seconds.");
+                    //PrinterStatusChanged?.Invoke(this, new PrinterStatusEventArgs(PrinterStatus.PrintFailed, $"Printer did not respond within {timeoutSeconds} seconds."));
                 }
 
-                PrinterStatusChanged?.Invoke(this, new PrinterStatusEventArgs(PrinterStatus.PrintCompleted));
+                //PrinterStatusChanged?.Invoke(this, new PrinterStatusEventArgs(PrinterStatus.PrintCompleted));
+                SetStatus(DeviceStatusCode.PrintCompleted);
 
             }
             catch (Exception ex)
             {
-                PrinterStatusChanged?.Invoke(this, new PrinterStatusEventArgs(PrinterStatus.PrinterError, $"Error during printing: {ex.Message}"));
-                throw;
+                //PrinterStatusChanged?.Invoke(this, new PrinterStatusEventArgs(PrinterStatus.PrinterError, $"Error during printing: {ex.Message}"));
+                SetStatus(DeviceStatusCode.Error, $"Error during printing: {ex.Message}");
             }
         }
 

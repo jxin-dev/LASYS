@@ -1,33 +1,25 @@
-﻿using LASYS.Application.Features.LabelProcessing.GetWorkOrders;
+﻿using LASYS.Application.Common.Enums;
+using LASYS.Application.Features.LabelInstructions.GetWorkOrderListBySectionId;
 using LASYS.DesktopApp.Events;
 using LASYS.DesktopApp.Views.Interfaces;
 using LASYS.UIControls.Controls;
-using System;
-using System.Collections.Generic;
-using System.Drawing;
-using System.Linq;
-using System.Windows.Forms;
 
 namespace LASYS.DesktopApp.Views.UserControls
 {
     public partial class WorkOrdersControl : UserControl, IWorkOrdersView
     {
         public event EventHandler<LabelPrintingRequestedEventArgs>? LabelPrintingRequested;
-        public event EventHandler<int>? PageNoChanged;
-        public event EventHandler<string>? SearchTermChanged;
         private readonly GridViewWithPagination _gridWithPagination;
         private readonly Panel _loadingCard;
         private readonly Panel _loadingAccent;
         private readonly Label _loadingLabel;
         private readonly ProgressBar _loadingProgress;
-        private static readonly Func<GetWorkOrdersResult, string[]> _workOrderRowSelector = ProjectWorkOrderRow;
-
         public WorkOrdersControl()
         {
             InitializeComponent();
             _gridWithPagination = new GridViewWithPagination
             {
-                PageSize = 50,
+                PageSize = 10,
                 Dock = DockStyle.Fill,
                 BackColor = Color.White
             };
@@ -64,47 +56,13 @@ namespace LASYS.DesktopApp.Views.UserControls
 
             _gridWithPagination.RowDoubleClicked += (sender, e) =>
             {
-                // e is the row object passed by the grid
-                if (e is GetWorkOrdersResult data)
+                if (e is WorkOrderItem labelInstruction)
                 {
-                    // Show box type selection dialog on double-click
-                    //using var dlg = new BoxTypeSelectionDialog();
-                    //var owner = FindForm();
-                    //var dr = owner != null ? dlg.ShowDialog(owner) : dlg.ShowDialog();
-
-                    //if (dr == DialogResult.OK)
-                    //{
-                        // Pass item code and lot number so label printing view can be populated
-                        LabelPrintingRequested?.Invoke(this, new LabelPrintingRequestedEventArgs(
-                            data.ItemCode ?? string.Empty,
-                            data.LotNo ?? string.Empty,
-                            string.Empty,
-                            LASYS.Application.Common.Enums.BoxType.NotSet,
-                            data.PrintType,
-                            data.UB_LI_Code,
-                            data.AUB_LI_Code,
-                            data.OUB_LI_Code,
-                            data.CB_LI_Code,
-                            data.ACB_LI_Code,
-                            data.OCB_LI_Code));
-                    //}
+                    LabelPrintingRequested?.Invoke(this, new LabelPrintingRequestedEventArgs(labelInstruction));
                 }
             };
 
-            _gridWithPagination.PageNoChanged += (sender, e) =>
-            {
-                PageNoChanged?.Invoke(this, e);
-            };
-
-            _gridWithPagination.SearchTermChanged += (sender, e) =>
-            {
-                SearchTermChanged?.Invoke(this, e);
-            };
-
             _gridWithPagination.Resize += (_, _) => LayoutLoadingCard();
-
-            // Enable external data mode for pagination (presenter handles paging)
-            _gridWithPagination.SetExternalDataMode(true);
 
             pnlContent.Controls.Add(_gridWithPagination);
 
@@ -173,41 +131,55 @@ namespace LASYS.DesktopApp.Views.UserControls
             }
         }
 
-        public void SetWorkOrders(List<GetWorkOrdersResult> workOrders, int totalPages)
+        public void SetWorkOrders(List<WorkOrderItem> workOrders, int totalPages)
         {
+            _gridWithPagination.PageSize = 10;
+            _gridWithPagination.SetExternalDataMode(false);
             _gridWithPagination.SetTotalPages(totalPages);
-            _gridWithPagination.SetRows(workOrders, _workOrderRowSelector);
-        }
+            _gridWithPagination.SetRows(workOrders,
+                 x =>
+                 {
+                     var ub = x.Details?.GetValueOrDefault(BoxType.UnitBox);
+                     var aub = x.Details?.GetValueOrDefault(BoxType.AdditionalUnitBox);
+                     var oub = x.Details?.GetValueOrDefault(BoxType.OuterUnitBox);
+                     return 
+                     [
+                        x.ItemCode,
+                        x.LotNo,
+                        x.ExpirationDate?.ToString("yyyy-MM-dd")  ?? string.Empty,
+                        ub?.PrintType ?? string.Empty,
+                        ub?.Verdict ?? string.Empty,
+                        ub?.DateApproved?.ToString("yyyy-MM-dd") ?? string.Empty,
+                        x.TargetProductionQuantity.ToString(),
+                        x.MasterLabelRevNumber.ToString(),
+                        x.LabelInsRevNumber.ToString(),
+                        ub?.TargetPrintQuantity?.ToString() ?? string.Empty,
+                        ub?.InstructionStatus?.ToString() ?? string.Empty,
+                        aub?.TargetPrintQuantity?.ToString() ?? string.Empty,
+                        aub?.InstructionStatus?.ToString() ?? string.Empty,
+                        oub?.TargetPrintQuantity?.ToString() ?? string.Empty,
+                        oub?.InstructionStatus?.ToString() ?? string.Empty
+                     ];
+                 });
 
-        private static string[] ProjectWorkOrderRow(GetWorkOrdersResult item)
-        {
-            var itemCode = item.ItemCode ?? string.Empty;
-            var lotNo = item.LotNo ?? string.Empty;
-            var expDate = item.ExpDate ?? string.Empty;
-            var printType = item.PrintType ?? string.Empty;
-            var verdict = item.Verdict ?? string.Empty;
-            var dateApproved = item.DateApproved ?? string.Empty;
-            var ubStatus = item.UB_LI_Status ?? string.Empty;
-            var aubStatus = item.AUB_LI_Status ?? string.Empty;
-            var oubStatus = item.OUB_LI_Status ?? string.Empty;
 
-            var row = new string[15];
-            row[0] = itemCode;
-            row[1] = lotNo;
-            row[2] = expDate;
-            row[3] = printType;
-            row[4] = verdict;
-            row[5] = dateApproved;
-            row[6] = item.ProdQty.ToString();
-            row[7] = item.MasterLabelRevisionNo.ToString();
-            row[8] = item.LabelInsRevisionNo.ToString();
-            row[9] = item.UB_Qty.ToString();
-            row[10] = ubStatus;
-            row[11] = item.AUB_Qty.ToString();
-            row[12] = aubStatus;
-            row[13] = item.OUB_Qty.ToString();
-            row[14] = oubStatus;
-            return row;
+            // [
+            //    x.ItemCode,
+            //    x.LotNo,
+            //    x.ExpirationDate?.ToString("yyyy-MM-dd")  ?? string.Empty,
+            //    x.UbLabel?.PrintType ?? string.Empty,
+            //    x.UbLabel?.Verdict ?? string.Empty,
+            //    x.UbLabel?.DateApproved?.ToString("yyyy-MM-dd") ?? string.Empty,
+            //    x.TargetProductionQuantity.ToString(),
+            //    x.MasterLabelRevNumber.ToString(),
+            //    x.LabelInsRevNumber.ToString(),
+            //    x.UbLabel?.TargetPrintQuantity?.ToString() ?? string.Empty,
+            //    x.UbLabel?.InstructionStatus?.ToString() ?? string.Empty,
+            //    x.AubLabel?.TargetPrintQuantity?.ToString() ?? string.Empty,
+            //    x.AubLabel?.InstructionStatus?.ToString() ?? string.Empty,
+            //    x.OubLabel?.TargetPrintQuantity?.ToString() ?? string.Empty,
+            //    x.OubLabel?.InstructionStatus?.ToString() ?? string.Empty
+            //]);
         }
 
         private void LayoutLoadingCard()
@@ -231,22 +203,5 @@ namespace LASYS.DesktopApp.Views.UserControls
             _loadingProgress.Top = _loadingLabel.Bottom + 16;
         }
     }
-
-    public record SampleData(
-        int Id,
-        string ItemCode,
-        string LotNo,
-        string ExpDate,
-        string PrintType,
-        string Verdict,
-        string DateApproved,
-        int ProductQty,
-        int MasterLabelRevNo,
-        int LabelInsRevNo,
-        string UnitBoxQty, string UnitBoxStatus,
-        string AddtnlUnitBoxQty, string AddtnlUnitBoxStatus,
-        string OuterUnitBoxQty, string OuterUnitBoxStatus
-    );
-
 }
 

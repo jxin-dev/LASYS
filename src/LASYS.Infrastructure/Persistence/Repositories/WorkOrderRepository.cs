@@ -257,11 +257,125 @@ namespace LASYS.Infrastructure.Persistence.Repositories
             return 1;
         }
 
+        //private const string GetProductHistorySql = @"
+        //    SELECT barcode_type+0 AS BARCODE_TYPE, products.*
+        //    FROM   pre_tpc_products_tcl products
+        //    WHERE  item_code = @itemCode
+        //      AND  masterlabel_revision_number = @revision";
+
         private const string GetProductHistorySql = @"
-            SELECT barcode_type+0 AS BARCODE_TYPE, products.*
-            FROM   pre_tpc_products_tcl products
-            WHERE  item_code = @itemCode
-              AND  masterlabel_revision_number = @revision";
+    SELECT
+        products.BARCODE_TYPE + 0                AS BarcodeType,
+        products.ITEM_CODE                       AS ItemCode,
+        products.ITEM_NAME                       AS ItemName,
+        products.ITEM_GROUP_TYPE_CODE            AS ItemGroupTypeCode,
+        products.MARKET_CODE                     AS MarketCode,
+        products.SECTION_ASSIGNMENTS             AS SectionAssignments,
+        products.UB_REPORT_TYPE_CODE             AS UbReportTypeCode,
+        products.CB_REPORT_TYPE_CODE             AS CbReportTypeCode,
+        products.ITEM_TYPE                       AS ItemType,
+        products.CALENDAR_TYPE                   AS CalendarType,
+        products.DESCRIPTION                     AS Description,
+        products.TIP_TYPE                        AS TipType,
+        products.WITH_COC                        AS WithCoc,
+        products.WITH_STERILIZATION              AS WithSterilization,
+        products.DAYS_BEFORE_EXPIRATION          AS DaysBeforeExpiration,
+        products.DAYS_BFR_XPRTN_FR_BRCD          AS DaysBfrXprtnFrBrcd,
+        products.DAYS_BEFORE_STERILIZATION       AS DaysBeforeSterilization,
+        products.PAIRED_CB_BOX_TYPE              AS PairedCbBoxType,
+
+        products.PRINT_UB_INSTRUCTION_FLAG + 0   AS PrintUbInstructionFlag,
+        products.PRINT_CB_INSTRUCTION_FLAG + 0   AS PrintCbInstructionFlag,
+        products.PRINT_CASE_LABEL_FLAG + 0       AS PrintCaseLabelFlag,
+        products.PRINT_QCSAMPLE_FLAG + 0         AS PrintQcSampleFlag,
+
+        products.BARCODE_CATEGORY                AS BarcodeCategory,
+
+        products.UB_QUANTITY                     AS UbQuantity,
+        products.CB_QUANTITY                     AS CbQuantity,
+        products.UB_PER_CB_QUANTITY              AS UbPerCbQuantity,
+        products.CB_PER_PALLETE                  AS CbPerPallete,
+        products.QC_SAMPLE_QUANTITY              AS QcSampleQuantity,
+        products.SB_QUANTITY                     AS SbQuantity,
+
+        products.UB_BARCODE_NUMBER               AS UbBarcodeNumber,
+        products.CB_BARCODE_NUMBER               AS CbBarcodeNumber,
+
+        products.PQE_CONTROL_NUMBER_CODE         AS PqeControlNumberCode,
+        products.DVR_NUMBER                      AS DvrNumber,
+        products.DEPKES_NUMBER                   AS DepkesNumber,
+        products.CE_MARK                         AS CeMark,
+        products.SR_TYPE                         AS SrType,
+
+        products.GAUGE                           AS Gauge,
+        products.NEEDLE_GAUGE                    AS NeedleGauge,
+        products.NEEDLE_SIZE                     AS NeedleSize,
+
+        products.TRANSFER_INSTRUCTION            AS TransferInstruction,
+        products.PSS_ID_NO                       AS PssIdNo,
+        products.FLOW_RATE                       AS FlowRate,
+        products.DESCRIPTION_1                   AS Description1,
+        products.DESCRIPTION_2                   AS Description2,
+
+        products.LABEL_FLAG + 0                  AS LabelFlag,
+        products.LABEL_TYPE_UB_FLAG + 0          AS LabelTypeUbFlag,
+        products.LABEL_TYPE_CB_FLAG + 0          AS LabelTypeCbFlag,
+        products.LABEL_TYPE_CASE_FLAG + 0        AS LabelTypeCaseFlag,
+        products.LABEL_WIDTH                     AS LabelWidth,
+        products.LABEL_HEIGHT                    AS LabelHeight,
+
+        products.COMBINED_BOXTYPE_FLAG + 0       AS CombinedBoxTypeFlag,
+        products.ACTIVE_FLAG + 0                 AS ActiveFlag,
+
+        products.CUSTOM_1                        AS Custom1,
+        products.CUSTOM_2                        AS Custom2,
+        products.CUSTOM_3                        AS Custom3,
+        products.CUSTOM_4                        AS Custom4,
+        products.CUSTOM_5                        AS Custom5,
+        products.CUSTOM_6                        AS Custom6,
+        products.CUSTOM_7                        AS Custom7,
+        products.CUSTOM_8                        AS Custom8,
+        products.CUSTOM_9                        AS Custom9,
+        products.CUSTOM_10                       AS Custom10,
+
+        products.CREATED_USER_CODE               AS CreatedUserCode,
+        products.CREATED_SECTION_ID              AS CreatedSectionId,
+        products.CREATED_IP_ADDRESS              AS CreatedIpAddress,
+        FROM_UNIXTIME(products.CREATED_DATETIME / 1000) AS CreatedDatetime,
+
+        products.LASTUPDATE_USER_CODE            AS LastUpdateUserCode,
+        products.LASTUPDATE_SECTION_ID           AS LastUpdateSectionId,
+        products.LASTUPDATE_IP_ADDRESS           AS LastUpdateIpAddress,
+        FROM_UNIXTIME(products.LASTUPDATE_DATETIME / 1000) AS LastUpdateDatetime,
+
+        products.OUB_REPORT_TYPE_CODE            AS OubReportTypeCode,
+        products.PRINT_OUB_INSTRUCTION_FLAG + 0  AS PrintOubInstructionFlag,
+        products.OUB_QUANTITY                    AS OubQuantity,
+        products.OUB_BARCODE_NUMBER              AS OubBarcodeNumber,
+        products.LABEL_TYPE_OUB_FLAG + 0         AS LabelTypeOubFlag,
+
+        products.OCB_REPORT_TYPE_CODE            AS OcbReportTypeCode,
+        products.PRINT_OCB_INSTRUCTION_FLAG + 0  AS PrintOcbInstructionFlag,
+        products.OCB_QUANTITY                    AS OcbQuantity,
+        products.OCB_BARCODE_NUMBER              AS OcbBarcodeNumber,
+        products.LABEL_TYPE_OCB_FLAG + 0         AS LabelTypeOcbFlag,
+
+        products.AUB_REPORT_TYPE_CODE            AS AubReportTypeCode,
+        products.PRINT_AUB_INSTRUCTION_FLAG + 0  AS PrintAubInstructionFlag,
+        products.AUB_QUANTITY                    AS AubQuantity,
+        products.AUB_BARCODE_NUMBER              AS AubBarcodeNumber,
+        products.LABEL_TYPE_AUB_FLAG + 0         AS LabelTypeAubFlag,
+
+        products.ACB_REPORT_TYPE_CODE            AS AcbReportTypeCode,
+        products.PRINT_ACB_INSTRUCTION_FLAG + 0  AS PrintAcbInstructionFlag,
+        products.ACB_QUANTITY                    AS AcbQuantity,
+        products.ACB_BARCODE_NUMBER              AS AcbBarcodeNumber,
+        products.LABEL_TYPE_ACB_FLAG + 0         AS LabelTypeAcbFlag,
+
+        products.LABEL_TYPE_EUMDR_FLAG + 0       AS LabelTypeEuMdrFlag
+
+    FROM pre_tpc_products_tcl products WHERE products.ITEM_CODE = @itemCode AND products.MASTERLABEL_REVISION_NUMBER = @revision";
+
 
         private const string GetProductMasterSql = @"
             SELECT barcode_type+0 AS BARCODE_TYPE, products.*

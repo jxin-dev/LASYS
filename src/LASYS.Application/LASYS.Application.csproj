@@ -22,4 +22,14 @@
     <ProjectReference Include="..\LASYS.Domain\LASYS.Domain.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Features\Devices\Queries\GetBarcodeScannerStatus\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="Interop.LabelGalleryPlus3WR">
+      <HintPath>..\LASYS.Infrastructure\Hardware\Printers\Sato\Drivers\Interop.LabelGalleryPlus3WR.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
 </Project>

@@ -1,6 +1,6 @@
 ﻿using System.IO;
 using LASYS.Application.Common.Results;
-using LASYS.Application.Features.LabelProcessing.Utilities;
+using LASYS.Application.Common.Utilities;
 using LASYS.Application.Interfaces.Persistence;
 using LASYS.Application.Interfaces.Services;
 using MediatR;
@@ -11,11 +11,13 @@ namespace LASYS.Application.Features.OCRCalibration.PrintLabel
     {
         private readonly IDbConnectionFactory _factory;
         private readonly IPrinterService _printerService;
+        private readonly INiceLabelTemplateService _niceLabelTemplateService;
 
-        public PrintLabelHandler(IDbConnectionFactory factory, IPrinterService printerService)
+        public PrintLabelHandler(IDbConnectionFactory factory, IPrinterService printerService, INiceLabelTemplateService niceLabelTemplateService)
         {
             _factory = factory;
             _printerService = printerService;
+            _niceLabelTemplateService = niceLabelTemplateService;
         }
 
         public async Task<Result<Unit>> Handle(PrintLabelCommand request, CancellationToken cancellationToken)
@@ -39,9 +41,8 @@ namespace LASYS.Application.Features.OCRCalibration.PrintLabel
             {
                 return Result.Failure<Unit>("Sample label template file not found.");
             }
-            _printerService.LoadLabelTemplate(sampleTemplatePath);
+            _niceLabelTemplateService.LoadTemplate(sampleTemplatePath);
 
-        
             int sequenceNo = 1;
             var formattedSequence = SequenceFormatter.Format(sequenceNo, 6);
 
@@ -58,16 +59,21 @@ namespace LASYS.Application.Features.OCRCalibration.PrintLabel
                 { "BOX_NO",$"{formattedSequence}" },
             };
 
+            _niceLabelTemplateService.SetVariables(labelData);
 
-            _printerService.SetLabelVariables(labelData);
+            string baseDir = AppDomain.CurrentDomain.BaseDirectory;
+            string dirPrn = Path.Combine(baseDir, "prns");
+            string dirImage = Path.Combine(baseDir, "images");
 
-            bool generated = _printerService.PrintLabelWithPreview($"LBL_{formattedSequence}");
+            bool generated = _niceLabelTemplateService.GeneratePreview(dirImage, $"LBL_{formattedSequence}");
             if (!generated)
             {
                 return Result.Failure<Unit>("Failed to generate label preview.");
             }
 
-            _printerService.Print();
+            string prnPath = _niceLabelTemplateService.GeneratePrn(dirPrn, $"LBL_{formattedSequence}");
+            var templateVariables = _niceLabelTemplateService.GetTemplateVariables();
+            _printerService.Print(prnPath);
             return Result.Success(Unit.Value);
         }
     }

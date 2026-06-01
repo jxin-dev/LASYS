@@ -1,8 +1,9 @@
-﻿using LASYS.Application.Common.Enums;
-using LASYS.Application.Events;
-using LASYS.Application.Features.LabelProcessing.Abstractions;
+﻿using LASYS.Application.Features.BatchPrinting.Commands.SetBatchPrintDecision;
+using LASYS.Application.Features.BatchPrinting.Enums;
+using LASYS.Application.Features.BatchPrinting.Events;
 using LASYS.DesktopApp.Views.Forms;
 using LASYS.DesktopApp.Views.Interfaces;
+using MediatR;
 
 namespace LASYS.DesktopApp.Presenters
 {
@@ -10,15 +11,22 @@ namespace LASYS.DesktopApp.Presenters
     {
         public ErrorForm View { get; }
         private readonly IErrorView _view;
-        private readonly ILabelProcessingService _labelProcessingService;
+        private readonly IMediator _mediator;
 
-        public ErrorPresenter(IErrorView view, ILabelProcessingService labelProcessingService)
+        public ErrorPresenter(IErrorView view, IMediator mediator)
         {
             _view = view;
+            _mediator = mediator;
+
             View = (ErrorForm)view;
 
             _view.DecisionRequested += OnDecisionRequested;
-            _labelProcessingService = labelProcessingService;
+        }
+
+        private async void OnDecisionRequested(object? sender, OperatorDecision e)
+        {
+            await _mediator.Send(new SetBatchPrintDecisionCommand(e));
+            _view.CloseError();
         }
 
         public string GetErrorMessage(OperatorDecisionRequiredEventArgs e)
@@ -47,10 +55,6 @@ namespace LASYS.DesktopApp.Presenters
                 _ => "A validation error occurred."
             };
         }
-        private void OnDecisionRequested(object? sender, OperatorDecision e)
-        {
-            _labelProcessingService.SetUserDecision(e);
-            _view.CloseError();
-        }
+     
     }
 }

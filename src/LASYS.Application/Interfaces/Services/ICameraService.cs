@@ -1,6 +1,8 @@
 ﻿using System.Drawing;
 using LASYS.Application.Contracts;
 using LASYS.Application.Events;
+using LASYS.Application.Features.Devices.Events;
+using LASYS.Application.Features.Devices.Models;
 using OpenCvSharp;
 using DrawingSize = System.Drawing.Size;
 namespace LASYS.Application.Interfaces.Services
@@ -10,7 +12,11 @@ namespace LASYS.Application.Interfaces.Services
         Mat? LastCapturedFrame { get; set; }
         Mat? GetSnapshot();
 
-        event EventHandler<CameraStatusEventArgs> CameraStatusChanged;
+        DeviceStatus CurrentStatus { get; }
+
+        //event EventHandler<CameraStatusEventArgs> CameraStatusChanged;
+        event EventHandler<DeviceStatusChangedEventArgs> DeviceStatusChanged;
+
         event EventHandler CameraDisconnected;
         event EventHandler CameraConnected;
 

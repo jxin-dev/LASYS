@@ -1,6 +1,5 @@
 ﻿using LASYS.Application.Common.Enums;
 using LASYS.Application.Events;
-using LASYS.Application.Features.LabelProcessing.Abstractions;
 using LASYS.DesktopApp.Views.Forms;
 using LASYS.DesktopApp.Views.Interfaces;
 
@@ -10,15 +9,12 @@ namespace LASYS.DesktopApp.Presenters
     {
         private ISplashView _view;
         public SplashForm View { get; }
-        private readonly ILabelProcessingService _labelProcessingService;
-        public SplashPresenter(ISplashView view, ILabelProcessingService labelProcessingService)
+        public SplashPresenter(ISplashView view)
         {
             _view = view;
             View = (SplashForm)view;
 
             _view.ViewShown += OnViewShown;
-            _labelProcessingService = labelProcessingService;
-            _labelProcessingService.DeviceStatusChanged += OnDeviceStatusChanged;
         }
 
         private void OnDeviceStatusChanged(object? sender, DeviceStatusEventArgs e)
@@ -66,7 +62,7 @@ namespace LASYS.DesktopApp.Presenters
             await Task.Delay(500);
 
             _view.InvokeOnUI(() => _view.UpdateProgress(10, "Initializing camera, printer, and barcode scanner..."));
-            await _labelProcessingService.InitializeDevicesAsync();
+            
             await Task.Delay(500);
 
             _view.InvokeOnUI(() => _view.UpdateProgress(96, "Finalizing setup..."));

@@ -1,11 +1,11 @@
-﻿using LASYS.DesktopApp.Views.Forms;
+﻿using LASYS.Application.Common.Enums;
 
 namespace LASYS.DesktopApp.Views.Interfaces
 {
     public interface ILabelBoxTypeView
     {
-        void RenderButtons(IEnumerable<LabelBoxType> types);
-        LabelBoxType? SelectedType { get; }
+        void RenderButtons(IReadOnlyCollection<BoxType> boxTypes);
+        BoxType? SelectedType { get; }
         DialogResult ShowDialog();
     }
 }

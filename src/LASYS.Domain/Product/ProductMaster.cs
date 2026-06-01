@@ -2,8 +2,9 @@
 {
     public class ProductMaster
     {
+
         public int? BarcodeType { get; set; }
-        public int? ItemCode { get; set; }
+        public string? ItemCode { get; set; }
         public string? ItemName { get; set; }
         public string? ItemGroupTypeCode { get; set; }
         public string? MarketCode { get; set; }

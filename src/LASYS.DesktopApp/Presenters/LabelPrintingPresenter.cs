@@ -1,253 +1,218 @@
-﻿using System.Drawing;
+﻿using System.Diagnostics;
 using LASYS.Application.Common.Enums;
 using LASYS.Application.Common.Messaging;
+using LASYS.Application.Common.Results;
 using LASYS.Application.Events;
-using LASYS.Application.Features.LabelProcessing.Abstractions;
-using LASYS.Application.Features.LabelProcessing.GetLabelTemplate;
-using LASYS.Application.Features.LabelProcessing.StartLabelJob;
-using LASYS.Application.Features.LabelProcessing.Contracts;
-using LASYS.DesktopApp.DTOs;
+using LASYS.Application.Features.BatchPrinting.Commands.PauseBatchPrint;
+using LASYS.Application.Features.BatchPrinting.Commands.ResumeBatchPrint;
+using LASYS.Application.Features.BatchPrinting.Commands.StartBatchPrint;
+using LASYS.Application.Features.BatchPrinting.Commands.StopBatchPrint;
+using LASYS.Application.Features.BatchPrinting.Enums;
+using LASYS.Application.Features.BatchPrinting.Events;
+using LASYS.Application.Features.BatchPrinting.Models;
+using LASYS.Application.Features.BatchPrinting.Services;
+using LASYS.Application.Features.Devices.Queries.GetCameraStatus;
+using LASYS.Application.Features.LabelInstructions.GetLabelInstructionContext;
+using LASYS.Application.Features.LabelInstructions.GetWorkOrderListBySectionId;
+using LASYS.Application.Features.PrintLabels.Helpers;
+using LASYS.Application.Interfaces.Services;
 using LASYS.DesktopApp.Views.Interfaces;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
-using LASYS.DesktopApp.Events;
-using LASYS.Application.Common.Models;
-using LASYS.Application.Interfaces.Services;
-using LASYS.DesktopApp.State.Printing;
 
 namespace LASYS.DesktopApp.Presenters
 {
     public class LabelPrintingPresenter
     {
         public UserControl View { get; }
+        private readonly IBatchPrintProcessService _batchPrintService;
+        private readonly IMediator _mediator;
+        private readonly IServiceProvider _services;
         private readonly ILabelPrintingView _view;
         private readonly IMainView _mainView;
-        private readonly IServiceProvider _services;
-        private readonly IMediator _mediator;
-        private readonly ILabelProcessingService _labelProcessingService;
+        private readonly INiceLabelTemplateService _niceLabelTemplateService;
         private readonly IPrinterService _printerService;
-        private readonly IPrintingState _printingState;
 
-        private PrintData _printData;
-
-        public LabelPrintingPresenter(ILabelPrintingView view,
-                                      IMainView mainView,
-                                      IServiceProvider services,
+        private Guid? _activePrintJobId;
+        public LabelPrintingPresenter(IBatchPrintProcessService batchPrintService,
                                       IMediator mediator,
-                                      ILabelProcessingService labelProcessingService,
-                                      IPrinterService printerService,
-                                      IPrintingState printingState)
+                                      IServiceProvider services,
+                                      ILabelPrintingView view,
+                                      IMainView mainView,
+                                      INiceLabelTemplateService niceLabelTemplateService,
+                                      IPrinterService printerService)
         {
+            _batchPrintService = batchPrintService;
+            _mediator = mediator;
+            _services = services;
             _view = view;
             _mainView = mainView;
-            _services = services;
-            _mediator = mediator;
-            _labelProcessingService = labelProcessingService;
+            _niceLabelTemplateService = niceLabelTemplateService;
+            _printerService = printerService;
 
             View = (UserControl)view;
 
-            _printerService = printerService;
-            _printingState = printingState;
 
 
+            // VIEW EVENTS
             _view.BackToWorkOrdersRequested += OnBackToWorkOrdersRequested;
             _view.PrintRequested += OnPrintRequested;
             _view.PausePrintingRequested += OnPausePrintingRequested;
             _view.ResumePrintingRequested += OnResumePrintingRequested;
             _view.StopPrintingRequested += OnStopPrintingRequested;
+            // SERVICE EVENTS
+            _batchPrintService.OperatorDecisionRequired += OnDecisionRequired;
+            _batchPrintService.JobStateChanged += OnJobStateChanged;
+            _batchPrintService.LogGenerated += OnLogGenerated;
 
-            _labelProcessingService.DecisionRequired += OnDecisionRequired;
-            _labelProcessingService.LogGenerated += OnLogGenerated;
-            _labelProcessingService.PrintControlsStateChanged += OnPrintControlsStateChanged;
-            _labelProcessingService.DeviceStatusChanged += OnDeviceStatusChanged;
-         
-        }
-
-        private void OnDeviceStatusChanged(object? sender, DeviceStatusEventArgs e)
-        {
-            switch (e.Device)
-            {
-                case DeviceType.Camera:
-                    _view.InvokeOnUI(() => _view.UpdateCameraStatus(e.Message, e.Description));
-                    break;
-                case DeviceType.Printer:
-                    _view.InvokeOnUI(() => _view.UpdatePrinterStatus(e.Message, e.Description));
-                    break;
-                case DeviceType.Barcode:
-                    _view.InvokeOnUI(() => _view.UpdateBarcodeStatus(e.Message, e.Description));
-                    break;
-                default:
-                    break;
-            }
-        }
-
-        private void OnPrintControlsStateChanged(object? sender, PrintJobState e)
-        {
-            _view.InvokeOnUI(() => _view.SetPrintingState(e));
+            //_printerService.DeviceStatusChanged += OnDeviceStatusChanged;
         }
 
         private void OnLogGenerated(object? sender, LogEventArgs e)
         {
-            _view.InvokeOnUI(() => _view.AddLog(e.Type, e.Timestamp, e.Message));
+            _view.InvokeOnUI(() => _view.AddLog(e.Type, DateTime.Now, e.Message));
         }
 
-        public void InitializePrintData(PrintData printData)
-        {
-            _printData = printData;
+        //private void OnDeviceStatusChanged(object? sender, DeviceStatusChangedEventArgs e)
+        //{
+        //    _view.InvokeOnUI(() =>
+        //            _view.AddLog(MessageType.Info, DateTime.Now, e.Status.Message));
 
+        //}
+
+        public async Task LoadCameraStatusAsync()
+        {
+            var status = await _mediator.Send(new GetCameraStatusQuery());
+            _view.InvokeOnUI(() => _view.UpdateCameraStatus(status.Message, status.Description));
+        }
+
+        private void OnJobStateChanged(object? sender, PrintJobState e)
+        {
             _view.InvokeOnUI(() =>
             {
-                _view.UpdateWorkOrderData(new WorkOrderDto
-                {
-                    LabelInstruction = new LabelInstruction(
-                        InstructionCode: printData.InstructionCode,
-                        ItemCode: printData.ItemCode,
-                        ExpiryDate: printData.ExpiryDate,
-                        LotNo: printData.LotNo,
-                        LabelFile: string.Empty
-                    ),
-                    BarcodeLabel = new BarcodeLabel((int)printData.ProductQuantity),
-                    BatchInformation = new BatchInformation(),
-                    PrintingResultInformation = new PrintingResultInformation()
-                });
+                _view.SetPrintingState(e.Status);
+                _view.UpdateProgress(e.PrintedCount, e.TotalQuantity);
             });
+
+            if (e.Status is PrintJobStatus.Completed or PrintJobStatus.Stopped or PrintJobStatus.Failed)
+            {
+                _activePrintJobId = null;
+            }
         }
-
-
-
-        public async Task InitializeTemplateAsync(int workOrderId)
+        private async void OnPrintRequested(object? sender, PrintRequestedEventArgs e)
         {
-            foreach (var status in _labelProcessingService.GetCurrentDeviceStatuses())
-            {
-                OnDeviceStatusChanged(this, status);
-            }
-            var result = await _mediator.Send(new GetLabelTemplateQuery(workOrderId));
+            var context = e.Context;
+            var quantityToPrint = e.Quantity;
+            _activePrintJobId = await _mediator.Send(new StartBatchPrintCommand(context, quantityToPrint));
 
-            if (!result.IsSuccess)
-            {
-                OnLogGenerated(this, new LogEventArgs(MessageType.Error, result.ErrorOrDefault));
-            }
-
-            _labelProcessingService.LoadLabelTemplateAsync(result.Value!);
-
-            _view.UpdateFilePath(result.Value!);
         }
 
-        // New overload: accept full event args, populate view first then load template
-        public async Task InitializeTemplateAsync(LabelPrintingRequestedEventArgs args)
+        private async void OnPausePrintingRequested(object? sender, EventArgs e)
         {
-            // Populate view with initial info from event so controls show immediately
-            try
-            {
-                SetWorkOrder(args);
-            }
-            catch { }
+            if (_activePrintJobId is null)
+                return;
 
-            // Call existing template initializer using workOrderId
-            await InitializeTemplateAsync(args.WorkOrderId);
+            await _mediator.Send(new PauseBatchPrintCommand(_activePrintJobId.Value));
         }
+
+        private async void OnResumePrintingRequested(object? sender, EventArgs e)
+        {
+            if (_activePrintJobId is null)
+                return;
+
+            await _mediator.Send(new ResumeBatchPrintCommand(_activePrintJobId.Value));
+        }
+
+        private async void OnStopPrintingRequested(object? sender, EventArgs e)
+        {
+            if (_activePrintJobId is null)
+                return;
+
+            await _mediator.Send(new StopBatchPrintCommand(_activePrintJobId.Value));
+
+            _activePrintJobId = null;
+        }
+
+
 
         private void OnDecisionRequired(object? sender, OperatorDecisionRequiredEventArgs e)
         {
-            var errorPresenter = _services.GetRequiredService<ErrorPresenter>();
-            var errorForm = errorPresenter.View;
-            errorForm.MessageText = errorPresenter.GetErrorMessage(e);
-
-            _view.ShowError(errorForm);
+            _view.InvokeOnUI(() =>
+            {
+                var errorPresenter = _services.GetRequiredService<ErrorPresenter>();
+                var errorForm = errorPresenter.View;
+                errorForm.MessageText = errorPresenter.GetErrorMessage(e);
+                _view.ShowError(errorForm);
+            });
         }
+
+        public async Task InitializeDataAsync(WorkOrderItem labelInstruction, BoxType boxType)
+        {
+            _view.InvokeOnUI(() => _view.SetPrintingState(PrintJobStatus.Initializing));
+
+            var itemCode = labelInstruction.ItemCode;
+            var lotNo = labelInstruction.LotNo;
+            var masterLabelRevNumber = labelInstruction.MasterLabelRevNumber;
+
+            var result = await _mediator.Send(new GetLabelInstructionContextQuery(itemCode, lotNo, masterLabelRevNumber, boxType));
+
+            if (!result.IsSuccess)
+            {
+                _view.InvokeOnUI(() =>
+                    _view.AddLog(MessageType.Error, DateTime.Now, $"Failed to retrieve label instruction context: {result.ErrorOrDefault}"));
+                return;
+            }
+
+            var context = result.Value!;
+            var masterLabel = context.MasterLabelDetails;
+            var niceLabelPath = masterLabel?.FilePath;
+            var niceLabelFile = masterLabel?.LabelFile;
+
+
+            var sw = Stopwatch.StartNew();
+
+            string filePath = NiceLabelFilePathBuilder.Build(itemCode, masterLabelRevNumber, boxType);
+            bool isNiceLabelExist = !string.IsNullOrWhiteSpace(niceLabelPath) && File.Exists(niceLabelPath);
+
+            if (isNiceLabelExist)
+                await NiceLabelFilePathBuilder.CopyFileAsync(niceLabelPath!, filePath);
+            else
+                await NiceLabelFilePathBuilder.CreateFileAsync(filePath, niceLabelFile!);
+
+            sw.Stop();
+
+            _view.AddLog(MessageType.Info, DateTime.Now, $"Template saved in {sw.ElapsedMilliseconds}ms");
+
+            var updatedContext = context with
+            {
+                MasterLabelDetails = masterLabel?.WithResolvedFilePath(filePath)
+            };
+
+
+            _view.InvokeOnUI(() =>
+            {
+                _view.LoadPrintingContext(updatedContext);
+                _view.SetPrintingState(PrintJobStatus.Ready);
+            });
+
+            // Load Nicelabel Template
+            _niceLabelTemplateService.LoadTemplate(filePath);
+
+        }
+
 
         private void OnBackToWorkOrdersRequested(object? sender, EventArgs e)
         {
-            if (_printingState.Status is PrintingStatus.Printing or PrintingStatus.Paused)
+            if (_activePrintJobId != null)
             {
                 _mainView.ShowNavigationBlocked("Cannot navigate while printing is in progress.");
                 return;
             }
 
             var workOrdersPresenter = _services.GetRequiredService<WorkOrdersPresenter>();
-            _mainView?.LoadView(workOrdersPresenter.View, false); //always new
+            _mainView?.LoadView(workOrdersPresenter.View, true); //false always new
             _mainView?.SetActiveNavigation(_mainView.WorkOrdersNavItem);
         }
 
-        private void OnStopPrintingRequested(object? sender, EventArgs e)
-        {
-            _labelProcessingService.Stop();
-        }
-
-        private void OnResumePrintingRequested(object? sender, EventArgs e)
-        {
-            _labelProcessingService.Resume();
-        }
-
-        private void OnPausePrintingRequested(object? sender, EventArgs e)
-        {
-            _labelProcessingService.Pause();
-        }
-
-        private async void OnPrintRequested(object? sender, EventArgs e)
-        {
-            _printingState.SetPrinting(PrintingStatus.Printing);
-            try
-            {
-                if (_printData == null)
-                {
-                    _view.InvokeOnUI(() => _view.AddLog(MessageType.Error, DateTime.Now, "Print data is not initialized."));
-                    return;
-                }
-
-                var quantity = (int)Math.Max(1, _printData.TargetQuantity - _printData.TotalPassed);
-                var request = new StartLabelJobRequest
-                {
-                    ItemCode = _printData.ItemCode,
-                    StartSequence = (int)Math.Max(1, _printData.SequenceNumber),
-                    Quantity = quantity,
-                    SequenceVariableName = "SEQ",
-                    BarcodeVariableName = "BARCODE",
-                    SequencePaddingLength = 6,
-                    LabelData = new Dictionary<string, string>
-                    {
-                        { "ItemCode", _printData.ItemCode },
-                        { "InstructionCode", _printData.InstructionCode },
-                        { "LotNo", _printData.LotNo },
-                        { "ExpiryDate", _printData.ExpiryDate == DateTime.MinValue ? string.Empty : _printData.ExpiryDate.ToString("yyyy-MM-dd") },
-                        { "LabelType", _printData.LabelType.ToString() }
-                    }
-                };
-
-                // Start job via service
-                await _labelProcessingService.StartJobAsync(new Size(800, 600), request);
-            }
-            catch (Exception ex)
-            {
-                _view.InvokeOnUI(() => _view.AddLog(MessageType.Error, DateTime.Now, ex.Message));
-            }
-        }
-
-        // New: populate view from event args
-        public void SetWorkOrder(LabelPrintingRequestedEventArgs args)
-        {
-            var labelInstruction = new LabelInstruction(
-                InstructionCode: args.InstructionCode ?? string.Empty,
-                ItemCode: args.ItemCode ?? string.Empty,
-                ExpiryDate: null,
-                LotNo: args.LotNo ?? string.Empty,
-                LabelFile: string.Empty
-            );
-
-            var dto = new WorkOrderDto
-            {
-                LabelInstruction = labelInstruction,
-                BarcodeLabel = new BarcodeLabel(),
-                BatchInformation = new BatchInformation(),
-                PrintingResultInformation = new PrintingResultInformation()
-            };
-
-            _view.InvokeOnUI(() => _view.UpdateWorkOrderData(dto));
-        }
-
-        public void SetWorkOrderId(int workOrderId)
-        {
-            _view.UpdateWorkOrderData(new WorkOrderDto());
-        }
     }
 }

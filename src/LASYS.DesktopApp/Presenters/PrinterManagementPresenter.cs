@@ -27,10 +27,10 @@ namespace LASYS.DesktopApp.Presenters
 
             // Unsubscribe first to avoid multiple subscriptions if the presenter is re-initialized
             _printerService.PrinterNotification -= OnPrinterNotification;
-            _printerService.PrinterStatusChanged -= OnPrinterStatusChanged;
+            //_printerService.PrinterStatusChanged -= OnPrinterStatusChanged;
             // Subscribe to printer events
             _printerService.PrinterNotification += OnPrinterNotification;
-            _printerService.PrinterStatusChanged += OnPrinterStatusChanged;
+            //_printerService.PrinterStatusChanged += OnPrinterStatusChanged;
         }
 
         private void OnPrinterStatusChanged(object? sender, PrinterStatusEventArgs e)

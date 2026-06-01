@@ -1,4 +1,4 @@
-﻿using LASYS.Application.Common.Enums;
+﻿using LASYS.Application.Features.BatchPrinting.Enums;
 
 namespace LASYS.DesktopApp.Views.Interfaces
 {

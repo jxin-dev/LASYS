@@ -1,10 +1,11 @@
-﻿using LASYS.DesktopApp.Views.Interfaces;
+﻿using LASYS.Application.Common.Enums;
+using LASYS.DesktopApp.Views.Interfaces;
 
 namespace LASYS.DesktopApp.Views.Forms
 {
     public partial class LabelBoxTypeForm : Form, ILabelBoxTypeView
     {
-        public LabelBoxType? SelectedType { get; private set; }
+        public BoxType? SelectedType { get; private set; }
         public LabelBoxTypeForm()
         {
             InitializeComponent();
@@ -29,15 +30,15 @@ namespace LASYS.DesktopApp.Views.Forms
                 }
             };
         }
-        private readonly Dictionary<LabelBoxType, string> _buttonLabels = new()
+        private readonly Dictionary<BoxType, string> _buttonLabels = new()
         {
-            { LabelBoxType.CaseLabel, "Case Label" },
-            { LabelBoxType.UnitBox, "Unit Box" },
-            { LabelBoxType.AdditionalUnitBox, "Additional Unit Box" },
-            { LabelBoxType.OuterUnitBox, "Outer Unit Box" },
-            { LabelBoxType.CartonBox, "Carton Box" },
-            { LabelBoxType.OuterCartonBox, "Outer Carton Box" },
-            { LabelBoxType.AdditionalCartonBox, "Additional Carton Box" }
+            { BoxType.CaseLabel, "Case Label" },
+            { BoxType.UnitBox, "Unit Box" },
+            { BoxType.AdditionalUnitBox, "Additional Unit Box" },
+            { BoxType.OuterUnitBox, "Outer Unit Box" },
+            { BoxType.CartonBox, "Carton Box" },
+            { BoxType.OuterCartonBox, "Outer Carton Box" },
+            { BoxType.AdditionalCartonBox, "Additional Carton Box" }
         };
         private void ResizeForm()
         {
@@ -86,12 +87,12 @@ namespace LASYS.DesktopApp.Views.Forms
 
             return btn;
         }
-        public void RenderButtons(IEnumerable<LabelBoxType> types)
+        public void RenderButtons(IReadOnlyCollection<BoxType> boxTypes)
         {
             flowButtons.SuspendLayout();
             flowButtons.Controls.Clear();
 
-            foreach (var type in types)
+            foreach (var type in boxTypes)
             {
                 var text = _buttonLabels.TryGetValue(type, out var label)
                     ? label
@@ -115,7 +116,7 @@ namespace LASYS.DesktopApp.Views.Forms
 
         private void OnButtonClick(object? sender, EventArgs e)
         {
-            if (sender is Button btn && btn.Tag is LabelBoxType type)
+            if (sender is Button btn && btn.Tag is BoxType type)
             {
                 SelectedType = type;
                 this.DialogResult = DialogResult.OK;
@@ -124,14 +125,14 @@ namespace LASYS.DesktopApp.Views.Forms
         }
     }
 
-    public enum LabelBoxType
-    {
-        CaseLabel,
-        UnitBox,
-        AdditionalUnitBox,
-        OuterUnitBox,
-        CartonBox,
-        OuterCartonBox,
-        AdditionalCartonBox,
-    }
+    //public enum BoxType
+    //{
+    //    CaseLabel,
+    //    UnitBox,
+    //    AdditionalUnitBox,
+    //    OuterUnitBox,
+    //    CartonBox,
+    //    OuterCartonBox,
+    //    AdditionalCartonBox,
+    //}
 }

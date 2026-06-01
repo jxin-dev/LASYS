@@ -1,7 +1,7 @@
-﻿using LASYS.Application.Common.Enums;
-using LASYS.Application.Common.Messaging;
-using LASYS.Application.Common.Models;
-using LASYS.DesktopApp.DTOs;
+﻿using LASYS.Application.Common.Messaging;
+using LASYS.Application.Features.BatchPrinting.Enums;
+using LASYS.Application.Features.BatchPrinting.Events;
+using LASYS.Application.Features.LabelInstructions.GetLabelInstructionContext;
 using LASYS.DesktopApp.Views.Forms;
 using LASYS.DesktopApp.Views.Interfaces;
 using LASYS.UIControls.Controls;
@@ -10,19 +10,19 @@ namespace LASYS.DesktopApp.Views.UserControls
 {
     public partial class LabelPrintingControl : UserControl, ILabelPrintingView
     {
-        //private readonly CustomProgressBar _progressBar;
         private readonly Image _pauseIcon = Properties.Resources.pause24;
         private readonly Image _resumeIcon = Properties.Resources.resume24;
         private readonly Image _stopIcon = Properties.Resources.stopbatch24;
         private readonly Image _startIcon = Properties.Resources.play24;
 
         public event EventHandler? BackToWorkOrdersRequested;
-        public event EventHandler? PrintRequested;
+        public event EventHandler<PrintRequestedEventArgs>? PrintRequested; 
+
         public event EventHandler? PausePrintingRequested;
         public event EventHandler? ResumePrintingRequested;
         public event EventHandler? StopPrintingRequested;
 
-        private PrintJobState _currentState = PrintJobState.Initializing;
+        private PrintJobStatus _currentJobStatus = PrintJobStatus.Initializing;
 
         private readonly DraggableResizerPanel _resizablePanel;
 
@@ -37,10 +37,9 @@ namespace LASYS.DesktopApp.Views.UserControls
         private Label? _barcodeStatus;
         private Label? _barcodeDetails;
 
-        private PrintData? _printData;
-
         public UserControl UserControl => this;
 
+        private LabelPrintingContext? _labelPrintingContext;
         public LabelPrintingControl()
         {
             InitializeComponent();
@@ -63,42 +62,36 @@ namespace LASYS.DesktopApp.Views.UserControls
 
             ActivityLogs();
             HardwareStatus();
-            //_progressBar = new CustomProgressBar
-            //{
-            //    Dock = DockStyle.Bottom,
-            //    ProgressColor = Color.FromArgb(255, 220, 20, 60),
-            //    ProgressBackgroundColor = Color.LightGray,
-            //    ShowPercentage = false
-            //};
-
-            //pnlLoadingContainer.Controls.Add(_progressBar);
-            //UpdateProgress(50, "Printing Progress");
-
-
+            
             RegisterHideEvent(pnlContent);
 
             btnBack.Click += (_, _) => BackToWorkOrdersRequested?.Invoke(this, EventArgs.Empty);
-
             btnPrint.Click += (_, _) =>
             {
-                if (_currentState == PrintJobState.Idle)
+                if (_labelPrintingContext is null)
+                    return;
+
+                if (_currentJobStatus is PrintJobStatus.Ready)
                 {
-                    PrintRequested?.Invoke(this, EventArgs.Empty);
+                    ClearLogs();
+                    PrintRequested?.Invoke(this, new PrintRequestedEventArgs(_labelPrintingContext, (int)nudQuantity.Value));
                 }
-                else
+
+                if (_currentJobStatus is PrintJobStatus.Printing or PrintJobStatus.Paused)
                 {
                     StopPrintingRequested?.Invoke(this, EventArgs.Empty);
                 }
+
             };
 
 
             btnPauseResume.Click += (_, _) =>
             {
-                if (_currentState == PrintJobState.Printing)
+                if (_currentJobStatus is PrintJobStatus.Printing)
                 {
                     PausePrintingRequested?.Invoke(this, EventArgs.Empty);
                 }
-                else if (_currentState == PrintJobState.Paused)
+                else if (_currentJobStatus == PrintJobStatus.Paused)
                 {
                     ResumePrintingRequested?.Invoke(this, EventArgs.Empty);
                 }
@@ -437,37 +430,40 @@ namespace LASYS.DesktopApp.Views.UserControls
             }
         }
 
-        public void UpdateWorkOrderData(WorkOrderDto workOrderDto)
+        public void LoadPrintingContext(LabelPrintingContext context)
         {
-            if (workOrderDto == null)
-            {
-                throw new ArgumentNullException(nameof(workOrderDto));
-            }
-            var labelInstruction = workOrderDto.LabelInstruction;
-            var barcodeLabel = workOrderDto.BarcodeLabel;
-            var batchInformation = workOrderDto.BatchInformation;
-            var printingResult = workOrderDto.PrintingResultInformation;
+            _labelPrintingContext = context;
+            var labelInstruction = context.LabelInstructionDetails!;
+            var product = context.ProductDetails!;
+            var masterLabel = context.MasterLabelDetails!;
+            var printDetails = context.PrintDetails!;
 
-            // Update Label Instruction Section
             lblInstructionCode.Text = labelInstruction.InstructionCode;
             lblItemCode.Text = labelInstruction.ItemCode;
-            lblExpiryDate.Text = labelInstruction.ExpiryDate?.ToString("yyyy-MM-dd") ?? "Not Applicable";
+            lblExpiryDate.Text = labelInstruction.ExpirationDate?.ToString("yyyy-MM-dd") ?? "N/A";
             lblLotNo.Text = labelInstruction.LotNo;
-            lblLabelFile.Text = labelInstruction.LabelFile;
-            // Update Barcode Label Section
-            nudQuantity.Value = barcodeLabel.Quantity;
-            lblStartSequence.Text = barcodeLabel.StartSequence.ToString();
-            // Update Batch Information Section
-            cbEndOfBatch.Checked = batchInformation.IsEndOfBatch;
-            lblBatchNumber.Text = batchInformation.BatchNumber.ToString();
-            lblSetNumber.Text = batchInformation.SetNumber.ToString();
-            // Update Printing Result Information Section
-            lblTotalQuantity.Text = printingResult.TargetQuantity.ToString();
-            lblRemaining.Text = printingResult.Remaining.ToString();
-            lblLabelSample.Text = printingResult.LabelSample.ToString();
-            lblTotalPrinted.Text = printingResult.TotalPrinted.ToString();
-            lblTotalPassed.Text = printingResult.TotalPassed.ToString();
-            lblTotalFailed.Text = printingResult.TotalFailed.ToString();
+
+            lblLabelFile.Text = masterLabel.FilePath;
+
+            //cbEndOfBatch.Checked = label.IsEndOfBatch;
+            lblStartSequence.Text = printDetails.NextSequence.ToString();
+            lblBatchNumber.Text = printDetails.BatchNumber.ToString();
+            lblSetNumber.Text = printDetails.SetNumber.ToString();
+
+            var remaining = printDetails.GetRemainingPrintQuantity(product.Quantity);
+
+            lblTotalQuantity.Text = product.Quantity.ToString();
+            lblRemaining.Text = remaining.ToString();
+            lblLabelSample.Text = printDetails.TotalSampled.ToString();
+            lblTotalPrinted.Text = printDetails.TotalPrinted.ToString();
+            lblTotalPassed.Text = printDetails.TotalPassed.ToString();
+            lblTotalFailed.Text = printDetails.TotalFailed.ToString();
+
+            nudQuantity.Minimum = 1;
+            nudQuantity.Value = remaining < 50 ? remaining : 50;
+            nudQuantity.Maximum = remaining < 50 ? remaining : 50;
+
+
         }
 
         private Color GetColor(MessageType type)
@@ -481,59 +477,6 @@ namespace LASYS.DesktopApp.Views.UserControls
             };
         }
 
-        public void SetPrintingState(PrintJobState state)
-        {
-            _currentState = state;
-            switch (state)
-            {
-                case PrintJobState.Initializing:
-                    btnPrint.Visible = false;
-                    btnPauseResume.Visible = false;
-                    ClearLogs();
-
-                    break;
-                case PrintJobState.Idle:
-                case PrintJobState.Stopped:
-                case PrintJobState.Completed:
-                    btnPauseResume.Visible = false;
-                    btnPrint.Visible = true;
-                    btnPrint.Text = "Start Print";
-                    btnPrint.Image = _startIcon;
-                    btnPrint.ForeColor = Color.Black;
-                    btnPrint.BackColor = Color.SeaGreen;
-                    break;
-
-                case PrintJobState.Printing:
-                    btnPauseResume.Visible = true;
-                    btnPauseResume.Text = "Pause";
-                    btnPauseResume.Image = _pauseIcon;
-                    btnPauseResume.BackColor = Color.DarkOrange;
-
-                    btnPrint.Visible = true;
-                    btnPrint.Text = "Stop Print";
-                    btnPrint.Image = _stopIcon;
-                    btnPrint.ForeColor = Color.White;
-                    btnPrint.BackColor = Color.Crimson;
-                    break;
-
-                case PrintJobState.Paused:
-                    btnPauseResume.Visible = true;
-                    btnPauseResume.Text = "Resume";
-                    btnPauseResume.Image = _resumeIcon;
-                    btnPauseResume.BackColor = Color.SeaGreen;
-                    break;
-                case PrintJobState.Resumed:
-                    btnPauseResume.Visible = true;
-                    btnPauseResume.Text = "Pause";
-                    btnPauseResume.Image = _pauseIcon;
-                    btnPauseResume.BackColor = Color.DarkOrange;
-                    break;
-                case PrintJobState.Disabled:
-                    btnPrint.Visible = false;
-                    btnPauseResume.Visible = false;
-                    break;
-            }
-        }
         private void ClearLogs()
         {
             _logListView!.BeginUpdate();
@@ -542,6 +485,15 @@ namespace LASYS.DesktopApp.Views.UserControls
         }
         public void AddLog(MessageType type, DateTime timeStamp, string message)
         {
+            if (_logListView is null || _logListView.IsDisposed)
+                return;
+
+            const int MaxLogs = 1000;
+            if (_logListView!.Items.Count >= MaxLogs)
+            {
+                _logListView.Items.RemoveAt(0);
+            }
+
             var item = new ListViewItem(timeStamp.ToString("yyyy-MM-dd"));
             item.SubItems.Add(timeStamp.ToString("HH:mm:ss"));
             item.SubItems.Add(message);
@@ -569,28 +521,71 @@ namespace LASYS.DesktopApp.Views.UserControls
                 action();
         }
 
-        public void UpdatePrintData(PrintData printData)
+
+        public void SetPrintingState(PrintJobStatus status)
         {
-            _printData = printData;
-            lblTotalQuantity.Text = printData.TargetQuantity.ToString();
-            lblRemaining.Text = (printData.LastSequence - printData.SequenceNumber).ToString();
-            lblLabelSample.Text = printData.TotalSampleCase.ToString();
-            lblTotalPrinted.Text = (printData.ResultData.TotalPassed + printData.ResultData.TotalFailed).ToString();
-            lblTotalPassed.Text = printData.ResultData.TotalPassed.ToString();
-            lblTotalFailed.Text = printData.ResultData.TotalFailed.ToString();
+            _currentJobStatus = status;
+            switch (status)
+            {
+                case PrintJobStatus.Initializing:
+                    btnPauseResume.Visible = false;
+                    btnPrint.Visible = false;
+
+                    lblPrintingProgress.Visible = false;
+                    pbPrintingProgress.Visible = false;
+                    break;
+                case PrintJobStatus.Completed:
+                case PrintJobStatus.Ready:
+                case PrintJobStatus.Stopped:
+                case PrintJobStatus.Failed:
+                    lblPrintingProgress.Visible = false;
+                    pbPrintingProgress.Visible = false;
+
+                    btnPauseResume.Visible = false;
+                    btnPrint.Visible = true;
+                    btnPrint.Text = "Start Print";
+                    btnPrint.Image = _startIcon;
+                    btnPrint.ForeColor = Color.Black;
+                    btnPrint.BackColor = Color.SeaGreen;
+                    break;
+                case PrintJobStatus.InProgress:
+                    btnPrint.Enabled = false;
+                    break;
+                case PrintJobStatus.Printing:
+                    lblPrintingProgress.Visible = true;
+                    pbPrintingProgress.Visible = true;
+                    btnPauseResume.Visible = true;
+                    btnPauseResume.Text = "Pause";
+                    btnPauseResume.Image = _pauseIcon;
+                    btnPauseResume.BackColor = Color.DarkOrange;
+
+                    btnPrint.Enabled = true;
+                    btnPrint.Visible = true;
+                    btnPrint.Text = "Stop Print";
+                    btnPrint.Image = _stopIcon;
+                    btnPrint.ForeColor = Color.White;
+                    btnPrint.BackColor = Color.Crimson;
+                    break;
+                case PrintJobStatus.Paused:
+                    btnPauseResume.Visible = true;
+                    btnPauseResume.Text = "Resume";
+                    btnPauseResume.Image = _resumeIcon;
+                    btnPauseResume.BackColor = Color.SeaGreen;
+                    break;
+                default:
+                    break;
+            }
+
         }
 
-        public void UpdateFilePath(string filePath)
+        public void UpdateProgress(int printedCount, int totalQuantity)
         {
-            lblLabelFile.Text = filePath;
+            lblPrintingProgress.Text = $"{printedCount} / {totalQuantity}";
+            pbPrintingProgress.Minimum = 0;
+            pbPrintingProgress.Maximum = totalQuantity;
+            pbPrintingProgress.Value = Math.Min(printedCount, totalQuantity);
         }
 
-
-        //public void UpdateProgress(int percent, string message)
-        //{
-        //    _progressBar.Value = percent;
-        //    _progressBar.UpdateStatus(message);
-        //}
 
     }
 }

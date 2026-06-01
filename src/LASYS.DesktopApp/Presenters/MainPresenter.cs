@@ -109,7 +109,7 @@ namespace LASYS.DesktopApp.Presenters
             _logService.Log("WorkOrderRequested received in MainPresenter.", MessageType.Info);
             var workOrdersPresenter = _serviceProvider.GetRequiredService<WorkOrdersPresenter>();
             _logService.Log($"Resolved WorkOrdersPresenter (HashCode={workOrdersPresenter.GetHashCode()}).", MessageType.Info);
-            _view?.LoadView(workOrdersPresenter.View, false); //always new
+            _view?.LoadView(workOrdersPresenter.View, true); //false always new
             _view?.SetActiveNavigation(_view.WorkOrdersNavItem);
 
             _logService.Log("Loaded WorkOrders view into MainForm.", MessageType.Info);

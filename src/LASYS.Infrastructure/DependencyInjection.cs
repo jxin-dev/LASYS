@@ -1,6 +1,7 @@
 ﻿using System.Data;
 using LASYS.Application.Interfaces.Persistence;
 using LASYS.Application.Interfaces.Persistence.Repositories;
+using LASYS.Application.Interfaces.Persistence.TableMappings;
 using LASYS.Application.Interfaces.Services;
 using LASYS.Infrastructure.Hardware.Barcode;
 using LASYS.Infrastructure.Hardware.Camera;
@@ -9,6 +10,7 @@ using LASYS.Infrastructure.Logging;
 using LASYS.Infrastructure.OCR;
 using LASYS.Infrastructure.Persistence.Connection;
 using LASYS.Infrastructure.Persistence.Repositories;
+using LASYS.Infrastructure.Persistence.TableMappings;
 using LASYS.Infrastructure.Services.Media;
 using LASYS.Infrastructure.Services.Security;
 using LASYS.Infrastructure.Services.Session;
@@ -76,11 +78,28 @@ public static class DependencyInjection
             return context.CreateConnectionAsync().GetAwaiter().GetResult();
         });
 
+        //Table & Column Mapping
+        services.AddScoped<IPrintTableResolver, PrintTableResolver>();
+        services.AddScoped<INiceLabelColumnResolver, NiceLabelColumnResolver>();
+        services.AddScoped<IProductColumnResolver, ProductColumnResolver>();
+        services.AddScoped<IMasterLabelColumnResolver, MasterLabelColumnResolver>();
+        services.AddScoped<ILabelInstructionColumnResolver,  LabelInstructionColumnResolver>();
+
         //Repositories
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IHrUserRepository, HrUserRepository>();
+        services.AddScoped<ILabelInstructionRepository, LabelInstructionRepository>();
+        services.AddScoped<IProductRepository, ProductRepository>();
+        services.AddScoped<IMasterLabelRepository, MasterLabelRepository>();
+        services.AddScoped<IPrintLabelRepository, PrintLabelRepository>();
+
+
+
+
         services.AddScoped<IWorkOrderRepository, WorkOrderRepository>();
         services.AddScoped<WorkOrderService>();
+
+        services.AddScoped<IProductRepository, ProductRepository>();
 
         return services;
     }
@@ -115,6 +134,7 @@ public static class DependencyInjection
     private static IServiceCollection AddSatoLabelPrinterServices(this IServiceCollection services)
     {
         services.AddSingleton<IPrinterService, PrinterService>();
+        services.AddSingleton<INiceLabelTemplateService, NiceLabelTemplateService>();  
         return services;
     }
 }

@@ -1,4 +1,4 @@
-﻿using LASYS.DesktopApp.Views.Forms;
+﻿using LASYS.Application.Common.Enums;
 using LASYS.DesktopApp.Views.Interfaces;
 
 namespace LASYS.DesktopApp.Presenters
@@ -10,55 +10,40 @@ namespace LASYS.DesktopApp.Presenters
         {
             _view = view;
         }
-        public LabelBoxType? Show(
-        bool hasCaseLabel,
-        bool hasUnitBox,
-        bool hasAdditionalUnitBox,
-        bool hasOuterUnitBox,
-        bool hasCartonBox,
-        bool hasOuterCartonBox,
-        bool hasAdditionalCartonBox)
+        public BoxType? Show(IReadOnlyCollection<BoxType>? availableBoxTypes)
         {
-            var types = BuildTypes(
-                hasCaseLabel,
-                hasUnitBox,
-                hasAdditionalUnitBox,
-                hasOuterUnitBox,
-                hasCartonBox,
-                hasOuterCartonBox,
-                hasAdditionalCartonBox);
-
-            if (!types.Any())
+            if (availableBoxTypes == null || availableBoxTypes.Count == 0)
                 return null;
 
-            _view.RenderButtons(types);
+            _view.RenderButtons(availableBoxTypes);
 
             return _view.ShowDialog() == DialogResult.OK
                 ? _view.SelectedType
                 : null;
         }
 
-        private IEnumerable<LabelBoxType> BuildTypes(
-            bool hasCaseLabel,
-            bool hasUnitBox,
-            bool hasAdditionalUnitBox,
-            bool hasOuterUnitBox,
-            bool hasCartonBox,
-            bool hasOuterCartonBox,
-            bool hasAdditionalCartonBox)
-        {
-            return new[]
-            {
-            (hasCaseLabel, LabelBoxType.CaseLabel),
-            (hasUnitBox, LabelBoxType.UnitBox),
-            (hasAdditionalUnitBox, LabelBoxType.AdditionalUnitBox),
-            (hasOuterUnitBox, LabelBoxType.OuterUnitBox),
-            (hasCartonBox, LabelBoxType.CartonBox),
-            (hasOuterCartonBox, LabelBoxType.OuterCartonBox),
-            (hasAdditionalCartonBox, LabelBoxType.AdditionalCartonBox)
-        }
-            .Where(x => x.Item1)
-            .Select(x => x.Item2);
-        }
+        //private IEnumerable<BoxType> BuildTypes(string? availableBoxTypes)
+        //{
+        //    if (string.IsNullOrWhiteSpace(availableBoxTypes))
+        //        return Enumerable.Empty<BoxType>();
+
+        //    var boxTypes = availableBoxTypes
+        //        .Split(',', StringSplitOptions.RemoveEmptyEntries)
+        //        .Select(x => x.Trim())
+        //        .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        //    return new[]
+        //    {
+        //        ("CASE", BoxType.CaseLabel),
+        //        ("UB", BoxType.UnitBox),
+        //        ("AUB", BoxType.AdditionalUnitBox),
+        //        ("OUB", BoxType.OuterUnitBox),
+        //        ("CB", BoxType.CartonBox),
+        //        ("OCB", BoxType.OuterCartonBox),
+        //        ("ACB", BoxType.AdditionalCartonBox)
+        //    }
+        //    .Where(x => boxTypes.Contains(x.Item1))
+        //    .Select(x => x.Item2);
+        //}
     }
 }

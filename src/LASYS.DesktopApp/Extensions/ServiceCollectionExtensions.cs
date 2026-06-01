@@ -1,6 +1,4 @@
-﻿using LASYS.Application.Features.LabelProcessing.Abstractions;
-using LASYS.Application.Interfaces;
-using LASYS.Application.Interfaces.Context;
+﻿using LASYS.Application.Interfaces.Context;
 using LASYS.DesktopApp.Presenters;
 using LASYS.DesktopApp.Services.Context;
 using LASYS.DesktopApp.State.Printing;
@@ -28,8 +26,8 @@ namespace LASYS.DesktopApp.Extensions
             services.AddTransient<IErrorView, ErrorForm>();
             services.AddTransient<ErrorPresenter>();
 
-            services.AddTransient<IWorkOrdersView, WorkOrdersControl>();
-            services.AddTransient<WorkOrdersPresenter>();
+            services.AddSingleton<IWorkOrdersView, WorkOrdersControl>();
+            services.AddSingleton<WorkOrdersPresenter>();
 
             services.AddTransient<ILabelPrintingView, LabelPrintingControl>();
             services.AddTransient<LabelPrintingPresenter>();

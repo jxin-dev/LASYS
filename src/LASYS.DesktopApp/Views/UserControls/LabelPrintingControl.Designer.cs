@@ -29,8 +29,8 @@
         private void InitializeComponent()
         {
             pnlContent = new Panel();
-            btnPrint = new Button();
-            btnPauseResume = new Button();
+            lblPrintingProgress = new Label();
+            pbPrintingProgress = new ProgressBar();
             groupBox4 = new GroupBox();
             lblLabelSample = new Label();
             label30 = new Label();
@@ -51,6 +51,8 @@
             cbEndOfBatch = new CheckBox();
             label13 = new Label();
             groupBox2 = new GroupBox();
+            btnPrint = new Button();
+            btnPauseResume = new Button();
             nudQuantity = new NumericUpDown();
             lblStartSequence = new Label();
             label19 = new Label();
@@ -82,8 +84,8 @@
             // 
             pnlContent.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             pnlContent.BackColor = Color.White;
-            pnlContent.Controls.Add(btnPrint);
-            pnlContent.Controls.Add(btnPauseResume);
+            pnlContent.Controls.Add(lblPrintingProgress);
+            pnlContent.Controls.Add(pbPrintingProgress);
             pnlContent.Controls.Add(groupBox4);
             pnlContent.Controls.Add(groupBox3);
             pnlContent.Controls.Add(groupBox2);
@@ -93,40 +95,24 @@
             pnlContent.Size = new Size(1235, 515);
             pnlContent.TabIndex = 4;
             // 
-            // btnPrint
+            // lblPrintingProgress
             // 
-            btnPrint.Anchor = AnchorStyles.None;
-            btnPrint.BackColor = Color.Crimson;
-            btnPrint.FlatAppearance.BorderSize = 0;
-            btnPrint.FlatStyle = FlatStyle.Flat;
-            btnPrint.Font = new Font("Segoe UI Semibold", 11.25F, FontStyle.Bold);
-            btnPrint.ForeColor = Color.White;
-            btnPrint.Image = Properties.Resources.stopbatch24;
-            btnPrint.Location = new Point(993, 312);
-            btnPrint.Name = "btnPrint";
-            btnPrint.Size = new Size(122, 37);
-            btnPrint.TabIndex = 5;
-            btnPrint.Text = "Stop Print";
-            btnPrint.TextImageRelation = TextImageRelation.ImageBeforeText;
-            btnPrint.UseVisualStyleBackColor = false;
-            btnPrint.Visible = false;
+            lblPrintingProgress.Anchor = AnchorStyles.None;
+            lblPrintingProgress.AutoSize = true;
+            lblPrintingProgress.Font = new Font("Segoe UI", 14.25F, FontStyle.Bold);
+            lblPrintingProgress.Location = new Point(575, 434);
+            lblPrintingProgress.Name = "lblPrintingProgress";
+            lblPrintingProgress.Size = new Size(52, 25);
+            lblPrintingProgress.TabIndex = 5;
+            lblPrintingProgress.Text = "0 / 0";
             // 
-            // btnPauseResume
+            // pbPrintingProgress
             // 
-            btnPauseResume.Anchor = AnchorStyles.None;
-            btnPauseResume.BackColor = Color.DarkOrange;
-            btnPauseResume.FlatAppearance.BorderSize = 0;
-            btnPauseResume.FlatStyle = FlatStyle.Flat;
-            btnPauseResume.Font = new Font("Segoe UI Semibold", 11.25F, FontStyle.Bold);
-            btnPauseResume.Image = Properties.Resources.pause24;
-            btnPauseResume.Location = new Point(893, 312);
-            btnPauseResume.Name = "btnPauseResume";
-            btnPauseResume.Size = new Size(94, 37);
-            btnPauseResume.TabIndex = 4;
-            btnPauseResume.Text = "Pause";
-            btnPauseResume.TextImageRelation = TextImageRelation.ImageBeforeText;
-            btnPauseResume.UseVisualStyleBackColor = false;
-            btnPauseResume.Visible = false;
+            pbPrintingProgress.Anchor = AnchorStyles.None;
+            pbPrintingProgress.Location = new Point(144, 464);
+            pbPrintingProgress.Name = "pbPrintingProgress";
+            pbPrintingProgress.Size = new Size(904, 14);
+            pbPrintingProgress.TabIndex = 4;
             // 
             // groupBox4
             // 
@@ -144,9 +130,9 @@
             groupBox4.Controls.Add(lblTotalPrinted);
             groupBox4.Controls.Add(label24);
             groupBox4.Font = new Font("Segoe UI Semibold", 11.25F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            groupBox4.Location = new Point(582, 156);
+            groupBox4.Location = new Point(144, 184);
             groupBox4.Name = "groupBox4";
-            groupBox4.Size = new Size(533, 150);
+            groupBox4.Size = new Size(904, 97);
             groupBox4.TabIndex = 3;
             groupBox4.TabStop = false;
             groupBox4.Text = "Printing Result Information";
@@ -154,10 +140,10 @@
             // lblLabelSample
             // 
             lblLabelSample.AutoSize = true;
-            lblLabelSample.Font = new Font("Segoe UI Semibold", 11.25F, FontStyle.Bold | FontStyle.Underline);
-            lblLabelSample.Location = new Point(139, 93);
+            lblLabelSample.Font = new Font("Segoe UI", 14.25F, FontStyle.Bold);
+            lblLabelSample.Location = new Point(642, 32);
             lblLabelSample.Name = "lblLabelSample";
-            lblLabelSample.Size = new Size(17, 20);
+            lblLabelSample.Size = new Size(23, 25);
             lblLabelSample.TabIndex = 21;
             lblLabelSample.Text = "0";
             // 
@@ -165,7 +151,7 @@
             // 
             label30.AutoSize = true;
             label30.Font = new Font("Segoe UI", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            label30.Location = new Point(19, 93);
+            label30.Location = new Point(523, 40);
             label30.Name = "label30";
             label30.Size = new Size(94, 17);
             label30.TabIndex = 20;
@@ -174,10 +160,10 @@
             // lblTotalFailed
             // 
             lblTotalFailed.AutoSize = true;
-            lblTotalFailed.Font = new Font("Segoe UI Semibold", 11.25F, FontStyle.Bold | FontStyle.Underline);
-            lblTotalFailed.Location = new Point(371, 93);
+            lblTotalFailed.Font = new Font("Segoe UI", 14.25F, FontStyle.Bold);
+            lblTotalFailed.Location = new Point(642, 63);
             lblTotalFailed.Name = "lblTotalFailed";
-            lblTotalFailed.Size = new Size(17, 20);
+            lblTotalFailed.Size = new Size(23, 25);
             lblTotalFailed.TabIndex = 19;
             lblTotalFailed.Text = "0";
             // 
@@ -185,7 +171,7 @@
             // 
             label28.AutoSize = true;
             label28.Font = new Font("Segoe UI", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            label28.Location = new Point(19, 51);
+            label28.Location = new Point(19, 40);
             label28.Name = "label28";
             label28.Size = new Size(109, 17);
             label28.TabIndex = 10;
@@ -195,7 +181,7 @@
             // 
             label17.AutoSize = true;
             label17.Font = new Font("Segoe UI", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            label17.Location = new Point(251, 93);
+            label17.Location = new Point(523, 69);
             label17.Name = "label17";
             label17.Size = new Size(84, 17);
             label17.TabIndex = 18;
@@ -204,20 +190,20 @@
             // lblTotalQuantity
             // 
             lblTotalQuantity.AutoSize = true;
-            lblTotalQuantity.Font = new Font("Segoe UI Semibold", 11.25F, FontStyle.Bold | FontStyle.Underline);
-            lblTotalQuantity.Location = new Point(139, 51);
+            lblTotalQuantity.Font = new Font("Segoe UI", 14.25F, FontStyle.Bold);
+            lblTotalQuantity.Location = new Point(139, 34);
             lblTotalQuantity.Name = "lblTotalQuantity";
-            lblTotalQuantity.Size = new Size(17, 20);
+            lblTotalQuantity.Size = new Size(23, 25);
             lblTotalQuantity.TabIndex = 11;
             lblTotalQuantity.Text = "0";
             // 
             // lblTotalPassed
             // 
             lblTotalPassed.AutoSize = true;
-            lblTotalPassed.Font = new Font("Segoe UI Semibold", 11.25F, FontStyle.Bold | FontStyle.Underline);
-            lblTotalPassed.Location = new Point(371, 72);
+            lblTotalPassed.Font = new Font("Segoe UI", 14.25F, FontStyle.Bold);
+            lblTotalPassed.Location = new Point(413, 61);
             lblTotalPassed.Name = "lblTotalPassed";
-            lblTotalPassed.Size = new Size(17, 20);
+            lblTotalPassed.Size = new Size(23, 25);
             lblTotalPassed.TabIndex = 17;
             lblTotalPassed.Text = "0";
             // 
@@ -225,7 +211,7 @@
             // 
             label26.AutoSize = true;
             label26.Font = new Font("Segoe UI", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            label26.Location = new Point(19, 72);
+            label26.Location = new Point(295, 40);
             label26.Name = "label26";
             label26.Size = new Size(78, 17);
             label26.TabIndex = 12;
@@ -235,7 +221,7 @@
             // 
             label22.AutoSize = true;
             label22.Font = new Font("Segoe UI", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            label22.Location = new Point(251, 72);
+            label22.Location = new Point(295, 69);
             label22.Name = "label22";
             label22.Size = new Size(89, 17);
             label22.TabIndex = 16;
@@ -244,20 +230,20 @@
             // lblRemaining
             // 
             lblRemaining.AutoSize = true;
-            lblRemaining.Font = new Font("Segoe UI Semibold", 11.25F, FontStyle.Bold | FontStyle.Underline);
-            lblRemaining.Location = new Point(139, 72);
+            lblRemaining.Font = new Font("Segoe UI", 14.25F, FontStyle.Bold);
+            lblRemaining.Location = new Point(413, 34);
             lblRemaining.Name = "lblRemaining";
-            lblRemaining.Size = new Size(17, 20);
+            lblRemaining.Size = new Size(23, 25);
             lblRemaining.TabIndex = 13;
             lblRemaining.Text = "0";
             // 
             // lblTotalPrinted
             // 
             lblTotalPrinted.AutoSize = true;
-            lblTotalPrinted.Font = new Font("Segoe UI Semibold", 11.25F, FontStyle.Bold | FontStyle.Underline);
-            lblTotalPrinted.Location = new Point(371, 51);
+            lblTotalPrinted.Font = new Font("Segoe UI", 14.25F, FontStyle.Bold);
+            lblTotalPrinted.Location = new Point(139, 63);
             lblTotalPrinted.Name = "lblTotalPrinted";
-            lblTotalPrinted.Size = new Size(17, 20);
+            lblTotalPrinted.Size = new Size(23, 25);
             lblTotalPrinted.TabIndex = 15;
             lblTotalPrinted.Text = "0";
             // 
@@ -265,7 +251,7 @@
             // 
             label24.AutoSize = true;
             label24.Font = new Font("Segoe UI", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            label24.Location = new Point(251, 51);
+            label24.Location = new Point(19, 69);
             label24.Name = "label24";
             label24.Size = new Size(92, 17);
             label24.TabIndex = 14;
@@ -280,9 +266,9 @@
             groupBox3.Controls.Add(cbEndOfBatch);
             groupBox3.Controls.Add(label13);
             groupBox3.Font = new Font("Segoe UI Semibold", 11.25F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            groupBox3.Location = new Point(582, 87);
+            groupBox3.Location = new Point(144, 287);
             groupBox3.Name = "groupBox3";
-            groupBox3.Size = new Size(533, 68);
+            groupBox3.Size = new Size(904, 68);
             groupBox3.TabIndex = 2;
             groupBox3.TabStop = false;
             groupBox3.Text = "Batch Information";
@@ -290,10 +276,10 @@
             // lblSetNumber
             // 
             lblSetNumber.AutoSize = true;
-            lblSetNumber.Font = new Font("Segoe UI Semibold", 11.25F, FontStyle.Bold | FontStyle.Underline, GraphicsUnit.Point, 0);
-            lblSetNumber.Location = new Point(470, 30);
+            lblSetNumber.Font = new Font("Segoe UI", 14.25F, FontStyle.Bold);
+            lblSetNumber.Location = new Point(470, 26);
             lblSetNumber.Name = "lblSetNumber";
-            lblSetNumber.Size = new Size(17, 20);
+            lblSetNumber.Size = new Size(23, 25);
             lblSetNumber.TabIndex = 8;
             lblSetNumber.Text = "0";
             // 
@@ -310,10 +296,10 @@
             // lblBatchNumber
             // 
             lblBatchNumber.AutoSize = true;
-            lblBatchNumber.Font = new Font("Segoe UI Semibold", 11.25F, FontStyle.Bold | FontStyle.Underline, GraphicsUnit.Point, 0);
-            lblBatchNumber.Location = new Point(295, 30);
+            lblBatchNumber.Font = new Font("Segoe UI", 14.25F, FontStyle.Bold);
+            lblBatchNumber.Location = new Point(295, 26);
             lblBatchNumber.Name = "lblBatchNumber";
-            lblBatchNumber.Size = new Size(17, 20);
+            lblBatchNumber.Size = new Size(23, 25);
             lblBatchNumber.TabIndex = 6;
             lblBatchNumber.Text = "0";
             // 
@@ -342,17 +328,54 @@
             // groupBox2
             // 
             groupBox2.Anchor = AnchorStyles.None;
+            groupBox2.Controls.Add(btnPrint);
+            groupBox2.Controls.Add(btnPauseResume);
             groupBox2.Controls.Add(nudQuantity);
             groupBox2.Controls.Add(lblStartSequence);
             groupBox2.Controls.Add(label19);
             groupBox2.Controls.Add(label21);
             groupBox2.Font = new Font("Segoe UI Semibold", 11.25F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            groupBox2.Location = new Point(144, 238);
+            groupBox2.Location = new Point(144, 361);
             groupBox2.Name = "groupBox2";
-            groupBox2.Size = new Size(432, 68);
+            groupBox2.Size = new Size(904, 68);
             groupBox2.TabIndex = 1;
             groupBox2.TabStop = false;
             groupBox2.Text = "Barcode Label";
+            // 
+            // btnPrint
+            // 
+            btnPrint.Anchor = AnchorStyles.None;
+            btnPrint.BackColor = Color.Crimson;
+            btnPrint.FlatAppearance.BorderSize = 0;
+            btnPrint.FlatStyle = FlatStyle.Flat;
+            btnPrint.Font = new Font("Segoe UI Semibold", 11.25F, FontStyle.Bold);
+            btnPrint.ForeColor = Color.White;
+            btnPrint.Image = Properties.Resources.stopbatch24;
+            btnPrint.Location = new Point(776, 19);
+            btnPrint.Name = "btnPrint";
+            btnPrint.Size = new Size(122, 37);
+            btnPrint.TabIndex = 7;
+            btnPrint.Text = "Stop Print";
+            btnPrint.TextImageRelation = TextImageRelation.ImageBeforeText;
+            btnPrint.UseVisualStyleBackColor = false;
+            btnPrint.Visible = false;
+            // 
+            // btnPauseResume
+            // 
+            btnPauseResume.Anchor = AnchorStyles.None;
+            btnPauseResume.BackColor = Color.DarkOrange;
+            btnPauseResume.FlatAppearance.BorderSize = 0;
+            btnPauseResume.FlatStyle = FlatStyle.Flat;
+            btnPauseResume.Font = new Font("Segoe UI Semibold", 11.25F, FontStyle.Bold);
+            btnPauseResume.Image = Properties.Resources.pause24;
+            btnPauseResume.Location = new Point(676, 19);
+            btnPauseResume.Name = "btnPauseResume";
+            btnPauseResume.Size = new Size(94, 37);
+            btnPauseResume.TabIndex = 6;
+            btnPauseResume.Text = "Pause";
+            btnPauseResume.TextImageRelation = TextImageRelation.ImageBeforeText;
+            btnPauseResume.UseVisualStyleBackColor = false;
+            btnPauseResume.Visible = false;
             // 
             // nudQuantity
             // 
@@ -366,10 +389,10 @@
             // lblStartSequence
             // 
             lblStartSequence.AutoSize = true;
-            lblStartSequence.Font = new Font("Segoe UI Semibold", 11.25F, FontStyle.Bold | FontStyle.Underline, GraphicsUnit.Point, 0);
-            lblStartSequence.Location = new Point(360, 29);
+            lblStartSequence.Font = new Font("Segoe UI", 14.25F, FontStyle.Bold);
+            lblStartSequence.Location = new Point(360, 25);
             lblStartSequence.Name = "lblStartSequence";
-            lblStartSequence.Size = new Size(17, 20);
+            lblStartSequence.Size = new Size(23, 25);
             lblStartSequence.TabIndex = 3;
             lblStartSequence.Text = "0";
             // 
@@ -407,9 +430,9 @@
             groupBox1.Controls.Add(lblInstructionCode);
             groupBox1.Controls.Add(label2);
             groupBox1.Font = new Font("Segoe UI Semibold", 11.25F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            groupBox1.Location = new Point(144, 87);
+            groupBox1.Location = new Point(144, 29);
             groupBox1.Name = "groupBox1";
-            groupBox1.Size = new Size(432, 150);
+            groupBox1.Size = new Size(904, 150);
             groupBox1.TabIndex = 0;
             groupBox1.TabStop = false;
             groupBox1.Text = "Label Instruction";
@@ -420,7 +443,7 @@
             lblLabelFile.Font = new Font("Segoe UI", 9.75F);
             lblLabelFile.Location = new Point(139, 113);
             lblLabelFile.Name = "lblLabelFile";
-            lblLabelFile.Size = new Size(287, 34);
+            lblLabelFile.Size = new Size(497, 19);
             lblLabelFile.TabIndex = 9;
             lblLabelFile.Text = "Loading...";
             // 
@@ -563,6 +586,7 @@
             Name = "LabelPrintingControl";
             Size = new Size(1242, 573);
             pnlContent.ResumeLayout(false);
+            pnlContent.PerformLayout();
             groupBox4.ResumeLayout(false);
             groupBox4.PerformLayout();
             groupBox3.ResumeLayout(false);
@@ -618,7 +642,9 @@
         private Label lblRemaining;
         private Label lblTotalPrinted;
         private Label label24;
-        private Button btnPauseResume;
         private Button btnPrint;
+        private Button btnPauseResume;
+        private Label lblPrintingProgress;
+        private ProgressBar pbPrintingProgress;
     }
 }
