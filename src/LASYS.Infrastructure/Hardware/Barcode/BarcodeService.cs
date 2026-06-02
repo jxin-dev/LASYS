@@ -2,10 +2,13 @@
 using System.Management;
 using System.Runtime.InteropServices;
 using System.Text;
-using LASYS.Application.Common.Enums;
 using LASYS.Application.Common.Messaging;
 using LASYS.Application.Contracts;
 using LASYS.Application.Events;
+using LASYS.Application.Features.Devices.Enums;
+using LASYS.Application.Features.Devices.Events;
+using LASYS.Application.Features.Devices.Factories;
+using LASYS.Application.Features.Devices.Models;
 using LASYS.Application.Interfaces.Services;
 using Newtonsoft.Json;
 
@@ -21,6 +24,9 @@ namespace LASYS.Infrastructure.Hardware.Barcode
         private SerialPort? _port;
         private readonly StringBuilder _buffer = new();
 
+        public DeviceStatus CurrentStatus { get; private set; } = DeviceStatusFactory.Create(DeviceType.BarcodeScanner, DeviceStatusCode.NotConfigured);
+
+
         private bool _isWaitingForScan;
 
         private readonly byte[] TRIGGER_ON = [0x7E, 0x80, 0x02, 0x00, 0x00, 0x00, 0x01, 0x01, 0x82, 0x7E];
@@ -29,13 +35,27 @@ namespace LASYS.Infrastructure.Hardware.Barcode
         public event EventHandler<BarcodeNotificationEventArgs>? BarcodeNotification;
         public event EventHandler<BarcodeStatusEventArgs>? BarcodeStatusChanged;
         public event EventHandler<BarcodeScannedEventArgs>? BarcodeScanned;
+        public event EventHandler<DeviceStatusChangedEventArgs>? DeviceStatusChanged;
 
+
+        private void SetStatus(DeviceStatusCode statusCode, string? descriptionOverride = null)
+        {
+            CurrentStatus = DeviceStatusFactory.Create(
+                DeviceType.BarcodeScanner,
+                statusCode,
+                descriptionOverride);
+
+            DeviceStatusChanged?.Invoke(
+                this,
+                new DeviceStatusChangedEventArgs(CurrentStatus));
+        }
         public async Task InitializeAsync()
         {
             var config = await LoadAsync();
             if (config == null || string.IsNullOrWhiteSpace(config.Port))
             {
-                BarcodeStatusChanged?.Invoke(this, new BarcodeStatusEventArgs(BarcodeStatus.BarcodeNotConfigured));
+                SetStatus(DeviceStatusCode.NotConfigured);
+                //BarcodeStatusChanged?.Invoke(this, new BarcodeStatusEventArgs(BarcodeStatus.BarcodeNotConfigured));
                 return;
             }
 
@@ -77,13 +97,16 @@ namespace LASYS.Infrastructure.Hardware.Barcode
                         _port.Open();
                 }
 
-                BarcodeStatusChanged?.Invoke(this,new BarcodeStatusEventArgs(
-                        BarcodeStatus.BarcodeConnected,
-                        $"The barcode scanner was initialized on port {config.Port}."));
+                SetStatus(DeviceStatusCode.Connected, $"The barcode scanner was initialized on port {config.Port}.");
+
+               //BarcodeStatusChanged?.Invoke(this,new BarcodeStatusEventArgs(
+               //         BarcodeStatus.BarcodeConnected,
+               //         $"The barcode scanner was initialized on port {config.Port}."));
             }
             catch
             {
-                BarcodeStatusChanged?.Invoke(this, new BarcodeStatusEventArgs(BarcodeStatus.BarcodeNotDetected, $"Barcode scanner not detected on port {config.Port}."));
+                SetStatus(DeviceStatusCode.NotDetected, $"Barcode scanner not detected on port {config.Port}.");
+                //BarcodeStatusChanged?.Invoke(this, new BarcodeStatusEventArgs(BarcodeStatus.BarcodeNotDetected, $"Barcode scanner not detected on port {config.Port}."));
             }
         }
         public bool IsConnected
@@ -96,6 +119,8 @@ namespace LASYS.Infrastructure.Hardware.Barcode
                 }
             }
         }
+
+
         private void OnDataReceived(object sender, SerialDataReceivedEventArgs e)
         {
             try
@@ -130,8 +155,8 @@ namespace LASYS.Infrastructure.Hardware.Barcode
 
                     BarcodeScanned?.Invoke(this,
                         new BarcodeScannedEventArgs(barcode));
-
-                    BarcodeStatusChanged?.Invoke(this, new BarcodeStatusEventArgs(BarcodeStatus.BarcodeScanned, $"Scanned barcode: {barcode}"));
+                    SetStatus(DeviceStatusCode.Connected, $"Scanned barcode: {barcode}");
+                    //BarcodeStatusChanged?.Invoke(this, new BarcodeStatusEventArgs(BarcodeStatus.BarcodeScanned, $"Scanned barcode: {barcode}"));
 
                     break;
                 }
@@ -139,7 +164,8 @@ namespace LASYS.Infrastructure.Hardware.Barcode
             }
             catch (Exception)
             {
-                BarcodeStatusChanged?.Invoke(this, new BarcodeStatusEventArgs(BarcodeStatus.BarcodeError));
+                SetStatus(DeviceStatusCode.Error);
+                //BarcodeStatusChanged?.Invoke(this, new BarcodeStatusEventArgs(BarcodeStatus.BarcodeError));
             }
         }
 
@@ -149,7 +175,8 @@ namespace LASYS.Infrastructure.Hardware.Barcode
             {
                 if (_isWaitingForScan)
                 {
-                    BarcodeStatusChanged?.Invoke(this, new BarcodeStatusEventArgs(BarcodeStatus.BarcodeScanning));
+                    SetStatus(DeviceStatusCode.Scanning);
+                    //BarcodeStatusChanged?.Invoke(this, new BarcodeStatusEventArgs(BarcodeStatus.BarcodeScanning));
                     return;
                 }
 
@@ -162,7 +189,8 @@ namespace LASYS.Infrastructure.Hardware.Barcode
                 {
                     _isWaitingForScan = false;
                 }
-                BarcodeStatusChanged?.Invoke(this, new BarcodeStatusEventArgs(BarcodeStatus.BarcodeDisconnected));
+                SetStatus(DeviceStatusCode.Disconnected);
+                //BarcodeStatusChanged?.Invoke(this, new BarcodeStatusEventArgs(BarcodeStatus.BarcodeDisconnected));
                 return;
             }
 
@@ -187,8 +215,8 @@ namespace LASYS.Infrastructure.Hardware.Barcode
                 {
                     _port.BaseStream.Write(TRIGGER_OFF, 0, TRIGGER_OFF.Length);
                 }
-
-                BarcodeStatusChanged?.Invoke(this, new BarcodeStatusEventArgs(BarcodeStatus.BarcodeConnected));
+                SetStatus(DeviceStatusCode.Connected);
+                //BarcodeStatusChanged?.Invoke(this, new BarcodeStatusEventArgs(BarcodeStatus.BarcodeConnected));
 
 
                 _ = Task.Run(async () =>
@@ -202,8 +230,8 @@ namespace LASYS.Infrastructure.Hardware.Barcode
 
                         _isWaitingForScan = false;
                     }
-
-                    BarcodeStatusChanged?.Invoke(this, new BarcodeStatusEventArgs(BarcodeStatus.BarcodeTimeout));
+                    SetStatus(DeviceStatusCode.Timeout);
+                    //BarcodeStatusChanged?.Invoke(this, new BarcodeStatusEventArgs(BarcodeStatus.BarcodeTimeout));
                 });
             }
             catch (Exception ex)
@@ -214,7 +242,8 @@ namespace LASYS.Infrastructure.Hardware.Barcode
                 }
 
                 Console.Error.WriteLine($"Failed to trigger scan: {ex.Message}");
-                BarcodeStatusChanged?.Invoke(this, new BarcodeStatusEventArgs(BarcodeStatus.BarcodeError));
+                SetStatus(DeviceStatusCode.Error);
+                //BarcodeStatusChanged?.Invoke(this, new BarcodeStatusEventArgs(BarcodeStatus.BarcodeError));
                 _isWaitingForScan = false; // reset flag on error
             }
         }
@@ -230,7 +259,8 @@ namespace LASYS.Infrastructure.Hardware.Barcode
         {
             if (_port == null)
             {
-                BarcodeStatusChanged?.Invoke(this, new BarcodeStatusEventArgs(BarcodeStatus.BarcodeDisconnected));
+                SetStatus(DeviceStatusCode.Disconnected);
+                //BarcodeStatusChanged?.Invoke(this, new BarcodeStatusEventArgs(BarcodeStatus.BarcodeDisconnected));
                 return false;
             }
             try
@@ -252,19 +282,21 @@ namespace LASYS.Infrastructure.Hardware.Barcode
             }
             catch (Exception)
             {
-                BarcodeStatusChanged?.Invoke(this, new BarcodeStatusEventArgs(BarcodeStatus.BarcodeError));
+                SetStatus(DeviceStatusCode.Error);
+                //BarcodeStatusChanged?.Invoke(this, new BarcodeStatusEventArgs(BarcodeStatus.BarcodeError));
                 return false;
             }
         }
         public async Task SetManualModeAsync()
         {
-            BarcodeStatusChanged?.Invoke(this, new BarcodeStatusEventArgs(BarcodeStatus.BarcodeCommunicating));
-
+            //BarcodeStatusChanged?.Invoke(this, new BarcodeStatusEventArgs(BarcodeStatus.BarcodeCommunicating));
+            SetStatus(DeviceStatusCode.Communicating);
             await SendScannerCommandAsync(CMD_SET_MANUAL_MODE);
             await SendScannerCommandAsync(CMD_SAVE_SETTINGS);
             // To verify, barcode light should turn off after this command,
             // indicating manual mode is active. If not, check scanner manual for correct command bytes.
-            BarcodeStatusChanged?.Invoke(this, new BarcodeStatusEventArgs(BarcodeStatus.BarcodeConnected));
+            //BarcodeStatusChanged?.Invoke(this, new BarcodeStatusEventArgs(BarcodeStatus.BarcodeConnected));
+            SetStatus(DeviceStatusCode.Connected, "Scanner set to manual mode.");
 
         }
 
@@ -276,21 +308,24 @@ namespace LASYS.Infrastructure.Hardware.Barcode
             {
                 if (!File.Exists(_configPath))
                 {
-                    BarcodeStatusChanged?.Invoke(this, new BarcodeStatusEventArgs(BarcodeStatus.BarcodeNotConfigured));
+                    //BarcodeStatusChanged?.Invoke(this, new BarcodeStatusEventArgs(BarcodeStatus.BarcodeNotConfigured));
+                    SetStatus(DeviceStatusCode.NotConfigured);
                     return null;
                 }
 
                 var json = await File.ReadAllTextAsync(_configPath);
                 if (string.IsNullOrWhiteSpace(json))
                 {
-                    BarcodeStatusChanged?.Invoke(this, new BarcodeStatusEventArgs(BarcodeStatus.BarcodeNotConfigured, "Configuration file is empty."));
+                    SetStatus(DeviceStatusCode.NotConfigured);
+                    //BarcodeStatusChanged?.Invoke(this, new BarcodeStatusEventArgs(BarcodeStatus.BarcodeNotConfigured, "Configuration file is empty."));
                     return null;
                 }
 
                 var config = JsonConvert.DeserializeObject<BarcodeConfig>(json);
                 if (config == null)
                 {
-                    BarcodeStatusChanged?.Invoke(this, new BarcodeStatusEventArgs(BarcodeStatus.BarcodeNotConfigured, "Invalid configuration format."));
+                    SetStatus(DeviceStatusCode.NotConfigured, "Invalid configuration format.");
+                    //BarcodeStatusChanged?.Invoke(this, new BarcodeStatusEventArgs(BarcodeStatus.BarcodeNotConfigured, "Invalid configuration format."));
                     return null;
                 }
 
@@ -303,7 +338,8 @@ namespace LASYS.Infrastructure.Hardware.Barcode
             }
             catch (Exception)
             {
-                BarcodeStatusChanged?.Invoke(this, new BarcodeStatusEventArgs(BarcodeStatus.BarcodeError));
+                SetStatus(DeviceStatusCode.Error, "Failed to load configuration.");
+                //BarcodeStatusChanged?.Invoke(this, new BarcodeStatusEventArgs(BarcodeStatus.BarcodeError));
                 return null;
             }
         }

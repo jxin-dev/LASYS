@@ -1,5 +1,8 @@
-﻿using LASYS.Application.Common.Enums;
-using LASYS.Application.Events;
+﻿using LASYS.Application.Events;
+using LASYS.Application.Features.Devices.Enums;
+using LASYS.Application.Features.Devices.Events;
+using LASYS.Application.Features.Devices.Models;
+using LASYS.Application.Interfaces.Services;
 using LASYS.DesktopApp.Views.Forms;
 using LASYS.DesktopApp.Views.Interfaces;
 
@@ -8,67 +11,73 @@ namespace LASYS.DesktopApp.Presenters
     public class SplashPresenter
     {
         private ISplashView _view;
+        private readonly IDeviceManager _deviceManager;
         public SplashForm View { get; }
-        public SplashPresenter(ISplashView view)
+        private readonly Dictionary<DeviceType, bool> _lastConnectionState = new();
+        public SplashPresenter(ISplashView view, IDeviceManager deviceManager)
         {
             _view = view;
+            _deviceManager = deviceManager;
             View = (SplashForm)view;
 
+            _deviceManager.DeviceStatusChanged += OnDeviceStatusChanged;
             _view.ViewShown += OnViewShown;
         }
 
-        private void OnDeviceStatusChanged(object? sender, DeviceStatusEventArgs e)
+        private void OnDeviceStatusChanged(object? sender, DeviceStatusChangedEventArgs e)
         {
-            switch (e.Device)
+            var status = e.Status;
+            
+            HandleConnectionStateChange(status);
+        }
+        private void HandleConnectionStateChange(DeviceStatus status)
+        {
+            var device = status.Device;
+            var isConnected = status.IsConnected;
+
+            if (_lastConnectionState.TryGetValue(device, out var previous))
             {
-                case DeviceType.Camera:
-                    _view.InvokeOnUI(() => _view.UpdateProgress(15, e.Description));
-                    break;
-                case DeviceType.Printer:
-                    _view.InvokeOnUI(() => _view.UpdateProgress(50, e.Description));
-                    break;
-                case DeviceType.Barcode:
-                    _view.InvokeOnUI(() => _view.UpdateProgress(70, e.Description));
-                    break;
-                default:
-                    break;
+                // no change → ignore
+                if (previous == isConnected)
+                    return;
             }
+
+            _lastConnectionState[device] = isConnected;
+
+            if (!isConnected)
+            {
+                _view.InvokeOnUI(() => _view.UpdateProgress(GetProgress(status.Device), $"❌ {device} disconnected"));
+            }
+            else
+            {
+                _view.InvokeOnUI(() => _view.UpdateProgress(GetProgress(status.Device), $"✅ {device} connected"));
+            }
+
         }
 
-        private void OnBarcodeStatusChanged(object? sender, BarcodeStatusEventArgs e)
+        private int GetProgress(DeviceType device) => device switch
         {
-            _view.InvokeOnUI(() => _view.UpdateProgress(70, e.Message));
-        }
-        private void OnPrinterStatusChanged(object? sender, PrinterStatusEventArgs e)
-        {
-            _view.InvokeOnUI(() => _view.UpdateProgress(50, e.Message));
-        }
+            DeviceType.Camera => 20,
+            DeviceType.BarcodeScanner => 40,
+            DeviceType.Printer => 70,
+            _ => 0
+        };
+
+
 
         private async void OnViewShown(object? sender, EventArgs e)
         {
             await InitializeAsync();
 
         }
-        private void OnCameraConfigIssue(object? sender, CameraConfigEventArgs e)
-        {
-            if (_view == null) return;
-            // Ensure UI thread update if needed
-            _view.InvokeOnUI(() => _view.UpdateProgress(15, e.Message));
-        }
-
         public async Task InitializeAsync()
         {
             _view.InvokeOnUI(() => _view.UpdateProgress(0, "Loading, Please wait..."));
-            await Task.Delay(500);
-
-            _view.InvokeOnUI(() => _view.UpdateProgress(10, "Initializing camera, printer, and barcode scanner..."));
-            
-            await Task.Delay(500);
-
-            _view.InvokeOnUI(() => _view.UpdateProgress(96, "Finalizing setup..."));
+            await _deviceManager.InitializeAllAsync();
+            _view.InvokeOnUI(() => _view.UpdateProgress(90, "Finalizing setup..."));
             await Task.Delay(2000);
             _view.InvokeOnUI(() => _view.UpdateProgress(100, "Launching application..."));
-            await Task.Delay(1000);
+            await Task.Delay(800);
 
             _view.CloseView();
 

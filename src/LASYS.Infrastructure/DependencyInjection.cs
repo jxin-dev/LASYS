@@ -6,6 +6,7 @@ using LASYS.Application.Interfaces.Persistence.TableMappings;
 using LASYS.Application.Interfaces.Services;
 using LASYS.Infrastructure.Hardware.Barcode;
 using LASYS.Infrastructure.Hardware.Camera;
+using LASYS.Infrastructure.Hardware.DeviceManagement;
 using LASYS.Infrastructure.Hardware.Printers.Sato;
 using LASYS.Infrastructure.Logging;
 using LASYS.Infrastructure.OCR;
@@ -31,6 +32,7 @@ public static class DependencyInjection
         services.AddCameraServices();
         services.AddOCRServices();
         services.AddSatoLabelPrinterServices();
+        services.AddDeviceManagement();
 
         services.AddLoggingServices();
 
@@ -73,18 +75,7 @@ public static class DependencyInjection
 
         services.AddScoped<IDbConnectionFactory, DapperContext>();
 
-        //Connection
-        //services.AddSingleton<DatabaseSettings>();
-        //services.Configure<DatabaseSettings>(config.GetSection("DatabaseSettings"));
-        //services.AddSingleton(sp => sp.GetRequiredService<IOptions<DatabaseSettings>>().Value);
-
-        //services.AddSingleton<IDbConnectionFactory, DapperContext>();
-        //services.AddScoped<IDbConnection>(sp =>
-        //{
-        //    var context = sp.GetRequiredService<DapperContext>();
-        //    return context.CreateConnectionAsync().GetAwaiter().GetResult();
-        //});
-
+       
         //Table & Column Mapping
         services.AddScoped<IPrintTableResolver, PrintTableResolver>();
         services.AddScoped<INiceLabelColumnResolver, NiceLabelColumnResolver>();
@@ -111,6 +102,12 @@ public static class DependencyInjection
         return services;
     }
 
+
+    public static IServiceCollection AddDeviceManagement(this IServiceCollection services)
+    {
+        services.AddSingleton<IDeviceManager, DeviceManager>();
+        return services;
+    }
     public static IServiceCollection AddLoggingServices(this IServiceCollection services)
     {
         services.AddSingleton<ILogService, FileLogService>();

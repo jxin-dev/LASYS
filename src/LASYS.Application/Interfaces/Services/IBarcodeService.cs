@@ -1,5 +1,7 @@
 ﻿using LASYS.Application.Contracts;
 using LASYS.Application.Events;
+using LASYS.Application.Features.Devices.Events;
+using LASYS.Application.Features.Devices.Models;
 namespace LASYS.Application.Interfaces.Services
 {
     public interface IBarcodeService
@@ -13,6 +15,10 @@ namespace LASYS.Application.Interfaces.Services
         // Events
         event EventHandler<BarcodeNotificationEventArgs> BarcodeNotification;
         event EventHandler<BarcodeStatusEventArgs> BarcodeStatusChanged;
+
+        public event EventHandler<DeviceStatusChangedEventArgs>? DeviceStatusChanged;
+        DeviceStatus CurrentStatus { get; }
+
         event EventHandler<BarcodeScannedEventArgs> BarcodeScanned;
         bool IsConnected { get; }
         Task InitializeAsync();

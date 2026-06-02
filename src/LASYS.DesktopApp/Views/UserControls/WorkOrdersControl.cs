@@ -114,22 +114,7 @@ namespace LASYS.DesktopApp.Views.UserControls
             MessageBox.Show(message, caption, MessageBoxButtons.OK, icon);
         }
 
-        public void SetLoading(bool isLoading)
-        {
-            if (InvokeRequired)
-            {
-                BeginInvoke(new Action(() => SetLoading(isLoading)));
-                return;
-            }
-
-            _gridWithPagination.Enabled = !isLoading;
-            _loadingCard.Visible = isLoading;
-            if (isLoading)
-            {
-                LayoutLoadingCard();
-                _loadingCard.BringToFront();
-            }
-        }
+      
 
         public void SetWorkOrders(List<WorkOrderItem> workOrders, int totalPages)
         {
@@ -162,26 +147,25 @@ namespace LASYS.DesktopApp.Views.UserControls
                      ];
                  });
 
-
-            // [
-            //    x.ItemCode,
-            //    x.LotNo,
-            //    x.ExpirationDate?.ToString("yyyy-MM-dd")  ?? string.Empty,
-            //    x.UbLabel?.PrintType ?? string.Empty,
-            //    x.UbLabel?.Verdict ?? string.Empty,
-            //    x.UbLabel?.DateApproved?.ToString("yyyy-MM-dd") ?? string.Empty,
-            //    x.TargetProductionQuantity.ToString(),
-            //    x.MasterLabelRevNumber.ToString(),
-            //    x.LabelInsRevNumber.ToString(),
-            //    x.UbLabel?.TargetPrintQuantity?.ToString() ?? string.Empty,
-            //    x.UbLabel?.InstructionStatus?.ToString() ?? string.Empty,
-            //    x.AubLabel?.TargetPrintQuantity?.ToString() ?? string.Empty,
-            //    x.AubLabel?.InstructionStatus?.ToString() ?? string.Empty,
-            //    x.OubLabel?.TargetPrintQuantity?.ToString() ?? string.Empty,
-            //    x.OubLabel?.InstructionStatus?.ToString() ?? string.Empty
-            //]);
         }
 
+
+        public void SetLoading(bool isLoading)
+        {
+            if (InvokeRequired)
+            {
+                BeginInvoke(new Action(() => SetLoading(isLoading)));
+                return;
+            }
+
+            _gridWithPagination.Enabled = !isLoading;
+            _loadingCard.Visible = isLoading;
+            if (isLoading)
+            {
+                LayoutLoadingCard();
+                _loadingCard.BringToFront();
+            }
+        }
         private void LayoutLoadingCard()
         {
             if (pnlContent.ClientSize.Width <= 0 || pnlContent.ClientSize.Height <= 0 || _loadingCard == null)

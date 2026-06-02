@@ -15,7 +15,6 @@ namespace LASYS.Application.Features.Devices.Factories
             return new DeviceStatus(
                 device,
                 statusCode,
-                statusCode == DeviceStatusCode.Connected,
                 info.Message,
                 descriptionOverride ?? info.Description);
         }

@@ -1,5 +1,4 @@
 ﻿using LASYS.Application.Common.Messaging;
-using LASYS.Application.Common.Results;
 using LASYS.Application.Common.Utilities;
 using LASYS.Application.Events;
 using LASYS.Application.Features.BatchPrinting.Enums;
@@ -7,30 +6,34 @@ using LASYS.Application.Features.BatchPrinting.Events;
 using LASYS.Application.Features.BatchPrinting.Helpers;
 using LASYS.Application.Features.BatchPrinting.Models;
 using LASYS.Application.Features.LabelInstructions.GetLabelInstructionContext;
+using LASYS.Application.Interfaces.Context;
 using LASYS.Application.Interfaces.Services;
 
 namespace LASYS.Application.Features.BatchPrinting.Services
 {
     public sealed class BatchPrintProcessService : IBatchPrintProcessService
     {
+        private readonly ICurrentUser _currentUser;
         private readonly IPrintJobController _jobController;
         private readonly INiceLabelTemplateService _niceLabelTemplateService;
         private readonly IPrinterService _printerService;
+        private readonly IBarcodeService _barcodeService;
+        private readonly IOCRService _ocrService;
 
         private TaskCompletionSource<StepResult>? _decisionTcs;
-
         public event EventHandler<OperatorDecisionRequiredEventArgs>? OperatorDecisionRequired;
         public event EventHandler<PrintJobState>? JobStateChanged;
         public event EventHandler<LogEventArgs>? LogGenerated;
-        public BatchPrintProcessService(IPrintJobController jobController,
-                                        INiceLabelTemplateService niceLabelTemplateService,
-                                        IPrinterService printerService)
+
+        public BatchPrintProcessService(ICurrentUser currentUser, IPrintJobController jobController, INiceLabelTemplateService niceLabelTemplateService, IPrinterService printerService, IBarcodeService barcodeService, IOCRService ocrService)
         {
+            _currentUser = currentUser;
             _jobController = jobController;
             _niceLabelTemplateService = niceLabelTemplateService;
             _printerService = printerService;
+            _barcodeService = barcodeService;
+            _ocrService = ocrService;
         }
-
         public PrintJobState? GetJob(Guid jobId)
         {
             return _jobController.GetJob(jobId);
@@ -332,8 +335,8 @@ namespace LASYS.Application.Features.BatchPrinting.Services
         private async Task<StepResult> ValidateBarcodeAsync(PrintJobState job, int sequence, CancellationToken cancellationToken)
         {
             EnsureCanContinue(job);
-
             await Task.Delay(300, cancellationToken);
+
             var result = await RequestOperatorDecisionAsync(
                             new OperatorDecisionRequiredEventArgs
                             {
@@ -344,15 +347,16 @@ namespace LASYS.Application.Features.BatchPrinting.Services
 
             if (result == StepResult.Success)
                 return StepResult.Success;
-            return result;
+
+            return result; //uncomment for real implementation
         }
 
 
         private async Task<StepResult> ValidateOcrAsync(PrintJobState job, int sequence, CancellationToken cancellationToken)
         {
             EnsureCanContinue(job);
-
             await Task.Delay(300, cancellationToken);
+
             var result = await RequestOperatorDecisionAsync(
                          new OperatorDecisionRequiredEventArgs
                          {
@@ -363,6 +367,7 @@ namespace LASYS.Application.Features.BatchPrinting.Services
 
             if (result == StepResult.Success)
                 return StepResult.Success;
+
             return result;
         }
 

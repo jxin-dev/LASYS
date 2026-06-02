@@ -1,6 +1,8 @@
 ﻿using LASYS.Application.Common.Messaging;
 using LASYS.Application.Features.BatchPrinting.Enums;
 using LASYS.Application.Features.BatchPrinting.Events;
+using LASYS.Application.Features.Devices.Enums;
+using LASYS.Application.Features.Devices.Models;
 using LASYS.Application.Features.LabelInstructions.GetLabelInstructionContext;
 using LASYS.DesktopApp.Views.Forms;
 using LASYS.DesktopApp.Views.Interfaces;
@@ -230,32 +232,13 @@ namespace LASYS.DesktopApp.Views.UserControls
             _resizablePanel.AddTab("Activity Logs", container);
         }
 
-        private Color GetStatusColor(string status)
+        private Color GetStatusColor(DeviceStatusCode status)
         {
             return status switch
             {
-                "Configuring..." => Color.Green,
-                "Reconnecting..." => Color.Green,
-                "Printing..." => Color.Green,
-                "Resuming..." => Color.Green,
-                "Connecting..." => Color.Green,
-                "Scanning..." => Color.Green,
-                "Communicating..." => Color.Green,
-
-                "Connected" => Color.Green,
-                "Ready" => Color.Green,
-                "Print Completed" => Color.Green,
-
-                "Disconnected" => Color.Red,
-                "Timeout" => Color.Red,
-                "Not Detected" => Color.Red,
-                "Error" => Color.Red,
-
-                "Not Configured" => Color.Red,
-                "Offline" => Color.Red,
-                "Print Failed" => Color.Red,
-
-                "Paused" => Color.Black,
+                DeviceStatusCode.Connected => Color.Green,
+                DeviceStatusCode.Disconnected => Color.Red,
+                DeviceStatusCode.Error => Color.Red,
                 _ => Color.Black
             };
         }
@@ -356,35 +339,41 @@ namespace LASYS.DesktopApp.Views.UserControls
             table.Controls.Add(_barcodeStatus, 2, 3);
             table.Controls.Add(_barcodeDetails, 3, 3);
 
-            _cameraStatus.ForeColor = GetStatusColor(_cameraStatus.Text);
+            //_cameraStatus.ForeColor = GetStatusColor(_cameraStatus.Text);
 
-            _printerStatus.ForeColor = GetStatusColor(_printerStatus.Text);
+            //_printerStatus.ForeColor = GetStatusColor(_printerStatus.Text);
 
-            _barcodeStatus.ForeColor = GetStatusColor(_barcodeStatus.Text);
+            //_barcodeStatus.ForeColor = GetStatusColor(_barcodeStatus.Text);
 
             container.Controls.Add(table);
             container.Controls.Add(title);
             _resizablePanel.AddTab("Hardware Status", container);
         }
 
-        public void UpdateCameraStatus(string status, string details)
+        public void UpdateDeviceStatus(DeviceStatus status)
         {
-            _cameraStatus!.Text = status;
-            _cameraStatus.ForeColor = GetStatusColor(status);
-            _cameraDetails!.Text = details;
-        }
+            var text = status.Status.ToString();
 
-        public void UpdatePrinterStatus(string status, string details)
-        {
-            _printerStatus!.Text = status;
-            _printerStatus.ForeColor = GetStatusColor(status);
-            _printerDetails!.Text = details;
-        }
-        public void UpdateBarcodeStatus(string status, string details)
-        {
-            _barcodeStatus!.Text = status;
-            _barcodeStatus.ForeColor = GetStatusColor(status);
-            _barcodeDetails!.Text = details;
+            switch (status.Device)
+            {
+                case DeviceType.Camera:
+                    _cameraStatus!.Text = text;
+                    _cameraStatus.ForeColor = GetStatusColor(status.Status);
+                    _cameraDetails!.Text = status.Description;
+                    break;
+
+                case DeviceType.Printer:
+                    _printerStatus!.Text = text;
+                    _printerStatus.ForeColor = GetStatusColor(status.Status);
+                    _printerDetails!.Text = status.Description;
+                    break;
+
+                case DeviceType.BarcodeScanner:
+                    _barcodeStatus!.Text = text;
+                    _barcodeStatus.ForeColor = GetStatusColor(status.Status);
+                    _barcodeDetails!.Text = status.Description;
+                    break;
+            }
         }
 
         public void HideError()
