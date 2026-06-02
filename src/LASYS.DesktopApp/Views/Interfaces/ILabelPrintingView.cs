@@ -17,6 +17,7 @@ namespace LASYS.DesktopApp.Views.Interfaces
 
         void SetPrintingState(PrintJobStatus status);
         void UpdateProgress(int printedCount, int totalQuantity);
+        void ToggleActivityLogs();
         void ShowError(ErrorForm errorForm);
         void InvokeOnUI(Action action);
         void AddLog(MessageType type, DateTime timeStamp, string message);

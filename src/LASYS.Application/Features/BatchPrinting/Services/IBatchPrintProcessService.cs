@@ -16,7 +16,7 @@ namespace LASYS.Application.Features.BatchPrinting.Services
         void Stop(Guid jobId);
 
         event EventHandler<OperatorDecisionRequiredEventArgs> OperatorDecisionRequired;
-        void SetUserDecision(OperatorDecision decision);
+        void SetUserDecision(StepResult decision);
         event EventHandler<LogEventArgs> LogGenerated;
     }
 }

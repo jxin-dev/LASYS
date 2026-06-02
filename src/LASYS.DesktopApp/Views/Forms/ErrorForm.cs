@@ -7,7 +7,7 @@ namespace LASYS.DesktopApp.Views.Forms
     {
         private bool allowClose = false;
 
-        public event EventHandler<OperatorDecision>? DecisionRequested;
+        public event EventHandler<StepResult>? DecisionRequested;
 
         public string MessageText
         {
@@ -18,11 +18,11 @@ namespace LASYS.DesktopApp.Views.Forms
         {
             InitializeComponent();
 
-            btnRetry.Click += (s, e) => DecisionRequested?.Invoke(this, OperatorDecision.Retry);
+            btnRetry.Click += (s, e) => DecisionRequested?.Invoke(this, StepResult.Retry);
 
-            btnSkip.Click += (s, e) => DecisionRequested?.Invoke(this, OperatorDecision.Skip);
+            btnSkip.Click += (s, e) => DecisionRequested?.Invoke(this, StepResult.Skip);
 
-            btnStopBatch.Click += (s, e) => DecisionRequested?.Invoke(this, OperatorDecision.Stop);
+            btnStopBatch.Click += (s, e) => DecisionRequested?.Invoke(this, StepResult.Stop);
         }
 
         public void CloseError()

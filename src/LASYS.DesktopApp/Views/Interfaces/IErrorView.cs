@@ -6,7 +6,7 @@ namespace LASYS.DesktopApp.Views.Interfaces
     {
         void InvokeOnUI(Action action);
         void CloseError();
-        event EventHandler<OperatorDecision> DecisionRequested;
+        event EventHandler<StepResult> DecisionRequested;
 
     }
 }

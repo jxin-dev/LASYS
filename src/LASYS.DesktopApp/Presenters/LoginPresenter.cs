@@ -13,20 +13,22 @@ namespace LASYS.DesktopApp.Presenters
     public class LoginPresenter
     {
         private ILoginView _view;
-        private readonly DatabaseSettings _databaseSettings;
+        //private readonly DatabaseSettings _databaseSettings;
+        private readonly IDatabaseEnvironment _databaseEnvironment;
         private readonly IMediator _mediator;
         private readonly ICurrentUser _currentUser;
         private readonly ILogService _logService;
         private readonly ISessionTracker _sessionTracker;
         private bool _isLoggingIn = false;
         public LoginForm View { get; }
-        public LoginPresenter(ILoginView view, IMediator mediator, DatabaseSettings databaseSettings, ICurrentUser currentUser, ILogService logService, ISessionTracker sessionTracker)
+        public LoginPresenter(ILoginView view, IMediator mediator, IDatabaseEnvironment databaseEnvironment, ICurrentUser currentUser, ILogService logService, ISessionTracker sessionTracker)
         {
             _view = view;
             View = (LoginForm)view;
 
             _mediator = mediator;
-            _databaseSettings = databaseSettings;
+            //_databaseSettings = databaseSettings;
+            _databaseEnvironment = databaseEnvironment;
             _currentUser = currentUser;
             _logService = logService;
 
@@ -62,7 +64,9 @@ namespace LASYS.DesktopApp.Presenters
                 return;
             }
 
-            _databaseSettings.Environment = environment;
+            //_databaseSettings.Environment = environment;
+            _databaseEnvironment.Current = environment;
+
             _isLoggingIn = true;
 
             try

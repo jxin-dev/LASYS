@@ -71,7 +71,7 @@ namespace LASYS.Application.Features.OCRCalibration.PrintLabel
                 return Result.Failure<Unit>("Failed to generate label preview.");
             }
 
-            string prnPath = _niceLabelTemplateService.GeneratePrn(dirPrn, $"LBL_{formattedSequence}");
+            bool isPrnGenerated = _niceLabelTemplateService.GeneratePrn(dirPrn, $"LBL_{formattedSequence}", out var prnPath);
             var templateVariables = _niceLabelTemplateService.GetTemplateVariables();
             _printerService.Print(prnPath);
             return Result.Success(Unit.Value);

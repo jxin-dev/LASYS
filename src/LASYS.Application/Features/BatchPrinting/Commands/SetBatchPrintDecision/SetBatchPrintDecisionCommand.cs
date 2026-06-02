@@ -3,5 +3,5 @@ using MediatR;
 
 namespace LASYS.Application.Features.BatchPrinting.Commands.SetBatchPrintDecision
 {
-    public sealed record SetBatchPrintDecisionCommand(OperatorDecision Decision): IRequest;
+    public sealed record SetBatchPrintDecisionCommand(StepResult Decision): IRequest;
 }

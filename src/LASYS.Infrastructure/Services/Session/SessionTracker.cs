@@ -12,15 +12,17 @@ namespace LASYS.Infrastructure.Services.Session
 
         private readonly ILogService _logService;
         private readonly ICurrentUser _currentUser;
-        private readonly DatabaseSettings _settings;
+        private readonly IDatabaseEnvironment _databaseEnvironment;
+        //private readonly DatabaseSettings _settings;
 
         public SessionTracker(ILogService logService,
                               ICurrentUser currentUser,
-                              DatabaseSettings settings)
+                              IDatabaseEnvironment databaseEnvironment)
         {
             _logService = logService;
             _currentUser = currentUser;
-            _settings = settings;
+            _databaseEnvironment = databaseEnvironment;
+            //_settings = settings;
         }
 
         public void EndSession()
@@ -65,7 +67,7 @@ namespace LASYS.Infrastructure.Services.Session
                 UserCode = _currentUser.UserCode,
                 Username = _currentUser.Username,
                 MachineName = Environment.MachineName,
-                Environment = _settings.Environment,
+                Environment = _databaseEnvironment.Current,
                 LoginTime = _currentUser.LoginTime
             };
             SaveState(state);

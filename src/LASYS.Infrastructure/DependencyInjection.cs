@@ -1,4 +1,5 @@
 ﻿using System.Data;
+using LASYS.Application.Interfaces.Context;
 using LASYS.Application.Interfaces.Persistence;
 using LASYS.Application.Interfaces.Persistence.Repositories;
 using LASYS.Application.Interfaces.Persistence.TableMappings;
@@ -66,17 +67,23 @@ public static class DependencyInjection
     }
     public static IServiceCollection AddPersistence(this IServiceCollection services, IConfiguration config)
     {
+        services.Configure<DatabaseSettings>(config.GetSection("DatabaseSettings"));
+
+        services.AddSingleton<IDatabaseEnvironment, DatabaseEnvironment>();
+
+        services.AddScoped<IDbConnectionFactory, DapperContext>();
+
         //Connection
         //services.AddSingleton<DatabaseSettings>();
-        services.Configure<DatabaseSettings>(config.GetSection("DatabaseSettings"));
-        services.AddSingleton(sp => sp.GetRequiredService<IOptions<DatabaseSettings>>().Value);
+        //services.Configure<DatabaseSettings>(config.GetSection("DatabaseSettings"));
+        //services.AddSingleton(sp => sp.GetRequiredService<IOptions<DatabaseSettings>>().Value);
 
-        services.AddSingleton<IDbConnectionFactory, DapperContext>();
-        services.AddScoped<IDbConnection>(sp =>
-        {
-            var context = sp.GetRequiredService<DapperContext>();
-            return context.CreateConnectionAsync().GetAwaiter().GetResult();
-        });
+        //services.AddSingleton<IDbConnectionFactory, DapperContext>();
+        //services.AddScoped<IDbConnection>(sp =>
+        //{
+        //    var context = sp.GetRequiredService<DapperContext>();
+        //    return context.CreateConnectionAsync().GetAwaiter().GetResult();
+        //});
 
         //Table & Column Mapping
         services.AddScoped<IPrintTableResolver, PrintTableResolver>();

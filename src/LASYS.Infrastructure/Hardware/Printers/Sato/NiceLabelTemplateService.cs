@@ -90,14 +90,14 @@ namespace LASYS.Infrastructure.Hardware.Printers.Sato
                 return false;
             }
         }
-       
-        public string GeneratePrn(string outputDirectory, string fileName)
+
+        public bool GeneratePrn(string outputDirectory, string fileName, out string prnPath)
         {
+            prnPath = string.Empty;
             try
             {
                 Directory.CreateDirectory(outputDirectory);
-
-                var prnPath = Path.Combine(outputDirectory, $"{fileName}.prn");
+                prnPath = Path.Combine(outputDirectory, $"{fileName}.prn");
 
                 lock (_sync)
                 {
@@ -106,14 +106,14 @@ namespace LASYS.Infrastructure.Hardware.Printers.Sato
                     var success = Label.Print("1");
 
                     if (!success)
-                        throw new InvalidOperationException("Failed to generate PRN file.");
+                        return false;
                 }
 
-                return prnPath;
+                return File.Exists(prnPath);
             }
             catch
             {
-                throw;
+                return false;
             }
         }
 
@@ -136,7 +136,7 @@ namespace LASYS.Infrastructure.Hardware.Printers.Sato
 
         }
 
-      
+
 
         public void SetVariable(string variableName, string value)
         {

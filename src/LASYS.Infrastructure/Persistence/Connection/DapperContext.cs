@@ -1,44 +1,94 @@
 ﻿using System.Data;
 using LASYS.Application.Common.Messaging;
+using LASYS.Application.Interfaces.Context;
 using LASYS.Application.Interfaces.Persistence;
 using LASYS.Application.Interfaces.Services;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
 using MySqlConnector;
 
 namespace LASYS.Infrastructure.Persistence.Connection
 {
     public class DapperContext : IDbConnectionFactory
     {
+        private readonly IConfiguration _configuration;
+        private readonly IDatabaseEnvironment _databaseEnvironment;
         private readonly ILogService _logService;
-        private readonly string _connectionString;
 
-        public DapperContext(IConfiguration configuration, DatabaseSettings settings, ILogService logService)
+        public DapperContext(IConfiguration configuration, IDatabaseEnvironment databaseEnvironment, ILogService logService)
         {
+            _configuration = configuration;
+            _databaseEnvironment = databaseEnvironment;
             _logService = logService;
-
-            var env = settings.Environment ?? "Production";
-            _connectionString = configuration.GetConnectionString(env)
-                ?? throw new InvalidOperationException("Connection string not found.");
         }
+
+
+        //private readonly string _connectionString;
+
+        //public DapperContext(IConfiguration configuration, DatabaseSettings settings, ILogService logService)
+        //{
+        //    _logService = logService;
+
+        //    var env = settings.Environment ?? "Production";
+        //    _connectionString = configuration.GetConnectionString(env)
+        //        ?? throw new InvalidOperationException("Connection string not found.");
+        //}
 
         public async Task<IDbConnection> CreateConnectionAsync()
         {
-            var connection = new MySqlConnection(_connectionString);
+            var environment = _databaseEnvironment.Current;
+
+            var connectionString =
+                _configuration.GetConnectionString(environment);
+
+            if (string.IsNullOrWhiteSpace(connectionString))
+            {
+                _logService.Log(
+                    $"Connection string not found for environment: {environment}",
+                    MessageType.Error);
+
+                throw new InvalidOperationException(
+                    $"Connection string '{environment}' not found.");
+            }
+
+            var connection = new MySqlConnection(connectionString);
 
             try
             {
-                if (connection.State != ConnectionState.Open)
-                {
-                    await connection.OpenAsync();
-                }
+                await connection.OpenAsync();
+
+                _logService.Log(
+                    $"Database connection opened ({environment})",
+                    MessageType.Info);
+
+                return connection;
             }
             catch (Exception ex)
             {
-                _logService.Log($"Database connection failed - {ex.Message}", MessageType.Error);
+                _logService.Log(
+                    $"Database connection failed ({environment}) - {ex.Message}",
+                    MessageType.Error);
+
+                connection.Dispose();
                 throw;
             }
 
-            return connection;
+            //var connection = new MySqlConnection(_connectionString);
+
+            //try
+            //{
+            //    if (connection.State != ConnectionState.Open)
+            //    {
+            //        await connection.OpenAsync();
+            //    }
+            //}
+            //catch (Exception ex)
+            //{
+            //    _logService.Log($"Database connection failed - {ex.Message}", MessageType.Error);
+            //    throw;
+            //}
+
+            //return connection;
         }
     }
 }

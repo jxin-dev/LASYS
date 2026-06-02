@@ -9,7 +9,7 @@
         void SetVariable(string variableName, string value);
 
         bool GeneratePreview(string outputDirectory, string fileName, int width = 800, int height = 600);
-        string GeneratePrn(string outputDirectory, string fileName);
+        bool GeneratePrn(string outputDirectory, string fileName, out string prnPath);
         bool IsTemplateLoaded { get; }
         IReadOnlyList<string> GetTemplateVariables();
 

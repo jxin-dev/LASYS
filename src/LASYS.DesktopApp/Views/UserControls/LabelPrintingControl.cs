@@ -16,7 +16,7 @@ namespace LASYS.DesktopApp.Views.UserControls
         private readonly Image _startIcon = Properties.Resources.play24;
 
         public event EventHandler? BackToWorkOrdersRequested;
-        public event EventHandler<PrintRequestedEventArgs>? PrintRequested; 
+        public event EventHandler<PrintRequestedEventArgs>? PrintRequested;
 
         public event EventHandler? PausePrintingRequested;
         public event EventHandler? ResumePrintingRequested;
@@ -62,7 +62,7 @@ namespace LASYS.DesktopApp.Views.UserControls
 
             ActivityLogs();
             HardwareStatus();
-            
+
             RegisterHideEvent(pnlContent);
 
             btnBack.Click += (_, _) => BackToWorkOrdersRequested?.Invoke(this, EventArgs.Empty);
@@ -73,7 +73,6 @@ namespace LASYS.DesktopApp.Views.UserControls
 
                 if (_currentJobStatus is PrintJobStatus.Ready)
                 {
-                    ClearLogs();
                     PrintRequested?.Invoke(this, new PrintRequestedEventArgs(_labelPrintingContext, (int)nudQuantity.Value));
                 }
 
@@ -535,8 +534,10 @@ namespace LASYS.DesktopApp.Views.UserControls
                     pbPrintingProgress.Visible = false;
                     break;
                 case PrintJobStatus.Completed:
-                case PrintJobStatus.Ready:
                 case PrintJobStatus.Stopped:
+                    ClearLogs();
+                    break;
+                case PrintJobStatus.Ready:
                 case PrintJobStatus.Failed:
                     lblPrintingProgress.Visible = false;
                     pbPrintingProgress.Visible = false;
@@ -586,6 +587,9 @@ namespace LASYS.DesktopApp.Views.UserControls
             pbPrintingProgress.Value = Math.Min(printedCount, totalQuantity);
         }
 
-
+        public void ToggleActivityLogs()
+        {
+            _resizablePanel.ShowTab("Activity Logs", true);
+        }
     }
 }

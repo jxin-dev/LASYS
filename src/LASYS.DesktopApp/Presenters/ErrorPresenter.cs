@@ -23,7 +23,7 @@ namespace LASYS.DesktopApp.Presenters
             _view.DecisionRequested += OnDecisionRequested;
         }
 
-        private async void OnDecisionRequested(object? sender, OperatorDecision e)
+        private async void OnDecisionRequested(object? sender, StepResult e)
         {
             await _mediator.Send(new SetBatchPrintDecisionCommand(e));
             _view.CloseError();

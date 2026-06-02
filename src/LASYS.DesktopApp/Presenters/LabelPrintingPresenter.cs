@@ -139,10 +139,13 @@ namespace LASYS.DesktopApp.Presenters
         {
             _view.InvokeOnUI(() =>
             {
+                _view.InvokeOnUI(() => _view.ToggleActivityLogs());
                 var errorPresenter = _services.GetRequiredService<ErrorPresenter>();
                 var errorForm = errorPresenter.View;
                 errorForm.MessageText = errorPresenter.GetErrorMessage(e);
                 _view.ShowError(errorForm);
+                _view.InvokeOnUI(() => _view.ToggleActivityLogs());
+
             });
         }
 
