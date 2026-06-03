@@ -1,7 +1,10 @@
-﻿using LASYS.Application.Features.Devices.Enums;
+﻿using System.Drawing;
+using LASYS.Application.Features.Devices.Enums;
 using LASYS.Application.Features.Devices.Events;
 using LASYS.Application.Features.Devices.Models;
 using LASYS.Application.Interfaces.Services;
+using LASYS.Application.Interfaces.Services.Camera;
+using LASYS.Infrastructure.Hardware.Camera;
 
 namespace LASYS.Infrastructure.Hardware.DeviceManagement
 {

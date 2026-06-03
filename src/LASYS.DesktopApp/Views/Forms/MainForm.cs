@@ -16,6 +16,7 @@ namespace LASYS.DesktopApp.Views.Forms
         public event EventHandler? BarcodeDeviceSetupRequested;
         public event EventHandler? FormClosingRequested;
         public event EventHandler? LogoutRequested;
+        public event EventHandler? StartCameraPreviewRequested;
 
         private NavItem? _workOrders;
         private NavItem? _visionSettings;
@@ -52,6 +53,14 @@ namespace LASYS.DesktopApp.Views.Forms
             // Setup navigation items
             SetupNavigation();
 
+
+            Load += delegate
+            {
+                BeginInvoke(() =>
+                {
+                    StartCameraPreviewRequested?.Invoke(this, EventArgs.Empty); // start streaming immediately on load
+                });
+            };
 
         }
         private void SetupNavigation()

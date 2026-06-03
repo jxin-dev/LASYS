@@ -1,7 +1,6 @@
 ﻿using Dapper;
 using LASYS.Application.Common.Enums;
 using LASYS.Application.Common.Models;
-using LASYS.Application.Features.Products;
 using LASYS.Application.Interfaces.Persistence;
 using LASYS.Application.Interfaces.Persistence.Repositories;
 using LASYS.Application.Interfaces.Persistence.TableMappings;

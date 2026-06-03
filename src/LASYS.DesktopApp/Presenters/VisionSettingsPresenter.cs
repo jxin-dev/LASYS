@@ -1,10 +1,12 @@
 ﻿using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Drawing;
 using LASYS.Application.Contracts;
 using LASYS.Application.Events;
 using LASYS.Application.Features.OCRCalibration.GetOcrLabelFilePath;
 using LASYS.Application.Features.OCRCalibration.PrintLabel;
 using LASYS.Application.Interfaces.Services;
+using LASYS.Application.Interfaces.Services.Camera;
 using LASYS.DesktopApp.Events;
 using LASYS.DesktopApp.Views.Interfaces;
 using MediatR;
@@ -24,7 +26,10 @@ namespace LASYS.DesktopApp.Presenters
         private readonly IServiceProvider _serviceProvider;
         private readonly IMediator _mediator;
 
-        public VisionSettingsPresenter(IVisionSettingsView view, ICameraService cameraService, IOCRService ocrService, ICalibrationService calibrationService, IServiceProvider serviceProvider, IMediator mediator)
+        private readonly IFrameHub _frameHub;
+        private Guid _cameraSubId;
+
+        public VisionSettingsPresenter(IVisionSettingsView view, ICameraService cameraService, IOCRService ocrService, ICalibrationService calibrationService, IServiceProvider serviceProvider, IMediator mediator, IFrameHub frameHub)
         {
             _view = view;
             View = (UserControl)view;
@@ -34,7 +39,9 @@ namespace LASYS.DesktopApp.Presenters
             _calibrationService = calibrationService;
             _serviceProvider = serviceProvider;
             _mediator = mediator;
+            _frameHub = frameHub;
 
+            SubscribeCamera();
 
             _view.InitializeRequested += OnInitializeRequested;
 
@@ -61,6 +68,23 @@ namespace LASYS.DesktopApp.Presenters
             _view.SelectOcrItemRequested += OnSelectOcrItemRequested;
             _view.OcrItemChosen += OnOcrItemChosen;
             _view.PrintLabelRequested += OnPrintLabelRequested;
+        }
+
+        private void UnsubscribeCamera()
+        {
+            _frameHub.Unsubscribe(_cameraSubId);
+        }
+        private void SubscribeCamera()
+        {
+            _cameraSubId = _frameHub.Subscribe(frame =>
+            {
+                _view.InvokeOnUI(() =>
+                {
+                    _view.DisplayFrame(frame);
+                });
+
+                frame.Dispose();
+            });
         }
 
         private void OnPrintLabelRequested(object? sender, PrintLabelEventArgs e)
@@ -293,6 +317,7 @@ namespace LASYS.DesktopApp.Presenters
         {
             try
             {
+                _view.InvokeOnUI(() => _view.ClearOCRResult());
                 var summary = new ConcurrentDictionary<string, int>();
                 int counter = 0;
 
@@ -405,27 +430,29 @@ namespace LASYS.DesktopApp.Presenters
         }
         private void OnInitializeRequested(object? sender, EventArgs e)
         {
-            try
-            {
-                // Start camera streaming in the background
-                _ = _cameraService.StartStreamingAsync(
-                    HandleFrame,
-                    GetSafePictureBoxSize)
-                    .ContinueWith(t =>
-                    {
-                        if (t.Exception != null)
-                            Debug.WriteLine(t.Exception.Flatten());
-                    }, TaskContinuationOptions.OnlyOnFaulted);
+            //_cameraService.StartStreamingAsync(() => _cameraService.DefaultResolution);
 
-            }
-            catch (OperationCanceledException)
-            {
-                // expected on shutdown
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine(ex);
-            }
+            //try
+            //{
+            //    // Start camera streaming in the background
+            //    _ = _cameraService.StartStreamingAsync(
+            //        HandleFrame,
+            //        GetSafePictureBoxSize)
+            //        .ContinueWith(t =>
+            //        {
+            //            if (t.Exception != null)
+            //                Debug.WriteLine(t.Exception.Flatten());
+            //        }, TaskContinuationOptions.OnlyOnFaulted);
+
+            //}
+            //catch (OperationCanceledException)
+            //{
+            //    // expected on shutdown
+            //}
+            //catch (Exception ex)
+            //{
+            //    Debug.WriteLine(ex);
+            //}
         }
 
     }

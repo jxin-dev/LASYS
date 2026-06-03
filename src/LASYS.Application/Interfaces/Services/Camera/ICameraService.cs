@@ -5,7 +5,7 @@ using LASYS.Application.Features.Devices.Events;
 using LASYS.Application.Features.Devices.Models;
 using OpenCvSharp;
 using DrawingSize = System.Drawing.Size;
-namespace LASYS.Application.Interfaces.Services
+namespace LASYS.Application.Interfaces.Services.Camera
 {
     public interface ICameraService : IDisposable
     {
@@ -22,7 +22,9 @@ namespace LASYS.Application.Interfaces.Services
 
         Task InitializeAsync();
         Task StopAsync();
+        DrawingSize DefaultResolution { get; }
         Task StartStreamingAsync(Action<Mat, Bitmap> onFrameCaptured, Func<DrawingSize> getTargetResolution);
+        Task StartStreamingAsync(Func<DrawingSize> getTargetResolution);
         void ReleaseCamera();
         bool IsCameraReady();
         void SetFocus(int focusValue);

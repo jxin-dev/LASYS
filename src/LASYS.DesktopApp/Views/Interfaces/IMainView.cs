@@ -8,6 +8,7 @@ namespace LASYS.DesktopApp.Views.Interfaces
         event EventHandler VisionSettingsRequested;
         event EventHandler PrinterManagementRequested;
         event EventHandler BarcodeDeviceSetupRequested;
+        event EventHandler StartCameraPreviewRequested;
         void LoadView(UserControl control, bool cache = true);
         void CloseView();
         event EventHandler FormClosingRequested;

@@ -1,6 +1,7 @@
 ﻿using LASYS.Application.Features.Devices.Enums;
 using LASYS.Application.Features.Devices.Events;
 using LASYS.Application.Features.Devices.Models;
+using LASYS.Application.Interfaces.Services.Camera;
 
 namespace LASYS.Application.Interfaces.Services
 {

@@ -1110,6 +1110,12 @@ namespace LASYS.DesktopApp.Views.UserControls
             picCameraPreview.Invalidate();
         }
 
+
+        public void ClearOCRResult()
+        {
+            _richTextOCRResult!.Clear();
+            picCameraPreview.Invalidate();
+        }
         public bool AskRestartConfirmation(string message, string title = "Restart Required")
         {
             throw new NotImplementedException();

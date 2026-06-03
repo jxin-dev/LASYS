@@ -17,7 +17,7 @@ namespace LASYS.DesktopApp.Views.Forms
 
             _gridWithPagination = new GridViewWithPagination
             {
-                PageSize = 2,
+                PageSize = 10,
                 Dock = DockStyle.Fill,
             };
 

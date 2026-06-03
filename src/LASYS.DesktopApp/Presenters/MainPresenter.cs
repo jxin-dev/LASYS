@@ -18,7 +18,8 @@ namespace LASYS.DesktopApp.Presenters
         private readonly ILogService _logService;
         private readonly ISessionTracker _sessionTracker;
         private readonly IPrintingState _printingState;
-        public MainPresenter(IMainView view, IServiceProvider serviceProvider, ICurrentUser currentUser, ILogService logService, ISessionTracker sessionTracker, IPrintingState printingState)
+        private readonly IDeviceManager _deviceManager;
+        public MainPresenter(IMainView view, IServiceProvider serviceProvider, ICurrentUser currentUser, ILogService logService, ISessionTracker sessionTracker, IPrintingState printingState, IDeviceManager deviceManager)
         {
             _view = view;
             View = (MainForm)view;
@@ -27,6 +28,7 @@ namespace LASYS.DesktopApp.Presenters
             _logService = logService;
             _sessionTracker = sessionTracker;
             _printingState = printingState;
+            _deviceManager = deviceManager;
 
             _view.WorkOrderRequested += OnWorkOrderRequested;
             _view.VisionSettingsRequested += OnOVisionSettingsRequested;
@@ -37,6 +39,13 @@ namespace LASYS.DesktopApp.Presenters
             _view.LogoutRequested += OnLogoutRequested;
 
             _view.ShowUserInfo(_currentUser.FullName, _currentUser.SectionName ?? "Unknown", _currentUser.ImagePath);
+
+            _view.StartCameraPreviewRequested += OnStartCameraPreviewRequested;
+        }
+
+        private void OnStartCameraPreviewRequested(object? sender, EventArgs e)
+        {
+            _deviceManager.Camera.StartStreamingAsync(() => _deviceManager.Camera.DefaultResolution);
         }
 
         private bool CanNavigate()

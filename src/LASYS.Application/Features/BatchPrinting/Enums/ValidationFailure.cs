@@ -2,6 +2,7 @@
 {
     public enum ValidationFailure
     {
+        FileGenerationFailed,
         PrinterUnavailable,
         BarcodeMismatch,
         OcrUnreadable,

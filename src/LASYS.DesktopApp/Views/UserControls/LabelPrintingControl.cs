@@ -23,6 +23,7 @@ namespace LASYS.DesktopApp.Views.UserControls
         public event EventHandler? PausePrintingRequested;
         public event EventHandler? ResumePrintingRequested;
         public event EventHandler? StopPrintingRequested;
+        public event EventHandler? StartCameraPreviewRequested;
 
         private PrintJobStatus _currentJobStatus = PrintJobStatus.Initializing;
 
@@ -97,6 +98,15 @@ namespace LASYS.DesktopApp.Views.UserControls
                     ResumePrintingRequested?.Invoke(this, EventArgs.Empty);
                 }
             };
+
+            Load += delegate
+            {
+                BeginInvoke(() =>
+                {
+                    StartCameraPreviewRequested?.Invoke(this, EventArgs.Empty); // start streaming immediately on load
+                });
+            };
+
 
         }
 
@@ -580,5 +590,16 @@ namespace LASYS.DesktopApp.Views.UserControls
         {
             _resizablePanel.ShowTab("Activity Logs", true);
         }
+
+        public void DisplayCameraFrame(Bitmap frame)
+        {
+            if (picCameraPreview == null) return;
+
+            var old = picCameraPreview.Image;
+            picCameraPreview.Image = (Bitmap)frame.Clone();
+
+            old?.Dispose();
+        }
+      
     }
 }

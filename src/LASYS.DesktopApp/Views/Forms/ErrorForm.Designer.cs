@@ -44,10 +44,9 @@
             btnRetry.Font = new Font("Segoe UI Semibold", 11.25F, FontStyle.Bold);
             btnRetry.ForeColor = Color.White;
             btnRetry.Image = Properties.Resources.retry24;
-            btnRetry.Location = new Point(39, 362);
-            btnRetry.Margin = new Padding(4, 5, 4, 5);
+            btnRetry.Location = new Point(161, 217);
             btnRetry.Name = "btnRetry";
-            btnRetry.Size = new Size(133, 73);
+            btnRetry.Size = new Size(93, 44);
             btnRetry.TabIndex = 0;
             btnRetry.Text = "Retry";
             btnRetry.TextImageRelation = TextImageRelation.ImageBeforeText;
@@ -60,10 +59,9 @@
             btnSkip.FlatStyle = FlatStyle.Flat;
             btnSkip.Font = new Font("Segoe UI Semibold", 11.25F, FontStyle.Bold);
             btnSkip.Image = Properties.Resources.skip24;
-            btnSkip.Location = new Point(180, 362);
-            btnSkip.Margin = new Padding(4, 5, 4, 5);
+            btnSkip.Location = new Point(58, 217);
             btnSkip.Name = "btnSkip";
-            btnSkip.Size = new Size(139, 73);
+            btnSkip.Size = new Size(97, 44);
             btnSkip.TabIndex = 1;
             btnSkip.Text = "Skip";
             btnSkip.TextImageRelation = TextImageRelation.ImageBeforeText;
@@ -77,10 +75,9 @@
             btnStopBatch.Font = new Font("Segoe UI Semibold", 11.25F, FontStyle.Bold);
             btnStopBatch.ForeColor = Color.White;
             btnStopBatch.Image = Properties.Resources.stopbatch24;
-            btnStopBatch.Location = new Point(371, 362);
-            btnStopBatch.Margin = new Padding(4, 5, 4, 5);
+            btnStopBatch.Location = new Point(260, 217);
             btnStopBatch.Name = "btnStopBatch";
-            btnStopBatch.Size = new Size(259, 73);
+            btnStopBatch.Size = new Size(181, 44);
             btnStopBatch.TabIndex = 2;
             btnStopBatch.Text = "Stop Batch Priniting";
             btnStopBatch.TextImageRelation = TextImageRelation.ImageBeforeText;
@@ -95,9 +92,8 @@
             label1.Image = Properties.Resources.error24;
             label1.ImageAlign = ContentAlignment.MiddleLeft;
             label1.Location = new Point(0, 0);
-            label1.Margin = new Padding(4, 0, 4, 0);
             label1.Name = "label1";
-            label1.Size = new Size(669, 73);
+            label1.Size = new Size(468, 44);
             label1.TabIndex = 3;
             label1.Text = "     Operation Failed";
             label1.TextAlign = ContentAlignment.MiddleLeft;
@@ -105,19 +101,18 @@
             // lblMessage
             // 
             lblMessage.Font = new Font("Segoe UI Semibold", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            lblMessage.Location = new Point(39, 105);
-            lblMessage.Margin = new Padding(4, 0, 4, 0);
+            lblMessage.Location = new Point(27, 63);
             lblMessage.Name = "lblMessage";
-            lblMessage.Size = new Size(591, 212);
+            lblMessage.Size = new Size(414, 127);
             lblMessage.TabIndex = 4;
             lblMessage.Text = "Failed to print the label. Please check the printer connection and try again";
             lblMessage.TextAlign = ContentAlignment.MiddleCenter;
             // 
             // ErrorForm
             // 
-            AutoScaleDimensions = new SizeF(10F, 25F);
+            AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(669, 462);
+            ClientSize = new Size(468, 277);
             Controls.Add(lblMessage);
             Controls.Add(label1);
             Controls.Add(btnStopBatch);
@@ -125,7 +120,6 @@
             Controls.Add(btnRetry);
             FormBorderStyle = FormBorderStyle.None;
             Icon = (Icon)resources.GetObject("$this.Icon");
-            Margin = new Padding(4, 5, 4, 5);
             Name = "ErrorForm";
             Text = "ErrorForm";
             ResumeLayout(false);

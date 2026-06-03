@@ -4,6 +4,7 @@ using LASYS.Application.Interfaces.Persistence;
 using LASYS.Application.Interfaces.Persistence.Repositories;
 using LASYS.Application.Interfaces.Persistence.TableMappings;
 using LASYS.Application.Interfaces.Services;
+using LASYS.Application.Interfaces.Services.Camera;
 using LASYS.Infrastructure.Hardware.Barcode;
 using LASYS.Infrastructure.Hardware.Camera;
 using LASYS.Infrastructure.Hardware.DeviceManagement;
@@ -125,6 +126,7 @@ public static class DependencyInjection
     private static IServiceCollection AddCameraServices(this IServiceCollection services)
     {
         services.AddSingleton<ICameraService, CameraService>();
+        services.AddSingleton<IFrameHub, FrameHub>();
         return services;
     }
 

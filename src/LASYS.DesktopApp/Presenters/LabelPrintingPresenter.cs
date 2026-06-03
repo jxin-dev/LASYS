@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
 using LASYS.Application.Common.Enums;
 using LASYS.Application.Common.Messaging;
+using LASYS.Application.Common.Results;
 using LASYS.Application.Events;
 using LASYS.Application.Features.BatchPrinting.Commands.PauseBatchPrint;
 using LASYS.Application.Features.BatchPrinting.Commands.ResumeBatchPrint;
@@ -18,6 +19,8 @@ using LASYS.Application.Features.LabelInstructions.GetLabelInstructionContext;
 using LASYS.Application.Features.LabelInstructions.GetWorkOrderListBySectionId;
 using LASYS.Application.Features.PrintLabels.Helpers;
 using LASYS.Application.Interfaces.Services;
+using LASYS.Application.Interfaces.Services.Camera;
+using LASYS.DesktopApp.Views.Forms;
 using LASYS.DesktopApp.Views.Interfaces;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
@@ -34,8 +37,9 @@ namespace LASYS.DesktopApp.Presenters
         private readonly IMainView _mainView;
         private readonly INiceLabelTemplateService _niceLabelTemplateService;
         private readonly IDeviceManager _deviceManager;
-        
+        private readonly IFrameHub _frameHub;
 
+        private Guid _cameraSubId;
         private Guid? _activePrintJobId;
         public LabelPrintingPresenter(IBatchPrintProcessService batchPrintService,
                                       IMediator mediator,
@@ -43,7 +47,8 @@ namespace LASYS.DesktopApp.Presenters
                                       ILabelPrintingView view,
                                       IMainView mainView,
                                       INiceLabelTemplateService niceLabelTemplateService,
-                                      IDeviceManager deviceManager)
+                                      IDeviceManager deviceManager,
+                                      IFrameHub frameHub)
         {
             _batchPrintService = batchPrintService;
             _mediator = mediator;
@@ -52,10 +57,11 @@ namespace LASYS.DesktopApp.Presenters
             _mainView = mainView;
             _niceLabelTemplateService = niceLabelTemplateService;
             _deviceManager = deviceManager;
+            _frameHub = frameHub;
 
             View = (UserControl)view;
 
-
+            SubscribeCamera();
 
             // VIEW EVENTS
             _view.BackToWorkOrdersRequested += OnBackToWorkOrdersRequested;
@@ -63,6 +69,7 @@ namespace LASYS.DesktopApp.Presenters
             _view.PausePrintingRequested += OnPausePrintingRequested;
             _view.ResumePrintingRequested += OnResumePrintingRequested;
             _view.StopPrintingRequested += OnStopPrintingRequested;
+            _view.StartCameraPreviewRequested += OnStartCameraPreviewRequested;
 
             // DEVICE EVENTS
             _deviceManager.DeviceStatusChanged += OnDeviceStatusChanged;
@@ -72,6 +79,28 @@ namespace LASYS.DesktopApp.Presenters
             _batchPrintService.OperatorDecisionRequired += OnDecisionRequired;
             _batchPrintService.JobStateChanged += OnJobStateChanged;
             _batchPrintService.LogGenerated += OnLogGenerated;
+        }
+
+        private void OnStartCameraPreviewRequested(object? sender, EventArgs e)
+        {
+            //_deviceManager.Camera.StartStreamingAsync(() => _deviceManager.Camera.DefaultResolution);
+        }
+
+        private void UnsubscribeCamera()
+        {
+            _frameHub.Unsubscribe(_cameraSubId);
+        }
+        private void SubscribeCamera()
+        {
+            _cameraSubId = _frameHub.Subscribe(frame =>
+            {
+                _view.InvokeOnUI(() =>
+                {
+                    _view.DisplayCameraFrame(frame); // YOU MUST ADD THIS IN VIEW
+                });
+
+                frame.Dispose();
+            });
         }
         private void SyncDeviceStates()
         {
@@ -157,17 +186,41 @@ namespace LASYS.DesktopApp.Presenters
 
         private void OnDecisionRequired(object? sender, OperatorDecisionRequiredEventArgs e)
         {
-            _view.InvokeOnUI(() => _view.ToggleActivityLogs());
-            _view.InvokeOnUI(() =>
+
+            try
             {
-                var errorPresenter = _services.GetRequiredService<ErrorPresenter>();
-                var errorForm = errorPresenter.View;
-                errorForm.MessageText = errorPresenter.GetErrorMessage(e);
-                _view.ShowError(errorForm);
-            });
-            _view.InvokeOnUI(() => _view.ToggleActivityLogs());
+                _view.InvokeOnUI(() => _view.ToggleActivityLogs());
 
+                _view.InvokeOnUI(() =>
+                {
+                    var errorPresenter = _services.GetRequiredService<ErrorPresenter>();
+                    var errorForm = errorPresenter.View;
+                    errorForm.MessageText = errorPresenter.GetErrorMessage(e);
 
+                    errorForm.DecisionRequested -= OnDecision;
+                    errorForm.DecisionRequested += OnDecision;
+
+                    errorForm.Configure(e.FailureType);
+
+                    _view.ShowError(errorForm);
+                });
+            }
+            finally
+            {
+                _view.InvokeOnUI(() => _view.ToggleActivityLogs());
+            }
+
+        }
+
+        private void OnDecision(object? sender, StepResult e)
+        {
+            var service = _services.GetRequiredService<IBatchPrintProcessService>();
+            service.SetUserDecision(e);
+
+            if (sender is Form form)
+            {
+                form.Close();
+            }
         }
 
         public async Task InitializeDataAsync(WorkOrderItem labelInstruction, BoxType boxType)
@@ -232,7 +285,7 @@ namespace LASYS.DesktopApp.Presenters
                 _mainView.ShowNavigationBlocked("Cannot navigate while printing is in progress.");
                 return;
             }
-
+            UnsubscribeCamera();
             var workOrdersPresenter = _services.GetRequiredService<WorkOrdersPresenter>();
             _mainView?.LoadView(workOrdersPresenter.View, true); //false always new
             _mainView?.SetActiveNavigation(_mainView.WorkOrdersNavItem);

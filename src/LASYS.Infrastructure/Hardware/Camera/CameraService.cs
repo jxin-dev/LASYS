@@ -8,7 +8,7 @@ using LASYS.Application.Features.Devices.Enums;
 using LASYS.Application.Features.Devices.Events;
 using LASYS.Application.Features.Devices.Factories;
 using LASYS.Application.Features.Devices.Models;
-using LASYS.Application.Interfaces.Services;
+using LASYS.Application.Interfaces.Services.Camera;
 using Newtonsoft.Json;
 using OpenCvSharp;
 using OpenCvSharp.Extensions;
@@ -18,6 +18,8 @@ namespace LASYS.Infrastructure.Hardware.Camera
 {
     public class CameraService : ICameraService
     {
+        public DrawingSize DefaultResolution => new(640, 480);
+        private readonly IFrameHub _frameHub;
         private readonly string _configPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "camera.config.json");
         public event EventHandler<CameraConfigEventArgs>? CameraConfigIssue;
 
@@ -51,9 +53,16 @@ namespace LASYS.Infrastructure.Hardware.Camera
         public bool IsStreaming => _isStreaming;
 
 
-        public CameraService()
+        //public CameraService()
+        //{
+        //    _cts = new CancellationTokenSource();
+        //}
+
+        public CameraService(IFrameHub frameHub)
         {
+            _frameHub = frameHub;
             _cts = new CancellationTokenSource();
+
         }
 
         private void SetStatus(DeviceStatusCode statusCode, string? descriptionOverride = null)
@@ -63,9 +72,7 @@ namespace LASYS.Infrastructure.Hardware.Camera
                 statusCode,
                 descriptionOverride);
 
-            DeviceStatusChanged?.Invoke(
-                this,
-                new DeviceStatusChangedEventArgs(CurrentStatus));
+            DeviceStatusChanged?.Invoke(this, new DeviceStatusChangedEventArgs(CurrentStatus));
         }
 
         public async Task InitializeAsync()
@@ -186,7 +193,109 @@ namespace LASYS.Infrastructure.Hardware.Camera
         // ----------------------------------------------------
         // Streaming
         // ----------------------------------------------------
+        public Task StartStreamingAsync(Func<DrawingSize> getTargetResolution)
+        {
+            lock (_captureLock)
+            {
+                if (_isStreaming)
+                    return Task.CompletedTask; // Already streaming
 
+                if (_capture == null || !_capture.IsOpened())
+                {
+                    SetStatus(DeviceStatusCode.Disconnected);
+                    //CameraStatusChanged?.Invoke(this, new CameraStatusEventArgs(CameraStatus.CameraDisconnected));
+                    CameraDisconnected?.Invoke(this, EventArgs.Empty);
+                    return Task.CompletedTask;
+                }
+
+                _isStreaming = true;
+                _cts ??= new CancellationTokenSource();
+            }
+
+
+            _isCameraConnected = false;
+
+            var token = _cts.Token;
+            _streamingTask = Task.Factory.StartNew(() =>
+            {
+                var frameInterval = TimeSpan.FromMilliseconds(100);
+                var lastUpdate = DateTime.Now;
+
+                while (!token.IsCancellationRequested)
+                {
+                    if (!IsCameraReady())
+                    {
+                        CreateEmptyFrame(getTargetResolution);
+                        SetStatus(DeviceStatusCode.Disconnected);
+                        CameraDisconnected?.Invoke(this, EventArgs.Empty);
+                        Thread.Sleep(1000);
+                        continue;
+                    }
+
+                    using var frame = new Mat();
+                    using var resized = new Mat();
+
+                    if (!TryReadFrame(frame) || frame.Empty())
+                    {
+                        CreateEmptyFrame(getTargetResolution);
+                        SetStatus(DeviceStatusCode.Disconnected);
+                        CameraDisconnected?.Invoke(this, EventArgs.Empty);
+                        continue;
+                    }
+
+                    var elapsed = DateTime.Now - lastUpdate;
+                    if (elapsed < frameInterval)
+                        Thread.Sleep(frameInterval - elapsed);
+
+                    lastUpdate = DateTime.Now;
+
+                    var targetSize = getTargetResolution();
+                    Cv2.Resize(frame, resized, new OpenCvSharp.Size(targetSize.Width, targetSize.Height));
+
+                    PublishFrame(resized);
+
+                    lock (_frameLock)
+                    {
+                        if (LastCapturedFrame == null)
+                            LastCapturedFrame = resized.Clone();
+                        else
+                            resized.CopyTo(LastCapturedFrame);
+                    }
+
+                    ReportConnectedOnce();
+                }
+
+            }, token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+
+
+            return _streamingTask;
+
+        }
+
+        private void PublishFrame(Mat frame)
+        {
+            try
+            {
+                var bitmap = frame.ToBitmap();
+
+                // IMPORTANT: FrameHub owns distribution
+                _frameHub.Publish(bitmap);
+
+                bitmap.Dispose();
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"PublishFrame error: {ex}");
+            }
+        }
+
+        private void CreateEmptyFrame(Func<DrawingSize> getTargetResolution)
+        {
+            var size = getTargetResolution();
+
+            using var mat = new Mat(size.Height, size.Width, MatType.CV_8UC3, Scalar.All(0));
+            PublishFrame(mat);
+        }
         public Task StartStreamingAsync(
             Action<Mat, Bitmap> onFrameCaptured,
             Func<DrawingSize> getTargetResolution)
@@ -736,6 +845,8 @@ namespace LASYS.Infrastructure.Hardware.Camera
                 //CameraStatusChanged?.Invoke(this, new CameraStatusEventArgs(CameraStatus.CameraError));
             }
         }
+
+       
     }
 }
 

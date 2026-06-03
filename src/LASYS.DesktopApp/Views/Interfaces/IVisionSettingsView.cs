@@ -14,6 +14,7 @@ namespace LASYS.DesktopApp.Views.Interfaces
         void ShowOCRRegion(Rectangle viewerRegion);
         void PreviewOCRRegion(Rectangle viewerRegion);
         void DisplayOCRResult(string result);
+        void ClearOCRResult();
         void TestOCRTCompleted();
         void SetTestButtonText(string text);
         void DisplayFrame(Bitmap bitmap);

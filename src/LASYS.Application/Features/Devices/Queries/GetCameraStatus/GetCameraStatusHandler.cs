@@ -1,5 +1,5 @@
 ﻿using LASYS.Application.Features.Devices.Models;
-using LASYS.Application.Interfaces.Services;
+using LASYS.Application.Interfaces.Services.Camera;
 using MediatR;
 
 namespace LASYS.Application.Features.Devices.Queries.GetCameraStatus

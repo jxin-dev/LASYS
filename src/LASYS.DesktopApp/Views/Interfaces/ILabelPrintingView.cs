@@ -1,7 +1,6 @@
 ﻿using LASYS.Application.Common.Messaging;
 using LASYS.Application.Features.BatchPrinting.Enums;
 using LASYS.Application.Features.BatchPrinting.Events;
-using LASYS.Application.Features.Devices.Enums;
 using LASYS.Application.Features.Devices.Models;
 using LASYS.Application.Features.LabelInstructions.GetLabelInstructionContext;
 using LASYS.DesktopApp.Views.Forms;
@@ -29,6 +28,9 @@ namespace LASYS.DesktopApp.Views.Interfaces
         //void UpdatePrinterStatus(string status, string details);
         //void UpdateBarcodeStatus(string status, string details);
         void UpdateDeviceStatus(DeviceStatus status);
+
+        void DisplayCameraFrame(Bitmap frame);
+        event EventHandler StartCameraPreviewRequested;
     }
 
 }
