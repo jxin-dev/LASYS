@@ -1,7 +1,9 @@
 ﻿using System.IO.Ports;
 using System.Management;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Text.Json;
+using System.Threading.Tasks;
 using Interop.LabelGalleryPlus3WR;
 using LASYS.Application.Common.Extensions;
 using LASYS.Application.Common.Messaging;
@@ -47,73 +49,65 @@ namespace LASYS.Infrastructure.Hardware.Printers.Sato
                 statusCode,
                 descriptionOverride);
 
-            DeviceStatusChanged?.Invoke(
-                this,
-                new DeviceStatusChangedEventArgs(CurrentStatus));
-        }
-
-        private void EnsureByteAvailableSubscription()
-        {
-            if (_printer == null || _isByteAvailableSubscribed)
-                return;
-
-            _printer.ByteAvailable += AsynDataIn;
-            _isByteAvailableSubscribed = true;
-        }
-
-        private readonly Dictionary<char, DeviceStatusCode> _printerControlStatusMap = new()
-        {
-            { '\x11', DeviceStatusCode.Started },  // DC1
-            { '\x13', DeviceStatusCode.Paused },    // DC3
-            // You can add more single-char mappings here
-        };
-        private void AppendSendText(byte[] data)
-        {
-            string smsg = ControlCharConvert(Utils.ByteArrayToString(data));
-
-            SetStatus(DeviceStatusCode.DataSent, $"{DateTime.Now:HH:mm:ss.fff} | TX {data.Length} bytes | {smsg}");
+            DeviceStatusChanged?.Invoke(this, new DeviceStatusChangedEventArgs(CurrentStatus));
 
         }
-        private void AsynDataIn(object? sender, Printer.ByteAvailableEventArgs e)
-        {
-            AppendRecvText(e.Data, false);
 
-            foreach (char ch in e.Data)
-            {
-                if (_printerControlStatusMap.TryGetValue(ch, out var status))
-                {
-                    SetStatus(status);
-                }
-            }
-            // Check multi-byte sequence: ESC+@ (0x1B, 0x40) for Offline
-            for (int i = 0; i < e.Data.Length - 1; i++)
-            {
-                if (e.Data[i] == 0x1B && e.Data[i + 1] == 0x40)
-                {
-                    SetStatus(DeviceStatusCode.Offline);
-                }
-            }
+        //private void EnsureByteAvailableSubscription()
+        //{
+        //    if (_printer == null || _isByteAvailableSubscribed)
+        //        return;
 
-            _printWaitHandle.Set();
-        }
-        private void AppendRecvText(byte[] data, bool empty)
-        {
-            // Convert bytes to string
-            string smsg = ControlCharConvert(Utils.ByteArrayToString(data));
-            SetStatus(DeviceStatusCode.DataReceived, $"{DateTime.Now:HH:mm:ss.fff} | RX {data.Length} bytes | {smsg}");
-        }
+        //    _printer.ByteAvailable += AsynDataIn;
+        //    _isByteAvailableSubscribed = true;
+        //}
 
-        private static readonly Dictionary<char, string> _controlCharMap = ControlCharList().ToDictionary(x => x.Value, x => x.Key);
+
+        //private void AppendSendText(byte[] data)
+        //{
+        //    string smsg = ControlCharConvert(Utils.ByteArrayToString(data));
+
+        //    SetStatus(DeviceStatusCode.DataSent, $"{DateTime.Now:HH:mm:ss.fff} | TX {data.Length} bytes | {smsg}");
+
+        //}
+        //private void AsynDataIn(object? sender, Printer.ByteAvailableEventArgs e)
+        //{
+        //    UpdatePrinterStatus(e.Data, false);
+        //}
+        //private void UpdatePrinterStatus(byte[] data, bool empty)
+        //{
+        //    var response = Encoding.ASCII.GetString(data);
+
+        //    response = response
+        //        .Replace("\x02", "") // STX
+        //        .Replace("\x03", "") // ETX
+        //        .Trim();
+
+        //    switch (response)
+        //    {
+        //        case "A000000":
+        //            SetStatus(DeviceStatusCode.Online);
+        //            break;
+
+        //        case "0000000":
+        //            SetStatus(DeviceStatusCode.Offline);
+        //            break;
+        //    }
+
+        //    string smsg = ControlCharConvert(Utils.ByteArrayToString(data));
+        //}
 
         private string ControlCharConvert(string data)
         {
-            foreach (var kvp in _controlCharMap)
+            Dictionary<char, string> chrList = ControlCharList().ToDictionary(x => x.Value, x => x.Key);
+            foreach (char key in chrList.Keys)
             {
-                data = data.Replace(kvp.Key.ToString(), kvp.Value);
+                data = data.Replace(key.ToString(), chrList[key]);
             }
             return data;
         }
-        private static Dictionary<string, char> ControlCharList()
+
+        private Dictionary<string, char> ControlCharList()
         {
             Dictionary<string, char> ctr = new Dictionary<string, char>();
             ctr.Add("[NUL]", '\u0000');
@@ -151,6 +145,7 @@ namespace LASYS.Infrastructure.Hardware.Printers.Sato
             ctr.Add("[DEL]", '\u007F');
             return ctr;
         }
+
         public void Dispose()
         {
             Dispose(true);
@@ -169,7 +164,7 @@ namespace LASYS.Infrastructure.Hardware.Printers.Sato
                     if (_printer != null && _isByteAvailableSubscribed)
                     {
                         _printer.Disconnect();
-                        _printer.ByteAvailable -= AsynDataIn;
+                        //_printer.ByteAvailable -= AsynDataIn;
                         _isByteAvailableSubscribed = false;
                     }
                 }
@@ -224,7 +219,6 @@ namespace LASYS.Infrastructure.Hardware.Printers.Sato
                 {
                     SetStatus(DeviceStatusCode.ConfigurationLoaded, $"Printer configuration loaded successfully.\nCommunication will use the USB interface with device ID {usb.UsbId.Ellipsis(18)}");
                 }
-                await Task.Delay(3000);
                 return config;
 
             }
@@ -272,8 +266,11 @@ namespace LASYS.Infrastructure.Hardware.Printers.Sato
             {
                 _printer = new Printer();
                 _printer.PermanentConnect = true;
+
+
+                //_printer.ByteAvailable -= AsynDataIn;
             }
-            EnsureByteAvailableSubscription();
+            //EnsureByteAvailableSubscription();
 
             if (config.SatoPrinter is SerialPrinterConnection serial)
             {
@@ -291,8 +288,18 @@ namespace LASYS.Infrastructure.Hardware.Printers.Sato
 
                 try
                 {
+                    //_printer.ByteAvailable += AsynDataIn;
                     _printer.Connect();
-                    SetStatus(DeviceStatusCode.Connected, $"Serial COM printer connected: {_printerName} (Port: {serial.ComPort})");
+                    //SetStatus(DeviceStatusCode.Connected, $"Serial COM printer connected: {_printerName} (Port: {serial.ComPort})");
+                    bool isOnline = _printer.GetPrinterStatus().IsOnline;
+                    if (isOnline)
+                    {
+                        SetStatus(DeviceStatusCode.Connected, $"Printer is already online: {_printerName ?? "Unknown Printer"}");
+                    }
+                    else
+                    {
+                        SetStatus(DeviceStatusCode.Offline, $"Printer is currently offline: {_printerName ?? "Unknown Printer"}. Please check the connection and try again.");
+                    }
                 }
                 catch (IOException ex)
                 {
@@ -306,15 +313,24 @@ namespace LASYS.Infrastructure.Hardware.Printers.Sato
                 _printer.USBPortID = usb.UsbId;
 
                 var usbPrinter = _printer.GetUSBList().FirstOrDefault(u => u.PortID == usb.UsbId);
-                if (usbPrinter != null)
+                if (usbPrinter != null && _printer != null)
                 {
                     _printerName = usbPrinter.Name; // Get the friendly name
                     _printer.Connect();
-                    SetStatus(DeviceStatusCode.Connected, $"USB printer connected: {_printerName}");
+                    //SetStatus(DeviceStatusCode.Connected, $"USB printer connected: {_printerName}");
+                    bool isOnline = _printer.GetPrinterStatus().IsOnline;
+                    if (isOnline)
+                    {
+                        SetStatus(DeviceStatusCode.Online, $"Printer is already online: {_printerName ?? "Unknown Printer"}");
+                    }
+                    else
+                    {
+                        SetStatus(DeviceStatusCode.Offline, $"Printer is currently offline: {_printerName ?? "Unknown Printer"}. Please check the connection and try again.");
+                    }
                 }
                 else
                 {
-                    SetStatus(DeviceStatusCode.Disconnected, $"USB printer {usb.UsbId} not connected.");
+                    //SetStatus(DeviceStatusCode.Disconnected, $"USB printer {usb.UsbId} not connected.");
                     return;
                 }
             }
@@ -395,41 +411,53 @@ namespace LASYS.Infrastructure.Hardware.Printers.Sato
                 SetStatus(DeviceStatusCode.Error, $"Test print failed: {ex.Message}");
             }
         }
-        public void Print(string prnFilePath, int timeoutSeconds = 300)
+        public async Task<bool> IsPrinted(string prnFilePath, int timeoutSeconds = 300)
         {
             if (!File.Exists(prnFilePath))
             {
                 SetStatus(DeviceStatusCode.Error, $"PRN file not found: {prnFilePath}.");
-                return;
+                return await Task.FromResult(false);
             }
 
             if (_printer is null)
             {
                 SetStatus(DeviceStatusCode.NotConfigured, "Printer not initialized. Please initialize the printer before printing.");
-                return;
+                return await Task.FromResult(false);
             }
 
             try
             {
-                byte[] prnData = File.ReadAllBytes(prnFilePath);
-                _printWaitHandle.Reset(); // reset before sending
-                AppendSendText(prnData);   // TX log
+                byte[] prnData = await File.ReadAllBytesAsync(prnFilePath);
+
+                SetStatus(DeviceStatusCode.Online, $"Printer is online. Sending PRN file to printer: {_printerName}...");
                 _printer.Send(prnData);
+                bool isOnline = _printer.GetPrinterStatus().IsOnline;
 
-                SetStatus(DeviceStatusCode.Started, $"PRN file sent to printer: {_printerName}. Waiting for response...");
-                bool signaled = _printWaitHandle.Wait(TimeSpan.FromSeconds(timeoutSeconds));
-
-                if (!signaled)
+                if (isOnline)
                 {
-                    SetStatus(DeviceStatusCode.Timeout, $"Printer did not respond within {timeoutSeconds} seconds.");
+                    SetStatus(DeviceStatusCode.PrinterError, $"Printer reported an error after sending PRN file: {_printerName}. Please check the printer status and try again.");
+                    return await Task.FromResult(true);
                 }
-                SetStatus(DeviceStatusCode.PrintCompleted);
-
+                else
+                {
+                    SetStatus(DeviceStatusCode.Offline, $"Printer is offline. Cannot send PRN file: {_printerName}. Please check the connection and try again.");
+                    return await Task.FromResult(false);
+                }
             }
             catch (Exception ex)
             {
                 SetStatus(DeviceStatusCode.Error, $"Error during printing: {ex.Message}");
+                return await Task.FromResult(false);
             }
+        }
+        private string ControlCharReplace(string data)
+        {
+            Dictionary<string, char> chrList = ControlCharList();
+            foreach (string key in chrList.Keys)
+            {
+                data = data.Replace(key, chrList[key].ToString());
+            }
+            return data;
         }
 
     }

@@ -28,8 +28,13 @@ namespace LASYS.DesktopApp.Views.Forms
         {
             switch (failureType)
             {
+                case ValidationFailure.FileGenerationFailed:
+                        btnRetry.Visible = true;
+                        btnSkip.Visible = false;
+                        btnStopBatch.Visible = true;
+                        break;
                 case ValidationFailure.PrinterUnavailable:
-                    btnRetry.Visible = true;
+                    btnRetry.Visible = false;
                     btnSkip.Visible = false;
                     btnStopBatch.Visible = true;
                     break;

@@ -24,7 +24,7 @@ namespace LASYS.Application.Interfaces.Services
         //void LoadLabelTemplate(string templatePath);
         //void SetLabelVariables(Dictionary<string, string> data);
         //bool PrintLabelWithPreview(string filename, int previewWidth = 800, int previewHeight = 600);
-        void Print(string prnFilePath, int timeoutSeconds = 300);
+        Task<bool> IsPrinted(string prnFilePath, int timeoutSeconds = 300);
 
         event EventHandler<LabelEventArgs> LabelStatusChanged;
         //event EventHandler<PrinterStatusEventArgs> PrinterStatusChanged;

@@ -20,6 +20,7 @@
         // Printer-specific
         ConfigurationLoaded,
         Started,
+        Online,
         Offline,
         Paused,
         Resuming,

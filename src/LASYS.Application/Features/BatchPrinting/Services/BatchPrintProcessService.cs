@@ -5,6 +5,7 @@ using LASYS.Application.Features.BatchPrinting.Enums;
 using LASYS.Application.Features.BatchPrinting.Events;
 using LASYS.Application.Features.BatchPrinting.Helpers;
 using LASYS.Application.Features.BatchPrinting.Models;
+using LASYS.Application.Features.Devices.Events;
 using LASYS.Application.Features.LabelInstructions.GetLabelInstructionContext;
 using LASYS.Application.Interfaces.Context;
 using LASYS.Application.Interfaces.Services;
@@ -16,24 +17,27 @@ namespace LASYS.Application.Features.BatchPrinting.Services
         private readonly ICurrentUser _currentUser;
         private readonly IPrintJobController _jobController;
         private readonly INiceLabelTemplateService _niceLabelTemplateService;
-        private readonly IPrinterService _printerService;
-        private readonly IBarcodeService _barcodeService;
-        private readonly IOCRService _ocrService;
+        private readonly IDeviceManager _deviceManager;
+        //private readonly IPrinterService _printerService;
+        //private readonly IBarcodeService _barcodeService;
+        //private readonly IOCRService _ocrService;
 
         private TaskCompletionSource<StepResult>? _decisionTcs;
+
         public event EventHandler<OperatorDecisionRequiredEventArgs>? OperatorDecisionRequired;
         public event EventHandler<PrintJobState>? JobStateChanged;
         public event EventHandler<LogEventArgs>? LogGenerated;
 
-        public BatchPrintProcessService(ICurrentUser currentUser, IPrintJobController jobController, INiceLabelTemplateService niceLabelTemplateService, IPrinterService printerService, IBarcodeService barcodeService, IOCRService ocrService)
+        public BatchPrintProcessService(ICurrentUser currentUser, IPrintJobController jobController, INiceLabelTemplateService niceLabelTemplateService, IDeviceManager deviceManager)
         {
             _currentUser = currentUser;
             _jobController = jobController;
             _niceLabelTemplateService = niceLabelTemplateService;
-            _printerService = printerService;
-            _barcodeService = barcodeService;
-            _ocrService = ocrService;
+            _deviceManager = deviceManager;
+
         }
+
+
         public PrintJobState? GetJob(Guid jobId)
         {
             return _jobController.GetJob(jobId);
@@ -82,8 +86,6 @@ namespace LASYS.Application.Features.BatchPrinting.Services
 
             try
             {
-                await _printerService.InitializeAsync();
-
                 var isTemplateLoaded = _niceLabelTemplateService.IsTemplateLoaded;
                 if (!isTemplateLoaded)
                 {
@@ -109,7 +111,7 @@ namespace LASYS.Application.Features.BatchPrinting.Services
                         generationAttempt++;
                         if (generationAttempt == 1)
                         {
-                            LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Info, $"Starting label files generation attempt for label {formattedCurrentSequence}."));
+                            //LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Info, $"Starting label files generation attempt for label {formattedCurrentSequence}."));
                         }
                         else
                         {
@@ -121,11 +123,11 @@ namespace LASYS.Application.Features.BatchPrinting.Services
                         {
                             if (generationAttempt == 1)
                             {
-                                LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Info, $"Label files generated successfully for label {formattedCurrentSequence}."));
+                                //LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Info, $"Label files generated successfully for label {formattedCurrentSequence}."));
                             }
                             else
                             {
-                                LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Info, $"Label files generated successfully for label {formattedCurrentSequence} after {generationAttempt} attempt(s)."));
+                                //LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Info, $"Label files generated successfully for label {formattedCurrentSequence} after {generationAttempt} attempt(s)."));
                             }
 
                             prnFileLocation = generationLabelFilesResult.PrnPath;
@@ -158,30 +160,22 @@ namespace LASYS.Application.Features.BatchPrinting.Services
                         printAttempt++;
                         if (printAttempt == 1)
                         {
-                            LogGenerated?.Invoke(this,
-                                new LogEventArgs(MessageType.Info,
-                                $"Starting print attempt for label {formattedCurrentSequence}."));
+                            //LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Info, $"Starting print attempt for label {formattedCurrentSequence}."));
                         }
                         else
                         {
-                            LogGenerated?.Invoke(this,
-                                new LogEventArgs(MessageType.Info,
-                                $"Retrying print attempt for label {formattedCurrentSequence}. Attempt {printAttempt}."));
+                            //LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Info, $"Retrying print attempt for label {formattedCurrentSequence}. Attempt {printAttempt}."));
                         }
                         var validationPrintResult = await ValidatePrintAsync(job, sequence, prnFileLocation, cancellationToken);
                         if (validationPrintResult == StepResult.Success)
                         {
                             if (printAttempt == 1)
                             {
-                                LogGenerated?.Invoke(this,
-                                    new LogEventArgs(MessageType.Info,
-                                    $"Label {formattedCurrentSequence} printed successfully."));
+                                //LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Info, $"Label {formattedCurrentSequence} printed successfully."));
                             }
                             else
                             {
-                                LogGenerated?.Invoke(this,
-                                    new LogEventArgs(MessageType.Info,
-                                    $"Label {formattedCurrentSequence} printed successfully after {printAttempt} attempt(s)."));
+                                //LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Info, $"Label {formattedCurrentSequence} printed successfully after {printAttempt} attempt(s)."));
                             }
                             break;
                         }
@@ -191,9 +185,7 @@ namespace LASYS.Application.Features.BatchPrinting.Services
                         }
                         if (validationPrintResult == StepResult.Stop)
                         {
-                            LogGenerated?.Invoke(this,
-                               new LogEventArgs(MessageType.Error,
-                               $"Job {jobId} stopped due to print failure after {printAttempt} attempt(s)."));
+                            //LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Error, $"Job {jobId} stopped due to print failure after {printAttempt} attempt(s)."));
 
                             _jobController.Stop(jobId);
                             NotifyJobStateChanged(jobId);
@@ -218,30 +210,22 @@ namespace LASYS.Application.Features.BatchPrinting.Services
                         barcodeAttempt++;
                         if (barcodeAttempt == 1)
                         {
-                            LogGenerated?.Invoke(this,
-                                new LogEventArgs(MessageType.Info,
-                                $"Starting barcode validation for label {formattedCurrentSequence}."));
+                            //LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Info, $"Starting barcode validation for label {formattedCurrentSequence}."));
                         }
                         else
                         {
-                            LogGenerated?.Invoke(this,
-                                new LogEventArgs(MessageType.Info,
-                                $"Retrying barcode validation for label {formattedCurrentSequence}. Attempt {barcodeAttempt}."));
+                            //LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Info, $"Retrying barcode validation for label {formattedCurrentSequence}. Attempt {barcodeAttempt}."));
                         }
                         var validationBarcodeResult = await ValidateBarcodeAsync(job, sequence, cancellationToken);
                         if (validationBarcodeResult == StepResult.Success)
                         {
                             if (barcodeAttempt == 1)
                             {
-                                LogGenerated?.Invoke(this,
-                                    new LogEventArgs(MessageType.Info,
-                                    $"Label {formattedCurrentSequence} barcode validation passed successfully."));
+                                //LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Info, $"Label {formattedCurrentSequence} barcode validation passed successfully."));
                             }
                             else
                             {
-                                LogGenerated?.Invoke(this,
-                                    new LogEventArgs(MessageType.Info,
-                                    $"Barcode validation passed for label {formattedCurrentSequence} after {barcodeAttempt} attempt(s)."));
+                                //LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Info, $"Barcode validation passed for label {formattedCurrentSequence} after {barcodeAttempt} attempt(s)."));
                             }
                             break;
                         }
@@ -251,16 +235,12 @@ namespace LASYS.Application.Features.BatchPrinting.Services
                         }
                         if (validationBarcodeResult == StepResult.Skip) // Add reason for skip?
                         {
-                            LogGenerated?.Invoke(this,
-                                new LogEventArgs(MessageType.Warning,
-                                $"Label {formattedCurrentSequence} skipped due to barcode failure after {barcodeAttempt} attempt(s)."));
+                            //LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Warning, $"Label {formattedCurrentSequence} skipped due to barcode failure after {barcodeAttempt} attempt(s)."));
                             break;
                         }
                         if (validationBarcodeResult == StepResult.Stop)
                         {
-                            LogGenerated?.Invoke(this,
-                               new LogEventArgs(MessageType.Error,
-                               $"Job {jobId} stopped due to barcode failure after {barcodeAttempt} attempt(s)."));
+                            //LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Error, $"Job {jobId} stopped due to barcode failure after {barcodeAttempt} attempt(s)."));
 
                             _jobController.Stop(jobId);
                             NotifyJobStateChanged(jobId);
@@ -279,9 +259,7 @@ namespace LASYS.Application.Features.BatchPrinting.Services
                         ocrAttempt++;
                         if (ocrAttempt == 1)
                         {
-                            LogGenerated?.Invoke(this,
-                                new LogEventArgs(MessageType.Info,
-                                $"Starting OCR validation for label {formattedCurrentSequence}."));
+                            //LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Info, $"Starting OCR validation for label {formattedCurrentSequence}."));
                         }
                         else
                         {
@@ -295,15 +273,11 @@ namespace LASYS.Application.Features.BatchPrinting.Services
                         {
                             if (ocrAttempt == 1)
                             {
-                                LogGenerated?.Invoke(this,
-                                    new LogEventArgs(MessageType.Info,
-                                    $"Label {formattedCurrentSequence} OCR validation passed successfully."));
+                                //LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Info, $"Label {formattedCurrentSequence} OCR validation passed successfully."));
                             }
                             else
                             {
-                                LogGenerated?.Invoke(this,
-                                        new LogEventArgs(MessageType.Info,
-                                        $"OCR validation passed for label {formattedCurrentSequence} after {ocrAttempt} attempt(s)."));
+                                //LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Info, $"OCR validation passed for label {formattedCurrentSequence} after {ocrAttempt} attempt(s)."));
                             }
                             break;
                         }
@@ -313,16 +287,12 @@ namespace LASYS.Application.Features.BatchPrinting.Services
                         }
                         if (validationOcrResult == StepResult.Skip) // Add reason for skip?
                         {
-                            LogGenerated?.Invoke(this,
-                                new LogEventArgs(MessageType.Warning,
-                                $"Label {formattedCurrentSequence} skipped due to OCR failure after {ocrAttempt} attempt(s)."));
+                            //LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Warning, $"Label {formattedCurrentSequence} skipped due to OCR failure after {ocrAttempt} attempt(s)."));
                             break;
                         }
                         if (validationOcrResult == StepResult.Stop)
                         {
-                            LogGenerated?.Invoke(this,
-                               new LogEventArgs(MessageType.Error,
-                               $"Job {jobId} stopped due to OCR failure after {ocrAttempt} attempt(s)."));
+                            //LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Error, $"Job {jobId} stopped due to OCR failure after {ocrAttempt} attempt(s)."));
 
                             _jobController.Stop(jobId);
                             NotifyJobStateChanged(jobId);
@@ -338,9 +308,7 @@ namespace LASYS.Application.Features.BatchPrinting.Services
                     job.PrintedCount = sequence;
                     NotifyJobStateChanged(jobId);
 
-                    LogGenerated?.Invoke(this,
-                        new LogEventArgs(MessageType.Info,
-                        $"Label {formattedCurrentSequence} processing completed and state saved successfully."));
+                    //LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Info, $"Label {formattedCurrentSequence} processing completed and state saved successfully."));
 
                     sequence++;
                 }
@@ -400,13 +368,13 @@ namespace LASYS.Application.Features.BatchPrinting.Services
 
                 var filename = PrintFileNameBuilder.Build(job.ItemCode, job.LotNo, formattedCurrentSequence);
 
-                LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Info, $"Generating preview: {filename}.jpg"));
+                //LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Info, $"Generating preview: {filename}.jpg"));
 
                 var isPreviewGenerated = _niceLabelTemplateService.GeneratePreview(job.Paths.LabelsDirectory, filename);
 
                 if (!isPreviewGenerated)
                 {
-                    LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Error, $"Failed to generate preview image for {filename}"));
+                    //LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Error, $"Failed to generate preview image for {filename}"));
 
                     return (await RequestOperatorDecisionAsync(
                         new OperatorDecisionRequiredEventArgs
@@ -418,16 +386,15 @@ namespace LASYS.Application.Features.BatchPrinting.Services
                         cancellationToken), string.Empty);
                 }
 
-                LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Info, $"Preview image generated: {filename}.jpg"));
+                //LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Info, $"Preview image generated: {filename}.jpg"));
 
-                LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Info, $"Generating prn file: {filename}.prn"));
+                //LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Info, $"Generating prn file: {filename}.prn"));
 
                 var isPrnGenerated = _niceLabelTemplateService.GeneratePrn(job.Paths.LabelsDirectory, filename, out string prnPath);
 
                 if (!isPrnGenerated || string.IsNullOrWhiteSpace(prnPath) || !File.Exists(prnPath))
                 {
-                    LogGenerated?.Invoke(this,
-                        new LogEventArgs(MessageType.Error, $"Failed to generate PRN file for {filename}"));
+                    //LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Error, $"Failed to generate PRN file for {filename}"));
 
                     return (await RequestOperatorDecisionAsync(
                         new OperatorDecisionRequiredEventArgs
@@ -438,14 +405,14 @@ namespace LASYS.Application.Features.BatchPrinting.Services
                         },
                         cancellationToken), string.Empty);
                 }
-                LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Info, $"PRN file generated successfully: {prnPath}"));
+                //LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Info, $"PRN file generated successfully: {prnPath}"));
 
                 return (StepResult.Success, prnPath);
 
             }
             catch (Exception ex)
             {
-                LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Error, $"Fatal error generating label files: {ex.Message}"));
+                //LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Error, $"Fatal error generating label files: {ex.Message}"));
 
                 return (await RequestOperatorDecisionAsync(
                     new OperatorDecisionRequiredEventArgs
@@ -464,20 +431,15 @@ namespace LASYS.Application.Features.BatchPrinting.Services
             var formattedLastSequence = SequenceFormatter.Format(job.LastSequenceToPrint, 5);
 
             EnsureCanContinue(job);
-            await Task.Delay(300, cancellationToken);
 
             job.Status = PrintJobStatus.Printing;
             NotifyJobStateChanged(job.JobId);
 
 
-
-            // Simulate printer validation logic here
-            var isPrinterValid = _printerService.CurrentStatus.IsConnected; // Replace with actual validation
-            if (isPrinterValid)
+            var isPrinted = await _deviceManager.Printer.IsPrinted(prnFileLocation);
+            //LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Info, $"Printing label {formattedCurrentSequence}/{formattedLastSequence}"));
+            if (isPrinted)
             {
-                _printerService.Print(prnFileLocation);
-                LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Info, $"Printing label {formattedCurrentSequence}/{formattedLastSequence}"));
-
                 return StepResult.Success;
             }
 
@@ -496,7 +458,6 @@ namespace LASYS.Application.Features.BatchPrinting.Services
             var formattedLastSequence = SequenceFormatter.Format(job.LastSequenceToPrint, 5);
 
             EnsureCanContinue(job);
-            await Task.Delay(300, cancellationToken);
             return StepResult.Success;
 
             return await RequestOperatorDecisionAsync(
@@ -516,7 +477,6 @@ namespace LASYS.Application.Features.BatchPrinting.Services
             var formattedLastSequence = SequenceFormatter.Format(job.LastSequenceToPrint, 5);
 
             EnsureCanContinue(job);
-            await Task.Delay(300, cancellationToken);
 
             return StepResult.Success; //uncomment for real implementation
 

@@ -48,6 +48,8 @@ namespace LASYS.Application.Features.Devices.Extensions
                     new("Printer configuration loaded", "The printer configuration was successfully loaded from the application settings."),
                 (DeviceType.Printer, DeviceStatusCode.Started) =>
                     new("Print Started", "The printer has started the print job."),
+                (DeviceType.Printer, DeviceStatusCode.Online) =>
+                    new("Online", "The printer is online and ready."),
                 (DeviceType.Printer, DeviceStatusCode.Offline) =>
                     new("Offline", "The printer is currently offline."),
                 (DeviceType.Printer, DeviceStatusCode.Paused) =>

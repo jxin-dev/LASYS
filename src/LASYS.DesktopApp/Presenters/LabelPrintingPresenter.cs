@@ -137,11 +137,10 @@ namespace LASYS.DesktopApp.Presenters
 
         private void OnJobStateChanged(object? sender, PrintJobState e)
         {
-            _view.InvokeOnUI(() =>
-            {
-                _view.SetPrintingState(e.Status);
-                _view.UpdateProgress(e.PrintedCount, e.TotalQuantity);
-            });
+            _view.InvokeOnUI(() => _view.SetPrintingState(e.Status));
+
+            //_view.InvokeOnUI(() => _view.UpdateProgress(e.PrintedCount, e.TotalQuantity));
+
 
             if (e.Status is PrintJobStatus.Completed or PrintJobStatus.Stopped or PrintJobStatus.Failed)
             {

@@ -73,7 +73,7 @@ namespace LASYS.Application.Features.OCRCalibration.PrintLabel
 
             bool isPrnGenerated = _niceLabelTemplateService.GeneratePrn(dirPrn, $"LBL_{formattedSequence}", out var prnPath);
             var templateVariables = _niceLabelTemplateService.GetTemplateVariables();
-            _printerService.Print(prnPath);
+            await _printerService.IsPrinted(prnPath);
             return Result.Success(Unit.Value);
         }
     }
