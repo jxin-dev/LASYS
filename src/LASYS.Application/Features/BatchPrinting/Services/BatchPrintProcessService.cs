@@ -197,9 +197,6 @@ namespace LASYS.Application.Features.BatchPrinting.Services
                         break;
                     }
 
-                    //job.Status = PrintJobStatus.Printing;
-                    //NotifyJobStateChanged(jobId);
-                    //PrintLabel(job, formattedCurrentSequence, formattedLastSequence); //Creating PRN and Image
 
                     EnsureCanContinue(job);
 
@@ -435,6 +432,7 @@ namespace LASYS.Application.Features.BatchPrinting.Services
             job.Status = PrintJobStatus.Printing;
             NotifyJobStateChanged(job.JobId);
 
+            return StepResult.Success;
 
             var isPrinted = await _deviceManager.Printer.IsPrinted(prnFileLocation);
             //LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Info, $"Printing label {formattedCurrentSequence}/{formattedLastSequence}"));
@@ -478,7 +476,7 @@ namespace LASYS.Application.Features.BatchPrinting.Services
 
             EnsureCanContinue(job);
 
-            return StepResult.Success; //uncomment for real implementation
+            //return StepResult.Success; //uncomment for real implementation
 
             var result = await RequestOperatorDecisionAsync(
                          new OperatorDecisionRequiredEventArgs

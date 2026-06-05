@@ -79,7 +79,7 @@
             btnStopBatch.Name = "btnStopBatch";
             btnStopBatch.Size = new Size(181, 44);
             btnStopBatch.TabIndex = 2;
-            btnStopBatch.Text = "Stop Batch Priniting";
+            btnStopBatch.Text = "Stop Batch Printing";
             btnStopBatch.TextImageRelation = TextImageRelation.ImageBeforeText;
             btnStopBatch.UseVisualStyleBackColor = false;
             // 

@@ -29,6 +29,7 @@ namespace LASYS.DesktopApp.Views.Forms
             switch (failureType)
             {
                 case ValidationFailure.FileGenerationFailed:
+                case ValidationFailure.BarcodeMismatch:
                         btnRetry.Visible = true;
                         btnSkip.Visible = false;
                         btnStopBatch.Visible = true;
@@ -39,7 +40,6 @@ namespace LASYS.DesktopApp.Views.Forms
                     btnStopBatch.Visible = true;
                     break;
 
-                case ValidationFailure.BarcodeMismatch:
                 case ValidationFailure.OcrMismatch:
                     btnRetry.Visible = true;
                     btnSkip.Visible = true;
