@@ -32,6 +32,7 @@ namespace LASYS.Infrastructure.Persistence.Repositories
                 DESCRIPTION AS Description,
                 TIP_TYPE AS TipType,
                 WITH_COC AS WithCoc,
+                CASE WHEN PAIRED_CB_BOX_TYPE IS NOT NULL THEN 1 ELSE 0 END AS IsPairedBoxType,
                 WITH_STERILIZATION AS WithSterilization,
                 BARCODE_TYPE AS BarcodeType,
                 BARCODE_CATEGORY AS BarcodeCategory,

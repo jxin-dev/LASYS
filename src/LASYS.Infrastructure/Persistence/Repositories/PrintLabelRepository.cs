@@ -2,6 +2,7 @@
 using LASYS.Application.Common.Enums;
 using LASYS.Application.Common.Models;
 using LASYS.Application.Common.Results;
+using LASYS.Application.Features.BatchPrinting.Models;
 using LASYS.Application.Interfaces.Persistence;
 using LASYS.Application.Interfaces.Persistence.Repositories;
 using LASYS.Application.Interfaces.Persistence.TableMappings;
@@ -48,6 +49,11 @@ namespace LASYS.Infrastructure.Persistence.Repositories
             {
                 throw new Exception($"Error retrieving print details: {ex.Message}", ex);
             }
+        }
+
+        public Task<bool> SavePrintedLabelAsync(SequenceData sequenceData)
+        {
+            return Task.FromResult(true);
         }
     }
 }

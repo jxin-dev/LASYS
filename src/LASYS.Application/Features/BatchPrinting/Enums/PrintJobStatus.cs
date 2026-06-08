@@ -4,8 +4,8 @@
     {
         Initializing,
         Ready,
+        Pending,
         InProgress,
-        Printing,
         Paused,
         Completed,
         Stopped,

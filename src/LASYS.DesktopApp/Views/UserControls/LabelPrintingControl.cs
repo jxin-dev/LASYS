@@ -79,7 +79,7 @@ namespace LASYS.DesktopApp.Views.UserControls
                     PrintRequested?.Invoke(this, new PrintRequestedEventArgs(_labelPrintingContext, (int)nudQuantity.Value));
                 }
 
-                if (_currentJobStatus is PrintJobStatus.Printing or PrintJobStatus.Paused)
+                if (_currentJobStatus is PrintJobStatus.InProgress or PrintJobStatus.Paused)
                 {
                     StopPrintingRequested?.Invoke(this, EventArgs.Empty);
                 }
@@ -89,7 +89,7 @@ namespace LASYS.DesktopApp.Views.UserControls
 
             btnPauseResume.Click += (_, _) =>
             {
-                if (_currentJobStatus is PrintJobStatus.Printing)
+                if (_currentJobStatus is PrintJobStatus.InProgress)
                 {
                     PausePrintingRequested?.Invoke(this, EventArgs.Empty);
                 }
@@ -548,10 +548,10 @@ namespace LASYS.DesktopApp.Views.UserControls
                     btnPrint.ForeColor = Color.Black;
                     btnPrint.BackColor = Color.SeaGreen;
                     break;
-                case PrintJobStatus.InProgress:
+                case PrintJobStatus.Pending:
                     btnPrint.Enabled = false;
                     break;
-                case PrintJobStatus.Printing:
+                case PrintJobStatus.InProgress:
                     lblPrintingProgress.Visible = true;
                     pbPrintingProgress.Visible = true;
                     btnPauseResume.Visible = true;

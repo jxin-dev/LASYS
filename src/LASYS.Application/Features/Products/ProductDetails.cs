@@ -11,6 +11,7 @@
         public string Description { get; private set; } = string.Empty;
         public string TipType { get; private set; } = string.Empty;
         public string WithCoc { get; private set; } = string.Empty;
+        public bool IsPairedBoxType { get; private set; } = false;
         public string WithSterilization { get; private set; } = string.Empty;
         public string BarcodeType { get; private set; } = string.Empty;
         public string BarcodeCategory { get; private set; } = string.Empty;

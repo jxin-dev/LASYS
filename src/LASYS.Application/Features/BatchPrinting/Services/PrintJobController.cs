@@ -1,4 +1,5 @@
 ﻿using System.Collections.Concurrent;
+using System.Collections.Generic;
 using LASYS.Application.Common.Mappings;
 using LASYS.Application.Features.BatchPrinting.Enums;
 using LASYS.Application.Features.BatchPrinting.Helpers;
@@ -11,47 +12,25 @@ namespace LASYS.Application.Features.BatchPrinting.Services
     {
         private readonly ConcurrentDictionary<Guid, PrintJobState> _jobs = new();
         
-        public Guid CreateJob(LabelPrintingContext context, int quantity)
+        public Guid CreateJob(string printerName, LabelPrintingContext context, int quantity)
         {
-            var labelInstruction = context.LabelInstructionDetails!;
-            var productDetails = context.ProductDetails!;
-            var printDetails = context.PrintDetails!;
-            var masterLabelDetails = context.MasterLabelDetails!;
+            var job = PrintJobState.Create(printerName, context, quantity);
 
-            var paths = PrintJobPathBuilder.Create(labelInstruction.ItemCode, labelInstruction.LotNo, masterLabelDetails.BoxType.ToString());
+            _jobs.TryAdd(job.JobId, job);
 
-            var jobId = Guid.NewGuid();
-
-            var job = new PrintJobState
-            {
-                JobId = jobId,
-                ItemCode = labelInstruction.ItemCode,
-                LotNo = labelInstruction.LotNo,
-                BoxType = masterLabelDetails.BoxType.ToString(),
-                NiceLabelFilePath = masterLabelDetails.FilePath!,
-                TotalQuantity = quantity,
-                PrintedCount = 0,
-                StartSequenceToPrint = (int)printDetails.NextSequence,
-                Status = PrintJobStatus.InProgress,
-                LabelData = NiceLabelDataMappings.ToLabelData(context),
-                Paths = paths
-            };
-
-            _jobs.TryAdd(jobId, job);
-
-            return jobId;
+            return job.JobId;
         }
         public void Complete(Guid jobId)
         {
             var job = GetJob(jobId);
             if (job is not null)
-                job.Status = PrintJobStatus.Completed;
+                job.Completed();
         }
         public void Fail(Guid jobId)
         {
             var job = GetJob(jobId);
             if (job is not null)
-                job.Status = PrintJobStatus.Failed;
+                job.Failed();
         }
 
         public PrintJobState? GetJob(Guid jobId)
@@ -63,17 +42,17 @@ namespace LASYS.Application.Features.BatchPrinting.Services
         {
             var job = GetJob(jobId);
             if (job is not null)
-                job.Status = PrintJobStatus.Ready;
+                job.Ready();
         }
         public void Pause(Guid jobId)
         {
             var job = GetJob(jobId);
             if (job is null) return;
 
-            if (job.Status != PrintJobStatus.Printing)
+            if (job.Status != PrintJobStatus.InProgress)
                 return;
 
-            job.Status = PrintJobStatus.Paused;
+            job.Paused();
             job.ResumeSignal.Reset();
         }
 
@@ -85,7 +64,7 @@ namespace LASYS.Application.Features.BatchPrinting.Services
             if (job.Status != PrintJobStatus.Paused)
                 return;
 
-            job.Status = PrintJobStatus.Printing;
+            job.InProgress();
             job.ResumeSignal.Set();
         }
 
@@ -97,7 +76,7 @@ namespace LASYS.Application.Features.BatchPrinting.Services
             if (job.Status == PrintJobStatus.Stopped)
                 return;
 
-            job.Status = PrintJobStatus.Stopped;
+            job.Stopped();
             job.CancellationTokenSource.Cancel();
 
             // wake any paused thread

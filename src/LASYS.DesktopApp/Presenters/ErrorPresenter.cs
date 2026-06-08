@@ -49,12 +49,15 @@ namespace LASYS.DesktopApp.Presenters
                 ValidationFailure.OcrMismatch =>
                     $"OCR mismatch.\n\nSequence: {e.SequenceNo}\nDetected: {e.OcrResult}",
 
-                ValidationFailure.PrinterUnavailable =>
-                    "Printer is not available.",
+                ValidationFailure.PrinterUnavailable => "Printer is not available.",
+
+                ValidationFailure.FileGenerationFailed => $"Failed to generate file.\nSequence: {e.SequenceNo}",
+
+                ValidationFailure.SaveFailed => $"Failed to save.\nSequence: {e.SequenceNo}",
 
                 _ => "A validation error occurred."
             };
         }
-     
+
     }
 }

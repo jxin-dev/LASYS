@@ -5,7 +5,7 @@ namespace LASYS.Application.Features.BatchPrinting.Services
 {
     public interface IPrintJobController
     {
-        Guid CreateJob(LabelPrintingContext context, int quantity);
+        Guid CreateJob(string printerName, LabelPrintingContext context, int quantity);
         PrintJobState? GetJob(Guid jobId);
         void Pause(Guid jobId);
         void Resume(Guid jobId);

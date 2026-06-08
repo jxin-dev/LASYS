@@ -30,6 +30,7 @@ namespace LASYS.DesktopApp.Views.Forms
             {
                 case ValidationFailure.FileGenerationFailed:
                 case ValidationFailure.BarcodeMismatch:
+                case ValidationFailure.SaveFailed:
                         btnRetry.Visible = true;
                         btnSkip.Visible = false;
                         btnStopBatch.Visible = true;
