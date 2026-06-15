@@ -2,6 +2,6 @@
 {
     public class DatabaseSettings
     {
-        public string DefaultEnvironment { get; set; } = "Staging"; //default
+        public string Environment { get; set; } = "Staging"; //default
     }
 }

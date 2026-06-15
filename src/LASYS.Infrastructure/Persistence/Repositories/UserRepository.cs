@@ -136,18 +136,9 @@ namespace LASYS.Infrastructure.Persistence.Repositories
                 SEC.NAME AS SECTION_NAME, USR.LASTPASSRENEW_DATETIME, IF(ISNULL(USR.ACTIVE_FLAG), False, True) AS 'ACTIVE_FLAG' 
                 FROM sec_users_mst USR LEFT JOIN sec_sections_mst SEC ON SEC.ID = USR.SECTION_ID
                 WHERE USR.USER_NAME = @USER_NAME AND USR.ACTIVE_FLAG = ' ' LIMIT 1";
+            using var connection = await _factory.CreateConnectionAsync();
+            return await connection.QueryFirstOrDefaultAsync<User>(sql, new { USER_NAME = username });
 
-            try
-            {
-                using (var connection = await _factory.CreateConnectionAsync())
-                {
-                    return await connection.QueryFirstOrDefaultAsync<User>(sql, new { USER_NAME = username });
-                }
-            }
-            catch
-            {
-                throw;
-            }
         }
 
         public async Task<User?> GetUserByUsernameAndPassword(string username, string password)

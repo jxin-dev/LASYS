@@ -20,11 +20,12 @@ namespace LASYS.DesktopApp
         [STAThread]
         static void Main()
         {
-
 #if DEBUG
-            //Debugger.Launch(); //auto attach debugger
+            if (!Debugger.IsAttached)
+            {
+                Debugger.Launch();
+            }
 #endif
-
             VelopackApp.Build().Run();
 
             ApplicationConfiguration.Initialize();
@@ -32,7 +33,7 @@ namespace LASYS.DesktopApp
             var host = Host.CreateDefaultBuilder()
                 .ConfigureAppConfiguration((context, config) =>
                 {
-                    config.SetBasePath(AppContext.BaseDirectory); 
+                    config.SetBasePath(AppContext.BaseDirectory);
                     config.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
                 })
                 .ConfigureServices((context, services) =>
@@ -60,6 +61,7 @@ namespace LASYS.DesktopApp
 
             if (!string.IsNullOrEmpty(username))
             {
+
                 var mediator = host.Services.GetRequiredService<IMediator>();
 
                 var currentUser = host.Services.GetRequiredService<ICurrentUser>();
@@ -89,6 +91,13 @@ namespace LASYS.DesktopApp
 
                     sessionTracker.StartSession();
 
+                }
+                else
+                {
+                    MessageBox.Show(result.Error!.ToString(), "Auto Login Failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
+
+                    System.Windows.Forms.Application.Exit(); // user cancelled login, exit the application
+                    return; // user cancelled login
                 }
             }
 

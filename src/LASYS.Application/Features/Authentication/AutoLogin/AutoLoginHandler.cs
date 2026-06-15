@@ -1,10 +1,12 @@
-﻿using LASYS.Application.Common.Messaging;
+﻿using System.Diagnostics;
+using LASYS.Application.Common.Messaging;
 using LASYS.Application.Common.Results;
 using LASYS.Application.Features.Authentication.Login;
 using LASYS.Application.Features.Permissions.GetUserPermissions;
 using LASYS.Application.Interfaces.Persistence.Repositories;
 using LASYS.Application.Interfaces.Services;
 using MediatR;
+using MySqlConnector;
 
 namespace LASYS.Application.Features.Authentication.AutoLogin
 {
@@ -75,9 +77,17 @@ namespace LASYS.Application.Features.Authentication.AutoLogin
                     hrUser.SECTION_NAME,
                     imagePath));
             }
-            catch
+            catch (MySqlException)
             {
-                return Result.Failure<LoginResponse>("Unable to connect to the server. Please try again later.");
+                return Result.Failure<LoginResponse>(
+                    "Unable to connect to the database. Please contact IT.");
+            }
+            catch (Exception ex)
+            {
+                _logService.Log(ex.ToString(), MessageType.Error);
+
+                return Result.Failure<LoginResponse>(
+                    "An unexpected error occurred.");
             }
         }
     }

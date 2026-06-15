@@ -23,17 +23,6 @@ namespace LASYS.Infrastructure.Persistence.Connection
         }
 
 
-        //private readonly string _connectionString;
-
-        //public DapperContext(IConfiguration configuration, DatabaseSettings settings, ILogService logService)
-        //{
-        //    _logService = logService;
-
-        //    var env = settings.Environment ?? "Production";
-        //    _connectionString = configuration.GetConnectionString(env)
-        //        ?? throw new InvalidOperationException("Connection string not found.");
-        //}
-
         public async Task<IDbConnection> CreateConnectionAsync()
         {
             var environment = _databaseEnvironment.Current;
@@ -72,23 +61,6 @@ namespace LASYS.Infrastructure.Persistence.Connection
                 connection.Dispose();
                 throw;
             }
-
-            //var connection = new MySqlConnection(_connectionString);
-
-            //try
-            //{
-            //    if (connection.State != ConnectionState.Open)
-            //    {
-            //        await connection.OpenAsync();
-            //    }
-            //}
-            //catch (Exception ex)
-            //{
-            //    _logService.Log($"Database connection failed - {ex.Message}", MessageType.Error);
-            //    throw;
-            //}
-
-            //return connection;
         }
     }
 }

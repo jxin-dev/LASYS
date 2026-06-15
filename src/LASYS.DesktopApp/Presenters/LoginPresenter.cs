@@ -27,7 +27,6 @@ namespace LASYS.DesktopApp.Presenters
             View = (LoginForm)view;
 
             _mediator = mediator;
-            //_databaseSettings = databaseSettings;
             _databaseEnvironment = databaseEnvironment;
             _currentUser = currentUser;
             _logService = logService;
