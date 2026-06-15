@@ -70,7 +70,7 @@ jobs:
 
           vpk pack `
             --packId "InnovaThinkCorporation" `
-            --packTitle "LASYS Application" `
+            --packTitle "LASYS-OCR" `
             --packVersion $version `
             --packDir ./publish `
             --mainExe "LASYS.DesktopApp.exe" `
