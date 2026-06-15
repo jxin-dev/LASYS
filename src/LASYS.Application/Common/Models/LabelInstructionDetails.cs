@@ -14,6 +14,13 @@
         public DateTime? ProductionDate { get; init; }
         public DateTime? SterilizationDate { get; init; }
         public int TargetProductionQuantity { get; init; }
+        public string PrintType { get; init; } = string.Empty;
+        public string ApprovedByUserCode { get; init; } = string.Empty;
+        public string ApprovedBySectionId { get; init; } = string.Empty;
+        public string ApprovedByIpAddress { get; init; } = string.Empty;
+        public string ApprovedByDateTime { get; init; } = string.Empty;
+
+
 
     }
 }

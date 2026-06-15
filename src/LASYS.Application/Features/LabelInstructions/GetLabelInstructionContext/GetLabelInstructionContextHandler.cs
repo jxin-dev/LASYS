@@ -26,20 +26,20 @@ namespace LASYS.Application.Features.LabelInstructions.GetLabelInstructionContex
         {
             try
             {
-                var labelInstructionTask = _labelInstructionRepository.GetDetailsAsync(request.ItemCode, request.LotNo, request.MasterRevision, request.BoxType);
+                var labelInstruction = await _labelInstructionRepository.GetDetailsAsync(request.ItemCode, request.LotNo, request.MasterRevision, request.BoxType);
                 var productTask = _productRepository.GetDetailsAsync(request.ItemCode, request.MasterRevision, request.BoxType);
                 var masterLabelTask = _masterLabelRepository.GetDetailsAsync(request.ItemCode, request.MasterRevision, request.BoxType);
-                var printDetailsTask = _printLabelRepository.GetDetailsAsync(request.ItemCode, request.LotNo, request.BoxType);
+                var printDetailsTask = _printLabelRepository.GetDetailsAsync(request.ItemCode, request.LotNo, labelInstruction.PrintType, request.BoxType);
 
 
-                await Task.WhenAll(labelInstructionTask, productTask, masterLabelTask, printDetailsTask);
+                await Task.WhenAll(productTask, masterLabelTask, printDetailsTask);
 
                 var context = new LabelPrintingContext
                 {
-                    LabelInstructionDetails = await labelInstructionTask,
-                    ProductDetails = await productTask,
-                    MasterLabelDetails = await masterLabelTask,
-                    PrintDetails = await printDetailsTask
+                    LabelInstructionDetails = labelInstruction,
+                    ProductDetails =  productTask.Result,
+                    MasterLabelDetails = masterLabelTask.Result,
+                    PrintDetails = printDetailsTask.Result
                 };
                 return Result.Success(context);
             }

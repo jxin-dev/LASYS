@@ -5,5 +5,5 @@ using MediatR;
 
 namespace LASYS.Application.Features.Printing.GetPrintDetails
 {
-    public sealed record GetPrintDetailsQuery(string ItemCode, string LotNo, BoxType BoxType) : IRequest<Result<PrintDetails>>;
+    public sealed record GetPrintDetailsQuery(string ItemCode, string LotNo, string PrintType, BoxType BoxType) : IRequest<Result<PrintDetails>>;
 }

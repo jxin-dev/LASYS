@@ -1,6 +1,4 @@
-﻿using LASYS.Application.Common.Enums;
-using LASYS.Application.Features.LabelInstructions.GetLabelInstructionsBySectionId;
-using LASYS.Application.Features.WorkOrders.GetWorkOrdersBySectionId;
+﻿using LASYS.Application.Features.LabelInstructions.GetLabelInstructionsBySectionId;
 using LASYS.Application.Interfaces.Services;
 using LASYS.DesktopApp.Events;
 using LASYS.DesktopApp.Views.Interfaces;
@@ -51,7 +49,7 @@ namespace LASYS.DesktopApp.Presenters
 
             if (result is null)
                 return;
-            
+
             var labelPrintingPresenter = _serviceProvider.GetRequiredService<LabelPrintingPresenter>();
             _mainView?.LoadView(labelPrintingPresenter.View, false); //false always new
 
@@ -66,7 +64,7 @@ namespace LASYS.DesktopApp.Presenters
             _isLoading = true;
             _view.SetLoading(true);
 
-           //await PrintJobCleanup.DeleteOldFilesByHoursAsync(TimeSpan.FromMinutes(5));
+            //await PrintJobCleanup.DeleteOldFilesByHoursAsync(TimeSpan.FromMinutes(5));
 
 
             try
@@ -78,7 +76,7 @@ namespace LASYS.DesktopApp.Presenters
                     var paginatedList = result.Value;
                     if (paginatedList?.Items != null && paginatedList.Items.Count > 0)
                     {
-                        _view.SetWorkOrders(paginatedList.Items, paginatedList.TotalPages);
+                        _view.InvokeOnUI(() => _view.SetWorkOrders(paginatedList.Items, paginatedList.TotalPages));
                     }
                 }
             }

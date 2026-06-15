@@ -31,32 +31,7 @@ namespace LASYS.DesktopApp.Presenters
 
         public string GetErrorMessage(OperatorDecisionRequiredEventArgs e)
         {
-            return BuildMessage(e);
-        }
-        private string BuildMessage(OperatorDecisionRequiredEventArgs e)
-        {
-            if (!string.IsNullOrWhiteSpace(e.CustomMessage))
-                return e.CustomMessage;
-
-            return e.FailureType switch
-            {
-                ValidationFailure.BarcodeMismatch =>
-                    $"Barcode mismatch.\n\nSequence: {e.SequenceNo}\nScanned: {e.BarcodeResult}",
-
-                ValidationFailure.OcrUnreadable =>
-                    $"OCR could not read the label.\n\nSequence: {e.SequenceNo}",
-
-                ValidationFailure.OcrMismatch =>
-                    $"OCR mismatch.\n\nSequence: {e.SequenceNo}\nDetected: {e.OcrResult}",
-
-                ValidationFailure.PrinterUnavailable => "Printer is not available.",
-
-                ValidationFailure.FileGenerationFailed => $"Failed to generate file.\nSequence: {e.SequenceNo}",
-
-                ValidationFailure.SaveFailed => $"Failed to save.\nSequence: {e.SequenceNo}",
-
-                _ => "A validation error occurred."
-            };
+            return e.GetMessage();
         }
 
     }

@@ -1,4 +1,5 @@
-﻿using LASYS.Application.Common.Messaging;
+﻿using DirectShowLib;
+using LASYS.Application.Common.Messaging;
 using LASYS.Application.Common.Utilities;
 using LASYS.Application.Events;
 using LASYS.Application.Features.BatchPrinting.Enums;
@@ -48,17 +49,36 @@ namespace LASYS.Application.Features.BatchPrinting.Services
             if (job is not null)
                 JobStateChanged?.Invoke(this, job);
         }
-        public Task<Guid> StartAsync(LabelPrintingContext context, int quantity)
+        public Task<PrintJobState> InitializeAsync(LabelPrintingContext context)
         {
-            var printerName = _deviceManager.Printer.PrinterName ?? "Test"; //throw new InvalidOperationException("Printer name is not available.");
-
-            var jobId = _jobController.CreateJob(printerName, context, quantity);
+            var printerName = _deviceManager.Printer.PrinterName ?? "Test";
+            var jobId = _jobController.CreateJob(printerName, context);
             var job = _jobController.GetJob(jobId)!;
+            if (job.RemainingQuantity == 0)
+            {
+                _jobController.Printed(jobId);
+            }
+
+            var isTemplateLoaded = _niceLabelTemplateService.IsTemplateLoaded;
+            if (!isTemplateLoaded)
+            {
+                _niceLabelTemplateService.LoadTemplate(job.NiceLabelFilePath);
+            }
+
+            NotifyJobStateChanged(jobId);
+
+            return Task.FromResult(job);
+        }
+        public Task StartAsync(Guid jobId, int quantity)
+        {
+            var job = _jobController.GetJob(jobId);
+            job.SetQuantity(quantity);
+
             NotifyJobStateChanged(jobId);
 
             _ = Task.Run(async () => await RunAsync(jobId, job.CancellationTokenSource.Token));
 
-            return Task.FromResult(jobId);
+            return Task.CompletedTask;
         }
 
         private void EnsureCanContinue(PrintJobState job)
@@ -88,49 +108,35 @@ namespace LASYS.Application.Features.BatchPrinting.Services
 
             try
             {
-                var isTemplateLoaded = _niceLabelTemplateService.IsTemplateLoaded;
-                if (!isTemplateLoaded)
-                {
-                    _niceLabelTemplateService.LoadTemplate(job.NiceLabelFilePath);
-                }
-
-
-                var sequence = job.StartSequence;
 
                 LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Info, $"Started print job. Total quantity: {job.TotalQuantity}"));
+                var startSequence = job.Context.PrintDetails!.NextSequence;
 
-                var prnFileLocation = string.Empty;
-                while (sequence <= job.TotalQuantity)
+                while (job.Context.PrintDetails!.NextSequence <= (job.TotalQuantity + startSequence) - 1) // 1 - 50
                 {
+                    var prnFileLocation = string.Empty;
                     EnsureCanContinue(job);
-
+                    // Generate Label Files Once per sequence, regardless of pair count.
                     var generationAttempt = 0;
                     while (true)
                     {
                         generationAttempt++;
                         if (generationAttempt == 1)
                         {
-                            //LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Info, $"Starting label files generation attempt for label {formattedCurrentSequence}."));
+                            LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Info, $"Starting label files generation attempt for label {job.CurrentSequenceFormat}."));
                         }
                         else
                         {
                             LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Info, $"Retrying label files generation attempt for label {job.CurrentSequenceFormat}. Attempt {generationAttempt}."));
                         }
 
-                        var generationLabelFilesResult = await GenerateLabelFilesAsync(job, sequence, cancellationToken);
+                        var generationLabelFilesResult = await GenerateLabelFilesAsync(job, job.Context.PrintDetails!.NextSequence, cancellationToken);
                         if (generationLabelFilesResult.Result == StepResult.Success)
                         {
-                            if (generationAttempt == 1)
-                            {
-                                //LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Info, $"Label files generated successfully for label {formattedCurrentSequence}."));
-                            }
-                            else
-                            {
-                                //LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Info, $"Label files generated successfully for label {formattedCurrentSequence} after {generationAttempt} attempt(s)."));
-                            }
-
+                            job.MarkGenerated();
                             prnFileLocation = generationLabelFilesResult.PrnPath;
 
+                            LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Info, $"Label files generated successfully for label {job.CurrentSequenceFormat}."));
                             break;
                         }
                         if (generationLabelFilesResult.Result == StepResult.Retry)
@@ -139,242 +145,202 @@ namespace LASYS.Application.Features.BatchPrinting.Services
                         }
                         if (generationLabelFilesResult.Result == StepResult.Stop)
                         {
-                            LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Error, $"Job {jobId} stopped due to label files generation failure after {generationAttempt} attempt(s)."));
-
+                            await SaveFailedLabelAsync(job);
+                            LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Error, $"Label generation failed. Job stopped by {_currentUser.FullName} on label {job.CurrentSequenceFormat}."));
                             _jobController.Stop(jobId);
-                            NotifyJobStateChanged(jobId);
-
-                            _jobController.Ready(jobId);
-                            NotifyJobStateChanged(jobId);
-                            return;
+                            EnsureCanContinue(job);
                         }
                         break;
                     }
 
-
-                    // PRINT
-                    var printAttempt = 0;
-                    while (true)
+                    var stopRequested = false;
+                    var pairCount = job.IsPairedType ? 2 : 1;
+                    var completedPairs = 0;
+                    foreach (var pairIndex in Enumerable.Range(1, pairCount))
                     {
-                        printAttempt++;
-                        if (printAttempt == 1)
+                        job.SetCurrentPair(pairIndex, pairCount);
+
+                        var pairText = FormatPair(pairIndex, pairCount);
+
+                        // PRINT
+                        var printAttempt = 0;
+                        while (true)
                         {
-                            //LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Info, $"Starting print attempt for label {formattedCurrentSequence}."));
-                        }
-                        else
-                        {
-                            //LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Info, $"Retrying print attempt for label {job.CurrentSequenceFormat}. Attempt {printAttempt}."));
-                        }
-                        var validationPrintResult = await ValidatePrintAsync(job, prnFileLocation, cancellationToken);
-                        if (validationPrintResult == StepResult.Success)
-                        {
+                            printAttempt++;
                             if (printAttempt == 1)
                             {
-                                //LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Info, $"Label {formattedCurrentSequence} printed successfully."));
+                                LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Info, $"Starting print attempt for label {job.CurrentSequenceFormat}{pairText}."));
                             }
                             else
                             {
-                                //LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Info, $"Label {formattedCurrentSequence} printed successfully after {printAttempt} attempt(s)."));
+                                LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Info, $"Retrying print attempt for label {job.CurrentSequenceFormat}{pairText}. Attempt {printAttempt}."));
+                            }
+                            var validationPrintResult = await ValidatePrintAsync(job, prnFileLocation, pairIndex, pairCount, cancellationToken);
+                            if (validationPrintResult == StepResult.Success)
+                            {
+                                job.MarkPrinted();
+                                LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Info, $"Label {job.CurrentSequenceFormat}{pairText} printed successfully."));
+                                break;
+                            }
+                            if (validationPrintResult == StepResult.Retry)
+                            {
+                                continue;
+                            }
+                            if (validationPrintResult == StepResult.Stop)
+                            {
+                                LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Error, $"Print operation failed. Job stopped {_currentUser.FullName} on label {job.CurrentSequenceFormat}{pairText}."));
+                                stopRequested = true;
+                                _jobController.Stop(jobId);
+                                EnsureCanContinue(job);
                             }
                             break;
                         }
-                        if (validationPrintResult == StepResult.Retry)
-                        {
-                            continue;
-                        }
-                        if (validationPrintResult == StepResult.Stop)
-                        {
-                            //LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Error, $"Job {jobId} stopped due to print failure after {printAttempt} attempt(s)."));
 
-                            _jobController.Stop(jobId);
-                            NotifyJobStateChanged(jobId);
-
-                            _jobController.Ready(jobId);
-                            NotifyJobStateChanged(jobId);
-                            return;
-                        }
-                        break;
-                    }
-
-
-                    EnsureCanContinue(job);
-
-                    // BARCODE VALIDATION
-                    var barcodeAttempt = 0;
-                    while (true)
-                    {
-                        barcodeAttempt++;
-                        if (barcodeAttempt == 1)
+                        // BARCODE VALIDATION
+                        var barcodeAttempt = 0;
+                        while (true)
                         {
-                            //LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Info, $"Starting barcode validation for label {formattedCurrentSequence}."));
-                        }
-                        else
-                        {
-                            //LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Info, $"Retrying barcode validation for label {formattedCurrentSequence}. Attempt {barcodeAttempt}."));
-                        }
-                        var validationBarcodeResult = await ValidateBarcodeAsync(job, sequence, cancellationToken);
-                        if (validationBarcodeResult == StepResult.Success)
-                        {
+                            barcodeAttempt++;
                             if (barcodeAttempt == 1)
                             {
-                                //LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Info, $"Label {formattedCurrentSequence} barcode validation passed successfully."));
+                                LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Info, $"Starting barcode validation for label {job.CurrentSequenceFormat}{pairText}."));
                             }
                             else
                             {
-                                //LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Info, $"Barcode validation passed for label {formattedCurrentSequence} after {barcodeAttempt} attempt(s)."));
+                                LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Info, $"Retrying barcode validation for label {job.CurrentSequenceFormat}{pairText}. Attempt {barcodeAttempt}."));
+                            }
+                            var validationBarcodeResult = await ValidateBarcodeAsync(job, pairIndex, pairCount, cancellationToken);
+                            if (validationBarcodeResult == StepResult.Success)
+                            {
+                                job.MarkBarcodeValidated();
+                                LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Info, $"Barcode validation passed for label {job.CurrentSequenceFormat}{pairText}."));
+                                break;
+                            }
+                            if (validationBarcodeResult == StepResult.Retry)
+                            {
+                                continue;
+                            }
+                            if (validationBarcodeResult == StepResult.Stop)
+                            {
+                                await SaveFailedLabelAsync(job);
+                                LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Error, $"Barcode validation failed. Job stopped by {_currentUser.FullName} on label {job.CurrentSequenceFormat}{pairText}."));
+                                stopRequested = true;
+                                _jobController.Stop(jobId);
+                                EnsureCanContinue(job);
                             }
                             break;
                         }
-                        if (validationBarcodeResult == StepResult.Retry)
-                        {
-                            continue;
-                        }
-                        if (validationBarcodeResult == StepResult.Skip) // Add reason for skip?
-                        {
-                            //LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Warning, $"Label {formattedCurrentSequence} skipped due to barcode failure after {barcodeAttempt} attempt(s)."));
-                            break;
-                        }
-                        if (validationBarcodeResult == StepResult.Stop)
-                        {
-                            //LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Error, $"Job {jobId} stopped due to barcode failure after {barcodeAttempt} attempt(s)."));
 
-                            _jobController.Stop(jobId);
-                            NotifyJobStateChanged(jobId);
-
-                            _jobController.Ready(jobId);
-                            NotifyJobStateChanged(jobId);
-                            return;
-                        }
-                        break;
-                    }
-
-                    // OCR VALIDATION
-                    var ocrAttempt = 0;
-                    while (true)
-                    {
-                        ocrAttempt++;
-                        if (ocrAttempt == 1)
+                        // OCR VALIDATION
+                        var ocrAttempt = 0;
+                        while (true)
                         {
-                            //LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Info, $"Starting OCR validation for label {formattedCurrentSequence}."));
-                        }
-                        else
-                        {
-                            LogGenerated?.Invoke(this,
-                                new LogEventArgs(MessageType.Info,
-                                $"Retrying OCR validation for label {job.CurrentSequenceFormat}. Attempt {ocrAttempt}."));
-                        }
-
-                        var validationOcrResult = await ValidateOcrAsync(job, sequence, cancellationToken);
-                        if (validationOcrResult == StepResult.Success)
-                        {
+                            ocrAttempt++;
                             if (ocrAttempt == 1)
                             {
-                                //LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Info, $"Label {formattedCurrentSequence} OCR validation passed successfully."));
+                                LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Info, $"Starting OCR validation for label {job.CurrentSequenceFormat}{pairText}."));
                             }
                             else
                             {
-                                //LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Info, $"OCR validation passed for label {formattedCurrentSequence} after {ocrAttempt} attempt(s)."));
+                                LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Info, $"Retrying OCR validation for label {job.CurrentSequenceFormat}{pairText}. Attempt {ocrAttempt}."));
                             }
-                            break;
-                        }
-                        if (validationOcrResult == StepResult.Retry)
-                        {
-                            continue;
-                        }
-                        if (validationOcrResult == StepResult.Skip) // Add reason for skip?
-                        {
-                            //LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Warning, $"Label {formattedCurrentSequence} skipped due to OCR failure after {ocrAttempt} attempt(s)."));
-                            break;
-                        }
-                        if (validationOcrResult == StepResult.Stop)
-                        {
-                            //LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Error, $"Job {jobId} stopped due to OCR failure after {ocrAttempt} attempt(s)."));
 
-                            _jobController.Stop(jobId);
-                            NotifyJobStateChanged(jobId);
-
-                            _jobController.Ready(jobId);
-                            NotifyJobStateChanged(jobId);
-                            return;
+                            var validationOcrResult = await ValidateOcrAsync(job, pairIndex, pairCount, cancellationToken);
+                            if (validationOcrResult == StepResult.Success)
+                            {
+                                job.MarkOcrValidated();
+                                LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Info, $"OCR validation passed for label {job.CurrentSequenceFormat}{pairText}."));
+                                break;
+                            }
+                            if (validationOcrResult == StepResult.Retry)
+                            {
+                                continue;
+                            }
+                            if (validationOcrResult == StepResult.Skip) // Add reason for skip?
+                            {
+                                LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Warning, $"OCR validation skipped by {_currentUser.FullName} for label {job.CurrentSequenceFormat}{pairText} after {ocrAttempt} attempt(s)."));
+                                break;
+                            }
+                            if (validationOcrResult == StepResult.Stop)
+                            {
+                                await SaveFailedLabelAsync(job);
+                                LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Error, $"OCR validation failed. Job stopped by {_currentUser.FullName} on label {job.CurrentSequenceFormat}{pairText}."));
+                                stopRequested = true;
+                                _jobController.Stop(jobId);
+                                EnsureCanContinue(job);
+                            }
+                            break; //
                         }
-                        break; //
-                    }
 
-                    // Save only AFTER successful validation
-                    
-                    //LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Info, $"Label {formattedCurrentSequence} processing completed and state saved successfully."));
-
-                    //Save Data with retry mechanism
-                    var saveAttempt = 0;
-                    while (true)
-                    {
-                        saveAttempt++;
-                        if (saveAttempt == 1)
+                        //Save Data 
+                        var saveAttempt = 0;
+                        while (true)
                         {
-                            LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Info, $"Starting save operation for label {job.CurrentSequenceFormat}."));
-                        }
-                        else
-                        {
-                            LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Info, $"Retrying save operation for label {job.CurrentSequenceFormat}. Attempt {saveAttempt}."));
-                        }
-                        var saveResult = await SavePrintedLabelAsync(job, new SequenceData(), cancellationToken);
-                        if (saveResult == StepResult.Success)
-                        {
+                            saveAttempt++;
                             if (saveAttempt == 1)
                             {
-                                LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Info, $"Label {job.CurrentSequenceFormat} save operation completed successfully."));
+                                LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Info, $"Starting save operation for label {job.CurrentSequenceFormat}{pairText}."));
                             }
                             else
                             {
-                                LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Info, $"Save operation completed for label {job.CurrentSequenceFormat} after {saveAttempt} attempt(s)."));
+                                LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Info, $"Retrying save operation for label {job.CurrentSequenceFormat}{pairText}. Attempt {saveAttempt}."));
                             }
-                           
+                            var saveResult = await SavePrintedLabelAsync(job, cancellationToken);
+                            if (saveResult == StepResult.Success)
+                            {
+                                job.MarkSaved();
+                                LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Info, $"Save operation completed for label {job.CurrentSequenceFormat}{pairText}."));
+
+                                completedPairs++;
+                                if (completedPairs == pairCount)
+                                {
+                                    job.MoveToNextLabel();
+                                    NotifyJobStateChanged(job.JobId);
+                                }
+
+                                break;
+                            }
+                            if (saveResult == StepResult.Retry)
+                            {
+                                continue;
+                            }
+                            if (saveResult == StepResult.Stop)
+                            {
+                                LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Error, $"Save operation failed. Job stopped by {_currentUser.FullName} on label {job.CurrentSequenceFormat}{pairText}."));
+                                stopRequested = true;
+                                _jobController.Stop(jobId);
+                                EnsureCanContinue(job);
+                            }
                             break;
                         }
-                        if (saveResult == StepResult.Retry)
-                        {
-                            continue;
-                        }
-                        if (saveResult == StepResult.Stop)
-                        {
-
-                            _jobController.Stop(jobId);
-                            NotifyJobStateChanged(jobId);
-
-                            _jobController.Ready(jobId);
-                            NotifyJobStateChanged(jobId);
-                            return;
-                        }
-                        break;
                     }
 
-
-                    sequence++;
+                    if (stopRequested) break;
                 }
 
                 _jobController.Complete(jobId);
                 NotifyJobStateChanged(jobId);
                 LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Info, "Batch printing completed."));
-                _jobController.Ready(jobId);
-                NotifyJobStateChanged(jobId);
 
             }
             catch (OperationCanceledException)
             {
+                var stage = job.CurrentStage;
+                LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Error, $"Batch printing operation stopped by {_currentUser.FullName}."));
                 NotifyJobStateChanged(jobId);
-            }
-            catch
-            {
-                _jobController.Fail(jobId);
-                NotifyJobStateChanged(jobId);
-                throw;
             }
             finally
             {
-                _niceLabelTemplateService.CloseTemplate();
+                _jobController.Reset(jobId);
+                NotifyJobStateChanged(jobId);
+                //_niceLabelTemplateService.CloseTemplate();
             }
         }
 
+        private static string FormatPair(int pairIndex, int pairCount)
+        {
+            return pairCount > 1 ? $" (Pair {pairIndex}/{pairCount})" : string.Empty;
+        }
         private async Task<StepResult> RequestOperatorDecisionAsync(OperatorDecisionRequiredEventArgs args, CancellationToken cancellationToken)
         {
             _decisionTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -390,36 +356,70 @@ namespace LASYS.Application.Features.BatchPrinting.Services
                 return await _decisionTcs.Task;
             }
         }
-
-        private async Task<StepResult> SavePrintedLabelAsync(PrintJobState job, SequenceData sequenceData, CancellationToken cancellationToken)
+        private async Task<StepResult> SavePrintedLabelAsync(PrintJobState job, CancellationToken cancellationToken)
         {
             EnsureCanContinue(job);
 
+            var context = job.Context;
+            var pairedType = job.CurrentPairCount == 1 ? "Single"
+                : job.CurrentPairNumber == 1 ? "Paired1" : "Paired2";
 
-            bool isSaved = await _printLabelRepository.SavePrintedLabelAsync(sequenceData);
+            bool isSaved = await _printLabelRepository.SavePrintedLabelAsync(new SequenceData(
+                context.MasterLabelDetails!.BoxType,
+                job.PrinterName,
+                context.LabelInstructionDetails!.ItemCode,
+                context.LabelInstructionDetails.LotNo,
+                context.PrintDetails!.NextSequence,
+                pairedType,
+                context.PrintDetails!.BatchNumber,
+                context.PrintDetails!.SetNumber,
+                job.CurrentLabelStatus,
+                context.LabelInstructionDetails.ApprovedByUserCode,
+                context.LabelInstructionDetails.ApprovedBySectionId,
+                context.LabelInstructionDetails.ApprovedByIpAddress,
+                context.LabelInstructionDetails.ApprovedByDateTime
+                ));
 
             if (isSaved)
             {
-                job.IncrementPrintedCount();
-                NotifyJobStateChanged(job.JobId);
-
                 return StepResult.Success;
             }
 
-            return await RequestOperatorDecisionAsync(
-                new OperatorDecisionRequiredEventArgs
-                {
-                    FailureType = ValidationFailure.SaveFailed,
-                    SequenceNo = 1,
-                    CustomMessage = $"Failed to save printed label for sequence {sequenceData.SequenceNumber}. Retry?"
-                },
-                cancellationToken
-            );
+            return await RequestOperatorDecisionAsync(new OperatorDecisionRequiredEventArgs(ValidationFailure.SaveFailed, job.CurrentSequenceFormat, job.CurrentPairNumber, job.PrintedCount), cancellationToken);
 
         }
 
-        private async Task<(StepResult Result, string PrnPath)> GenerateLabelFilesAsync(PrintJobState job, int sequence, CancellationToken cancellationToken)
+        private async Task SaveFailedLabelAsync(PrintJobState job)
         {
+
+            var context = job.Context;
+            var pairedType = job.CurrentPairCount == 1 ? "Single"
+                : job.CurrentPairNumber == 1 ? "Paired1" : "Paired2";
+
+
+            await _printLabelRepository.SavePrintedLabelAsync(new SequenceData(
+                context.MasterLabelDetails!.BoxType,
+                job.PrinterName,
+                context.LabelInstructionDetails!.ItemCode,
+                context.LabelInstructionDetails.LotNo,
+                context.PrintDetails!.NextSequence,
+                pairedType,
+                context.PrintDetails!.BatchNumber,
+                context.PrintDetails!.SetNumber,
+                job.CurrentLabelStatus,
+                context.LabelInstructionDetails.ApprovedByUserCode,
+                context.LabelInstructionDetails.ApprovedBySectionId,
+                context.LabelInstructionDetails.ApprovedByIpAddress,
+                context.LabelInstructionDetails.ApprovedByDateTime
+                ));
+
+            job.MarkFailed();
+
+        }
+
+        private async Task<(StepResult Result, string PrnPath)> GenerateLabelFilesAsync(PrintJobState job, long sequence, CancellationToken cancellationToken)
+        {
+            EnsureCanContinue(job);
             try
             {
                 var formattedCurrentSequence = SequenceFormatter.Format(sequence, 5);
@@ -442,14 +442,7 @@ namespace LASYS.Application.Features.BatchPrinting.Services
                 {
                     //LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Error, $"Failed to generate preview image for {filename}"));
 
-                    return (await RequestOperatorDecisionAsync(
-                        new OperatorDecisionRequiredEventArgs
-                        {
-                            FailureType = ValidationFailure.FileGenerationFailed,
-                            SequenceNo = sequence,
-                            CustomMessage = $"Preview generation failed for {filename}"
-                        },
-                        cancellationToken), string.Empty);
+                    return (await RequestOperatorDecisionAsync(new OperatorDecisionRequiredEventArgs(ValidationFailure.FileGenerationFailed, job.CurrentSequenceFormat), cancellationToken), string.Empty);
                 }
 
                 //LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Info, $"Preview image generated: {filename}.jpg"));
@@ -462,14 +455,7 @@ namespace LASYS.Application.Features.BatchPrinting.Services
                 {
                     //LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Error, $"Failed to generate PRN file for {filename}"));
 
-                    return (await RequestOperatorDecisionAsync(
-                        new OperatorDecisionRequiredEventArgs
-                        {
-                            FailureType = ValidationFailure.FileGenerationFailed,
-                            SequenceNo = sequence,
-                            CustomMessage = $"PRN generation failed for {filename}"
-                        },
-                        cancellationToken), string.Empty);
+                    return (await RequestOperatorDecisionAsync(new OperatorDecisionRequiredEventArgs(ValidationFailure.FileGenerationFailed, job.CurrentSequenceFormat), cancellationToken), string.Empty);
                 }
                 //LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Info, $"PRN file generated successfully: {prnPath}"));
 
@@ -480,20 +466,13 @@ namespace LASYS.Application.Features.BatchPrinting.Services
             {
                 //LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Error, $"Fatal error generating label files: {ex.Message}"));
 
-                return (await RequestOperatorDecisionAsync(
-                    new OperatorDecisionRequiredEventArgs
-                    {
-                        FailureType = ValidationFailure.FileGenerationFailed,
-                        SequenceNo = sequence,
-                        CustomMessage = ex.Message
-                    },
-                    cancellationToken), string.Empty);
+                return (await RequestOperatorDecisionAsync(new OperatorDecisionRequiredEventArgs(ValidationFailure.FileGenerationFailed, job.CurrentSequenceFormat), cancellationToken), string.Empty);
             }
 
         }
-        private async Task<StepResult> ValidatePrintAsync(PrintJobState job, string prnFileLocation, CancellationToken cancellationToken)
+        private async Task<StepResult> ValidatePrintAsync(PrintJobState job, string prnFileLocation, int pairNumber, int totalPairs, CancellationToken cancellationToken)
         {
-          
+
             EnsureCanContinue(job);
 
             NotifyJobStateChanged(job.JobId);
@@ -507,47 +486,26 @@ namespace LASYS.Application.Features.BatchPrinting.Services
                 return StepResult.Success;
             }
 
-            return await RequestOperatorDecisionAsync(
-                            new OperatorDecisionRequiredEventArgs
-                            {
-                                FailureType = ValidationFailure.PrinterUnavailable,
-                                SequenceNo = job.CurrentSequence,
-                                CustomMessage = $"Printer is unavailable for label {job.CurrentSequenceFormat}."
-                            }, cancellationToken);
+            return await RequestOperatorDecisionAsync(new OperatorDecisionRequiredEventArgs(ValidationFailure.PrinterUnavailable, job.CurrentSequenceFormat, pairNumber, totalPairs), cancellationToken);
         }
-
-        private async Task<StepResult> ValidateBarcodeAsync(PrintJobState job, int sequence, CancellationToken cancellationToken)
+        private async Task<StepResult> ValidateBarcodeAsync(PrintJobState job, int pairNumber, int totalPairs, CancellationToken cancellationToken)
         {
 
             EnsureCanContinue(job);
 
             return StepResult.Success; //uncomment for real implementation
 
-            return await RequestOperatorDecisionAsync(
-                            new OperatorDecisionRequiredEventArgs
-                            {
-                                FailureType = ValidationFailure.BarcodeMismatch,
-                                SequenceNo = job.CurrentSequence,
-                                CustomMessage = $"Barcode validation failed on label {job.CurrentSequenceFormat}."
-                            }, cancellationToken);
+            return await RequestOperatorDecisionAsync(new OperatorDecisionRequiredEventArgs(ValidationFailure.BarcodeMismatch, job.CurrentSequenceFormat, pairNumber, totalPairs), cancellationToken);
 
         }
-
-
-        private async Task<StepResult> ValidateOcrAsync(PrintJobState job, int sequence, CancellationToken cancellationToken)
+        private async Task<StepResult> ValidateOcrAsync(PrintJobState job, int pairNumber, int totalPairs, CancellationToken cancellationToken)
         {
 
             EnsureCanContinue(job);
 
             return StepResult.Success; //uncomment for real implementation
 
-            var result = await RequestOperatorDecisionAsync(
-                         new OperatorDecisionRequiredEventArgs
-                         {
-                             FailureType = ValidationFailure.OcrMismatch,
-                             SequenceNo = job.CurrentSequence,
-                             CustomMessage = $"OCR validation failed on label {job.CurrentSequenceFormat}."
-                         }, cancellationToken);
+            var result = await RequestOperatorDecisionAsync(new OperatorDecisionRequiredEventArgs(ValidationFailure.OcrMismatch, job.CurrentSequenceFormat, pairNumber, totalPairs), cancellationToken); ;
 
 
             return result;
@@ -579,10 +537,6 @@ namespace LASYS.Application.Features.BatchPrinting.Services
             NotifyJobStateChanged(jobId);
 
             _decisionTcs?.TrySetResult(StepResult.Stop);
-
-            // Can start print again
-            _jobController.Ready(jobId);
-            NotifyJobStateChanged(jobId);
         }
 
         public void SetUserDecision(StepResult decision)

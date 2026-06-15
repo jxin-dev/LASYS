@@ -8,6 +8,7 @@ namespace LASYS.Infrastructure.Persistence.TableMappings
         public string GetTableName(BoxType boxType) =>
             boxType switch
             {
+                BoxType.CaseLabel => "prdprnt_case_labels_tcl",
                 BoxType.UnitBox => "prdprnt_ub_labels_tcl",
                 BoxType.AdditionalUnitBox => "prdprnt_aub_labels_tcl",
                 BoxType.OuterUnitBox => "prdprnt_oub_labels_tcl",

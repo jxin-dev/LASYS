@@ -25,8 +25,7 @@ namespace LASYS.DesktopApp.Views.UserControls
             };
 
             _gridWithPagination.SetMergedHeaders(
-                new HeaderColumn[]
-                {
+                [
                     new HeaderColumn { Text = "Item Code", ColSpan = 1 },
                     new HeaderColumn { Text = "Lot No", ColSpan = 1 },
                     new HeaderColumn { Text = "Exp. Date", ColSpan = 1 },
@@ -39,15 +38,14 @@ namespace LASYS.DesktopApp.Views.UserControls
                     new HeaderColumn { Text = "UNIT BOX", ColSpan = 2 },
                     new HeaderColumn { Text = "ADDTNL UNIT BOX", ColSpan = 2 },
                     new HeaderColumn { Text = "OUTR UNIT BOX", ColSpan = 2 },
-                },
-                new string[]
-                {
+                ],
+                [
                     "Item Code", "Lot No", "Exp. Date", "Print Type", "Verdict", "Date Approved", "Prod Qty",
                     "Master Label Revision No.", "Label Ins. Revision No.",
                     "Qty", "Status",
                     "Qty", "Status",
                     "Qty", "Status"
-                }
+                ]
             );
 
             _gridWithPagination.SetColumnWidths(
@@ -185,6 +183,17 @@ namespace LASYS.DesktopApp.Views.UserControls
 
             _loadingProgress.Left = Math.Max(0, (_loadingCard.Width - _loadingProgress.Width) / 2);
             _loadingProgress.Top = _loadingLabel.Bottom + 16;
+        }
+
+        public void InvokeOnUI(Action action)
+        {
+            if (IsDisposed)
+                return;
+
+            if (InvokeRequired)
+                Invoke(action);
+            else
+                action();
         }
     }
 }

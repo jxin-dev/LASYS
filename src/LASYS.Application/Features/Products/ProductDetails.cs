@@ -2,6 +2,7 @@
 {
     public sealed record ProductDetails
     {
+        public int BatchSize { get; } = 50;
         public string ItemName { get; private set; } = string.Empty;
         public string ItemGroupTypeCode { get; private set; } = string.Empty;
         public string MarketCode { get; private set; } = string.Empty;

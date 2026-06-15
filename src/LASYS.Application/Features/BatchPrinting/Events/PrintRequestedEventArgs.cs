@@ -4,11 +4,11 @@ namespace LASYS.Application.Features.BatchPrinting.Events
 {
     public sealed class PrintRequestedEventArgs : EventArgs
     {
-        public LabelPrintingContext Context { get; }
+        public Guid JobId{ get; }
         public int Quantity { get; set; }
-        public PrintRequestedEventArgs(LabelPrintingContext context, int quantity)
+        public PrintRequestedEventArgs(Guid jobId, int quantity)
         {
-            Context = context;
+            JobId = jobId;
             Quantity = quantity;
         }
 

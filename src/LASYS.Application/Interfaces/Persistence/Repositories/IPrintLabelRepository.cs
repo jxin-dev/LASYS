@@ -6,7 +6,7 @@ namespace LASYS.Application.Interfaces.Persistence.Repositories
 {
     public interface IPrintLabelRepository
     {
-        Task<PrintDetails> GetDetailsAsync(string itemCode, string lotNo, BoxType boxType);
+        Task<PrintDetails> GetDetailsAsync(string itemCode, string lotNo, string printType, BoxType boxType);
         Task<bool> SavePrintedLabelAsync(SequenceData sequenceData);
     }
 

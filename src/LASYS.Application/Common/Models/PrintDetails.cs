@@ -2,16 +2,16 @@
 {
     public sealed record PrintDetails
     {
-        public string ItemCode { get; init; } = string.Empty;
-        public string LotNo { get; init; } = string.Empty;
-        public long TotalPassed { get; init; }
-        public long TotalFailed { get; init; }
-        public long TotalSampled { get; init; }
-        public long TotalPrinted { get; init; }
-        public long NextSequence { get; init; }
-        public long BatchNumber { get; init; }
-        public long SetNumber { get; init; }
-        public long GetRemainingPrintQuantity(uint? targetPrintQuantity) => (targetPrintQuantity ?? 0) - TotalPrinted;
+        public string ItemCode { get; set; } = string.Empty;
+        public string LotNo { get; set; } = string.Empty;
+        public long TotalPassed { get; set; }
+        public long TotalFailed { get; set; }
+        public long TotalSampled { get; set; }
+        public long TotalPrinted { get; set; }
+        public long NextSequence { get; set; }
+        public long BatchNumber { get; set; }
+        public long SetNumber { get; set; }
+        public long GetRemainingPrintQuantity(uint? targetPrintQuantity) => ((targetPrintQuantity ?? 0) - TotalPrinted) + TotalFailed;
 
         public PrintDetails IncrementPassed() => this with
         {

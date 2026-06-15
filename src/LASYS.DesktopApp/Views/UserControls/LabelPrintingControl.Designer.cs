@@ -38,7 +38,7 @@
             lblTotalFailed = new Label();
             label28 = new Label();
             label17 = new Label();
-            lblTotalQuantity = new Label();
+            lblTargetQuantity = new Label();
             lblTotalPassed = new Label();
             label26 = new Label();
             label22 = new Label();
@@ -49,13 +49,12 @@
             lblSetNumber = new Label();
             label15 = new Label();
             lblBatchNumber = new Label();
-            cbEndOfBatch = new CheckBox();
             label13 = new Label();
             groupBox2 = new GroupBox();
             btnPrint = new Button();
             btnPauseResume = new Button();
             nudQuantity = new NumericUpDown();
-            lblStartSequence = new Label();
+            lblCurrentSequence = new Label();
             label19 = new Label();
             label21 = new Label();
             groupBox1 = new GroupBox();
@@ -136,7 +135,7 @@
             groupBox4.Controls.Add(lblTotalFailed);
             groupBox4.Controls.Add(label28);
             groupBox4.Controls.Add(label17);
-            groupBox4.Controls.Add(lblTotalQuantity);
+            groupBox4.Controls.Add(lblTargetQuantity);
             groupBox4.Controls.Add(lblTotalPassed);
             groupBox4.Controls.Add(label26);
             groupBox4.Controls.Add(label22);
@@ -201,15 +200,15 @@
             label17.TabIndex = 18;
             label17.Text = "Total Failed:";
             // 
-            // lblTotalQuantity
+            // lblTargetQuantity
             // 
-            lblTotalQuantity.AutoSize = true;
-            lblTotalQuantity.Font = new Font("Segoe UI", 14.25F, FontStyle.Bold);
-            lblTotalQuantity.Location = new Point(139, 34);
-            lblTotalQuantity.Name = "lblTotalQuantity";
-            lblTotalQuantity.Size = new Size(23, 25);
-            lblTotalQuantity.TabIndex = 11;
-            lblTotalQuantity.Text = "0";
+            lblTargetQuantity.AutoSize = true;
+            lblTargetQuantity.Font = new Font("Segoe UI", 14.25F, FontStyle.Bold);
+            lblTargetQuantity.Location = new Point(139, 34);
+            lblTargetQuantity.Name = "lblTargetQuantity";
+            lblTargetQuantity.Size = new Size(23, 25);
+            lblTargetQuantity.TabIndex = 11;
+            lblTargetQuantity.Text = "0";
             // 
             // lblTotalPassed
             // 
@@ -277,7 +276,6 @@
             groupBox3.Controls.Add(lblSetNumber);
             groupBox3.Controls.Add(label15);
             groupBox3.Controls.Add(lblBatchNumber);
-            groupBox3.Controls.Add(cbEndOfBatch);
             groupBox3.Controls.Add(label13);
             groupBox3.Font = new Font("Segoe UI Semibold", 11.25F, FontStyle.Bold, GraphicsUnit.Point, 0);
             groupBox3.Location = new Point(144, 287);
@@ -291,7 +289,7 @@
             // 
             lblSetNumber.AutoSize = true;
             lblSetNumber.Font = new Font("Segoe UI", 14.25F, FontStyle.Bold);
-            lblSetNumber.Location = new Point(470, 26);
+            lblSetNumber.Location = new Point(413, 30);
             lblSetNumber.Name = "lblSetNumber";
             lblSetNumber.Size = new Size(23, 25);
             lblSetNumber.TabIndex = 8;
@@ -301,7 +299,7 @@
             // 
             label15.AutoSize = true;
             label15.Font = new Font("Segoe UI", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            label15.Location = new Point(350, 30);
+            label15.Location = new Point(295, 34);
             label15.Name = "label15";
             label15.Size = new Size(86, 17);
             label15.TabIndex = 7;
@@ -311,29 +309,17 @@
             // 
             lblBatchNumber.AutoSize = true;
             lblBatchNumber.Font = new Font("Segoe UI", 14.25F, FontStyle.Bold);
-            lblBatchNumber.Location = new Point(295, 26);
+            lblBatchNumber.Location = new Point(139, 30);
             lblBatchNumber.Name = "lblBatchNumber";
             lblBatchNumber.Size = new Size(23, 25);
             lblBatchNumber.TabIndex = 6;
             lblBatchNumber.Text = "0";
             // 
-            // cbEndOfBatch
-            // 
-            cbEndOfBatch.AutoSize = true;
-            cbEndOfBatch.CheckAlign = ContentAlignment.MiddleRight;
-            cbEndOfBatch.Font = new Font("Segoe UI", 9.75F, FontStyle.Bold);
-            cbEndOfBatch.Location = new Point(19, 29);
-            cbEndOfBatch.Name = "cbEndOfBatch";
-            cbEndOfBatch.Size = new Size(133, 21);
-            cbEndOfBatch.TabIndex = 3;
-            cbEndOfBatch.Text = "End of Batch:      ";
-            cbEndOfBatch.UseVisualStyleBackColor = true;
-            // 
             // label13
             // 
             label13.AutoSize = true;
             label13.Font = new Font("Segoe UI", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            label13.Location = new Point(175, 30);
+            label13.Location = new Point(19, 34);
             label13.Name = "label13";
             label13.Size = new Size(101, 17);
             label13.TabIndex = 5;
@@ -345,7 +331,7 @@
             groupBox2.Controls.Add(btnPrint);
             groupBox2.Controls.Add(btnPauseResume);
             groupBox2.Controls.Add(nudQuantity);
-            groupBox2.Controls.Add(lblStartSequence);
+            groupBox2.Controls.Add(lblCurrentSequence);
             groupBox2.Controls.Add(label19);
             groupBox2.Controls.Add(label21);
             groupBox2.Font = new Font("Segoe UI Semibold", 11.25F, FontStyle.Bold, GraphicsUnit.Point, 0);
@@ -400,25 +386,25 @@
             nudQuantity.TabIndex = 4;
             nudQuantity.TextAlign = HorizontalAlignment.Right;
             // 
-            // lblStartSequence
+            // lblCurrentSequence
             // 
-            lblStartSequence.AutoSize = true;
-            lblStartSequence.Font = new Font("Segoe UI", 14.25F, FontStyle.Bold);
-            lblStartSequence.Location = new Point(360, 25);
-            lblStartSequence.Name = "lblStartSequence";
-            lblStartSequence.Size = new Size(23, 25);
-            lblStartSequence.TabIndex = 3;
-            lblStartSequence.Text = "0";
+            lblCurrentSequence.AutoSize = true;
+            lblCurrentSequence.Font = new Font("Segoe UI", 14.25F, FontStyle.Bold);
+            lblCurrentSequence.Location = new Point(413, 25);
+            lblCurrentSequence.Name = "lblCurrentSequence";
+            lblCurrentSequence.Size = new Size(23, 25);
+            lblCurrentSequence.TabIndex = 3;
+            lblCurrentSequence.Text = "0";
             // 
             // label19
             // 
             label19.AutoSize = true;
             label19.Font = new Font("Segoe UI", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            label19.Location = new Point(240, 29);
+            label19.Location = new Point(295, 29);
             label19.Name = "label19";
-            label19.Size = new Size(103, 17);
+            label19.Size = new Size(70, 17);
             label19.TabIndex = 2;
-            label19.Text = "Start Sequence:";
+            label19.Text = "Sequence:";
             // 
             // label21
             // 
@@ -634,7 +620,7 @@
         private Label lblItemCode;
         private Label label5;
         private GroupBox groupBox2;
-        private Label lblStartSequence;
+        private Label lblCurrentSequence;
         private Label label19;
         private Label label21;
         private NumericUpDown nudQuantity;
@@ -642,7 +628,6 @@
         private Label lblSetNumber;
         private Label label15;
         private Label lblBatchNumber;
-        private CheckBox cbEndOfBatch;
         private Label label13;
         private GroupBox groupBox4;
         private Label lblLabelSample;
@@ -650,7 +635,7 @@
         private Label lblTotalFailed;
         private Label label28;
         private Label label17;
-        private Label lblTotalQuantity;
+        private Label lblTargetQuantity;
         private Label lblTotalPassed;
         private Label label26;
         private Label label22;

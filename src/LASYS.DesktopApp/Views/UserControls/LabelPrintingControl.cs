@@ -1,9 +1,9 @@
 ﻿using LASYS.Application.Common.Messaging;
 using LASYS.Application.Features.BatchPrinting.Enums;
 using LASYS.Application.Features.BatchPrinting.Events;
+using LASYS.Application.Features.BatchPrinting.Models;
 using LASYS.Application.Features.Devices.Enums;
 using LASYS.Application.Features.Devices.Models;
-using LASYS.Application.Features.LabelInstructions.GetLabelInstructionContext;
 using LASYS.DesktopApp.Views.Forms;
 using LASYS.DesktopApp.Views.Interfaces;
 using LASYS.UIControls.Controls;
@@ -42,7 +42,7 @@ namespace LASYS.DesktopApp.Views.UserControls
 
         public UserControl UserControl => this;
 
-        private LabelPrintingContext? _labelPrintingContext;
+        private Guid? _printJobId;
         public LabelPrintingControl()
         {
             InitializeComponent();
@@ -71,12 +71,12 @@ namespace LASYS.DesktopApp.Views.UserControls
             btnBack.Click += (_, _) => BackToWorkOrdersRequested?.Invoke(this, EventArgs.Empty);
             btnPrint.Click += (_, _) =>
             {
-                if (_labelPrintingContext is null)
+                if (_printJobId is null)
                     return;
 
-                if (_currentJobStatus is PrintJobStatus.Ready)
+                if (_currentJobStatus is PrintJobStatus.Ready or PrintJobStatus.Completed)
                 {
-                    PrintRequested?.Invoke(this, new PrintRequestedEventArgs(_labelPrintingContext, (int)nudQuantity.Value));
+                    PrintRequested?.Invoke(this, new PrintRequestedEventArgs(_printJobId.Value, (int)nudQuantity.Value));
                 }
 
                 if (_currentJobStatus is PrintJobStatus.InProgress or PrintJobStatus.Paused)
@@ -428,9 +428,11 @@ namespace LASYS.DesktopApp.Views.UserControls
             }
         }
 
-        public void LoadPrintingContext(LabelPrintingContext context)
+        public void InitializePrintingContext(PrintJobState printJob)
         {
-            _labelPrintingContext = context;
+            _printJobId = printJob.JobId;
+
+            var context = printJob.Context;
             var labelInstruction = context.LabelInstructionDetails!;
             var product = context.ProductDetails!;
             var masterLabel = context.MasterLabelDetails!;
@@ -443,25 +445,41 @@ namespace LASYS.DesktopApp.Views.UserControls
 
             lblLabelFile.Text = masterLabel.FilePath;
 
-            //cbEndOfBatch.Checked = label.IsEndOfBatch;
-            lblStartSequence.Text = printDetails.NextSequence.ToString();
+            lblCurrentSequence.Text = printDetails.NextSequence.ToString();
             lblBatchNumber.Text = printDetails.BatchNumber.ToString();
             lblSetNumber.Text = printDetails.SetNumber.ToString();
 
-            var remaining = printDetails.GetRemainingPrintQuantity(product.Quantity);
 
-            lblTotalQuantity.Text = product.Quantity.ToString();
-            lblRemaining.Text = remaining.ToString();
+            lblTargetQuantity.Text = printJob.TargetQuantity.ToString();
+            lblRemaining.Text = printJob.RemainingQuantity.ToString();
             lblLabelSample.Text = printDetails.TotalSampled.ToString();
             lblTotalPrinted.Text = printDetails.TotalPrinted.ToString();
             lblTotalPassed.Text = printDetails.TotalPassed.ToString();
             lblTotalFailed.Text = printDetails.TotalFailed.ToString();
 
-            nudQuantity.Minimum = 1;
-            nudQuantity.Value = remaining < 50 ? remaining : 50;
-            nudQuantity.Maximum = remaining < 50 ? remaining : 50;
 
+            UpdateQuantityControl(printJob);
 
+        }
+
+        public void UpdateQuantityControl(PrintJobState printJob)
+        {
+            var product = printJob.Context.ProductDetails!;
+            var printDetails = printJob.Context.PrintDetails!;
+
+            var batchSize = product.BatchSize;
+            var currentBatchCount = printDetails.TotalPassed % batchSize;
+            var remaining = printJob.RemainingQuantity;
+
+            var remainingInBatch = currentBatchCount == 0
+                ? batchSize
+                : batchSize - currentBatchCount;
+
+            var maxQty = Math.Min((long)remaining, remainingInBatch);
+
+            nudQuantity.Minimum = remaining == 0 ? 0 : 1;
+            nudQuantity.Maximum = (decimal)maxQty;
+            nudQuantity.Value = (decimal)maxQty;
         }
 
         private Color GetColor(MessageType type)
@@ -526,18 +544,15 @@ namespace LASYS.DesktopApp.Views.UserControls
             switch (status)
             {
                 case PrintJobStatus.Initializing:
+                case PrintJobStatus.Printed:
                     btnPauseResume.Visible = false;
                     btnPrint.Visible = false;
 
                     lblPrintingProgress.Visible = false;
                     pbPrintingProgress.Visible = false;
                     break;
-                case PrintJobStatus.Completed:
-                case PrintJobStatus.Stopped:
-                    ClearLogs();
-                    break;
                 case PrintJobStatus.Ready:
-                case PrintJobStatus.Failed:
+                case PrintJobStatus.Completed:
                     lblPrintingProgress.Visible = false;
                     pbPrintingProgress.Visible = false;
 
@@ -550,6 +565,7 @@ namespace LASYS.DesktopApp.Views.UserControls
                     break;
                 case PrintJobStatus.Pending:
                     btnPrint.Enabled = false;
+                    ClearLogs();
                     break;
                 case PrintJobStatus.InProgress:
                     lblPrintingProgress.Visible = true;
@@ -600,6 +616,25 @@ namespace LASYS.DesktopApp.Views.UserControls
 
             old?.Dispose();
         }
-      
+
+        public void UpdatePrintingResults(uint targetQuantity, long setNumber, long batchNumber, long startSequence, long remaining, long totalPrinted, long totalPassed, long totalFailed, long labelSample)
+        {
+            //if(remaining == 0)
+            //{
+            //    nudQuantity.Minimum = 0;
+            //    nudQuantity.Maximum = 0;
+            //    nudQuantity.Value = 0;
+            //}
+
+            lblTargetQuantity.Text = targetQuantity.ToString();
+            lblSetNumber.Text = setNumber.ToString();
+            lblBatchNumber.Text = batchNumber.ToString();
+            lblCurrentSequence.Text = startSequence.ToString();
+            lblRemaining.Text = remaining.ToString();
+            lblTotalPrinted.Text = totalPrinted.ToString();
+            lblTotalPassed.Text = totalPassed.ToString();
+            lblTotalFailed.Text = totalFailed.ToString();
+            lblLabelSample.Text = labelSample.ToString();
+        }
     }
 }

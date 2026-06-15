@@ -4,11 +4,11 @@
     {
         Initializing,
         Ready,
+        Completed,
         Pending,
         InProgress,
         Paused,
-        Completed,
         Stopped,
-        Failed
+        Printed
     }
 }

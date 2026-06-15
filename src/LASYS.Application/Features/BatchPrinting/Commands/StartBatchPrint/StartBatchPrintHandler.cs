@@ -3,7 +3,7 @@ using MediatR;
 
 namespace LASYS.Application.Features.BatchPrinting.Commands.StartBatchPrint
 {
-    public sealed class StartBatchPrintHandler : IRequestHandler<StartBatchPrintCommand, Guid>
+    public sealed class StartBatchPrintHandler : IRequestHandler<StartBatchPrintCommand>
     {
         private readonly IBatchPrintProcessService _service;
 
@@ -12,9 +12,10 @@ namespace LASYS.Application.Features.BatchPrinting.Commands.StartBatchPrint
             _service = service;
         }
 
-        public Task<Guid> Handle(StartBatchPrintCommand request, CancellationToken cancellationToken)
+        public Task Handle(StartBatchPrintCommand request, CancellationToken cancellationToken)
         {
-            return _service.StartAsync(request.LabelPrintingContext, request.Quantity);
+            _service.StartAsync(request.JobId, request.Quantity);
+            return Task.CompletedTask;
         }
     }
 }

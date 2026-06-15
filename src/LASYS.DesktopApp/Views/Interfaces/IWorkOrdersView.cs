@@ -1,4 +1,4 @@
-﻿using LASYS.Application.Features.WorkOrders.GetWorkOrdersBySectionId;
+﻿using LASYS.Application.Features.LabelInstructions.GetWorkOrderListBySectionId;
 using LASYS.DesktopApp.Events;
 
 namespace LASYS.DesktopApp.Views.Interfaces
@@ -8,7 +8,7 @@ namespace LASYS.DesktopApp.Views.Interfaces
         event EventHandler<LabelPrintingRequestedEventArgs> LabelPrintingRequested;
         void ShowNotification(string message, string caption, MessageBoxIcon icon);
         void SetLoading(bool isLoading);
-        void SetWorkOrders(List<Application.Features.LabelInstructions.GetWorkOrderListBySectionId.WorkOrderItem> labelInstructions, int totalCount);
-
+        void SetWorkOrders(List<WorkOrderItem> labelInstructions, int totalCount);
+        void InvokeOnUI(Action action);
     }
 }

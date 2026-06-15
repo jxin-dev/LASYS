@@ -17,6 +17,7 @@ using LASYS.Infrastructure.Persistence.TableMappings;
 using LASYS.Infrastructure.Services.Media;
 using LASYS.Infrastructure.Services.Security;
 using LASYS.Infrastructure.Services.Session;
+using LASYS.Infrastructure.Services.System;
 using LASYS.Infrastructure.Services.WorkOrder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -29,6 +30,7 @@ public static class DependencyInjection
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration config)
     {
         services.AddPersistence(config);
+        services.AddSystemServices();
         services.AddBarcodeAnalyzerServices();
         services.AddCameraServices();
         services.AddOCRServices();
@@ -116,7 +118,12 @@ public static class DependencyInjection
         return services;
     }
 
-  
+    public static IServiceCollection AddSystemServices(this IServiceCollection services)
+    {
+        services.AddSingleton<IIpAddressProvider, IpAddressProvider>();
+
+        return services;
+    }
     private static IServiceCollection AddBarcodeAnalyzerServices(this IServiceCollection services)
     {
         services.AddSingleton<IBarcodeService, BarcodeService>();

@@ -17,7 +17,7 @@ namespace LASYS.Application.Features.Printing.GetPrintDetails
         {
             try
             {
-                var printDetails = await _printLabelRepository.GetDetailsAsync(request.ItemCode, request.LotNo, request.BoxType);
+                var printDetails = await _printLabelRepository.GetDetailsAsync(request.ItemCode, request.LotNo, request.PrintType, request.BoxType);
                 if (printDetails is null)
                 {
                     return Result.Failure<PrintDetails>("Print details not found");

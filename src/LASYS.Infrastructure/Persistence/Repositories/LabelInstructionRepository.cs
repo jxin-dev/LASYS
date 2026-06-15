@@ -1,4 +1,5 @@
 ﻿using Dapper;
+using DirectShowLib.BDA;
 using LASYS.Application.Common.Enums;
 using LASYS.Application.Common.Models;
 using LASYS.Application.Interfaces.Persistence;
@@ -19,11 +20,11 @@ namespace LASYS.Infrastructure.Persistence.Repositories
 
         public async Task<LabelInstructionDetails> GetDetailsAsync(string itemCode, string lotNo, uint masterRevision, BoxType boxType)
         {
-            var instructionColumn = _labelInstructionColumnResolver.GetInstructionColumnName(boxType);
+            var (instrunctionCode, printType, approvedByUserCode, approvedBySectionId, approvedByIpAddress, approvedByDateTime) = _labelInstructionColumnResolver.GetInstructionColumnNames(boxType);
 
             var sql = $@"
             SELECT 
-                {instructionColumn} AS InstructionCode,
+                {instrunctionCode} AS InstructionCode,
                 LINE_CODE AS LineCode,
 	            ITEM_CODE AS ItemCode,
                 LOT_NO AS LotNo,
@@ -33,7 +34,12 @@ namespace LASYS.Infrastructure.Persistence.Repositories
                 EXPIRY_DATE AS ExpirationDate,
                 PRODUCTION_DATE AS ProductionDate,
                 STERILIZATION_DATE AS SterilizationDate,
-                Target_Production_Quantity AS TargetProductionQuantity       
+                TARGET_PRODUCTION_QUANTITY AS TargetProductionQuantity,
+                {printType} AS PrintType,
+                {approvedByUserCode} AS ApprovedByUserCode,
+                {approvedBySectionId} AS ApprovedBySectionId,
+                {approvedByIpAddress} AS ApprovedByIpAddress,
+                {approvedByDateTime} AS ApprovedByDateTime
             FROM ppt_lbl_instructn_plns_hst
             WHERE 
             ITEM_CODE = @itemCode AND

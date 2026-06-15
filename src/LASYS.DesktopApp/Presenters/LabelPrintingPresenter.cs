@@ -3,6 +3,7 @@ using LASYS.Application.Common.Enums;
 using LASYS.Application.Common.Messaging;
 using LASYS.Application.Common.Results;
 using LASYS.Application.Events;
+using LASYS.Application.Features.BatchPrinting.Commands.InitializeBatchPrint;
 using LASYS.Application.Features.BatchPrinting.Commands.PauseBatchPrint;
 using LASYS.Application.Features.BatchPrinting.Commands.ResumeBatchPrint;
 using LASYS.Application.Features.BatchPrinting.Commands.StartBatchPrint;
@@ -40,6 +41,7 @@ namespace LASYS.DesktopApp.Presenters
         private readonly IFrameHub _frameHub;
 
         private Guid _cameraSubId;
+        private PrintJobStatus _printJobStatus;
         private Guid? _activePrintJobId;
         public LabelPrintingPresenter(IBatchPrintProcessService batchPrintService,
                                       IMediator mediator,
@@ -141,18 +143,26 @@ namespace LASYS.DesktopApp.Presenters
 
             _view.InvokeOnUI(() => _view.UpdateProgress(e.PrintedCount, e.TotalQuantity));
 
-
-            if (e.Status is PrintJobStatus.Completed or PrintJobStatus.Stopped or PrintJobStatus.Failed)
+            _view.InvokeOnUI(() => _view.UpdatePrintingResults(e.TargetQuantity, e.Context.PrintDetails!.SetNumber, e.Context.PrintDetails!.BatchNumber, e.DisplaySequence, e.RemainingQuantity, e.Context.PrintDetails!.TotalPrinted, e.Context.PrintDetails!.TotalPassed, e.Context.PrintDetails!.TotalFailed, e.Context.PrintDetails!.TotalSampled));
+            
+            if(e.Status is PrintJobStatus.Completed or PrintJobStatus.Stopped)
             {
-                _activePrintJobId = null;
+                _view.InvokeOnUI(() => _view.UpdateQuantityControl(e));
             }
+
+            _printJobStatus = e.Status;
+
+
         }
         private async void OnPrintRequested(object? sender, PrintRequestedEventArgs e)
         {
-            var context = e.Context;
-            var quantityToPrint = e.Quantity;
-            _activePrintJobId = await _mediator.Send(new StartBatchPrintCommand(context, quantityToPrint));
+            if (_printJobStatus is PrintJobStatus.InProgress)
+                return;
 
+            var jobId = e.JobId;
+            var quantityToPrint = e.Quantity;
+            await _mediator.Send(new StartBatchPrintCommand(jobId, quantityToPrint));
+            _activePrintJobId = jobId;
         }
 
         private async void OnPausePrintingRequested(object? sender, EventArgs e)
@@ -193,15 +203,11 @@ namespace LASYS.DesktopApp.Presenters
                 _view.InvokeOnUI(() =>
                 {
                     var errorPresenter = _services.GetRequiredService<ErrorPresenter>();
-                    var errorForm = errorPresenter.View;
-                    errorForm.MessageText = errorPresenter.GetErrorMessage(e);
+                    errorPresenter.View.MessageText = errorPresenter.GetErrorMessage(e);
 
-                    errorForm.DecisionRequested -= OnDecision;
-                    errorForm.DecisionRequested += OnDecision;
+                    errorPresenter.View.Configure(e.FailureType);
 
-                    errorForm.Configure(e.FailureType);
-
-                    _view.ShowError(errorForm);
+                    _view.ShowError(errorPresenter.View);
                 });
             }
             finally
@@ -264,26 +270,23 @@ namespace LASYS.DesktopApp.Presenters
                 MasterLabelDetails = masterLabel?.WithResolvedFilePath(filePath)
             };
 
+             var printJobContext = await _mediator.Send(new InitializeBatchPrintCommand(updatedContext));
 
-            _view.InvokeOnUI(() =>
-            {
-                _view.LoadPrintingContext(updatedContext);
-                _view.SetPrintingState(PrintJobStatus.Ready);
-            });
-
-            // Load Nicelabel Template
-            _niceLabelTemplateService.LoadTemplate(filePath);
+            _view.InvokeOnUI(() => _view.InitializePrintingContext(printJobContext));
+            //_view.InvokeOnUI(() => _view.SetPrintingState(PrintJobStatus.Ready));
 
         }
 
 
         private void OnBackToWorkOrdersRequested(object? sender, EventArgs e)
         {
-            if (_activePrintJobId != null)
+            if (_printJobStatus is PrintJobStatus.InProgress or PrintJobStatus.Paused)
             {
                 _mainView.ShowNavigationBlocked("Cannot navigate while printing is in progress.");
                 return;
             }
+            _niceLabelTemplateService.CloseTemplate();
+
             UnsubscribeCamera();
             var workOrdersPresenter = _services.GetRequiredService<WorkOrdersPresenter>();
             _mainView?.LoadView(workOrdersPresenter.View, true); //false always new

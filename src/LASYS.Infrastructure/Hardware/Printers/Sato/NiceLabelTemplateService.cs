@@ -25,13 +25,22 @@ namespace LASYS.Infrastructure.Hardware.Printers.Sato
 
             lock (_sync)
             {
-                _app ??= new LGApp();
-
+                //_app ??= new LGApp();
+                EnsureApplication();
                 CloseTemplate();
 
                 try
                 {
-                    _label = _app.LabelOpenEx(templatePath)
+                    _label = _app!.LabelOpenEx(templatePath)
+                        ?? throw new InvalidOperationException("Failed to open NiceLabel template.");
+
+                    TemplatePath = templatePath;
+                }
+                catch (COMException ex) when ((uint)ex.ErrorCode == 0x800706BA)
+                {
+                    RecreateApplication();
+
+                    _label = _app!.LabelOpenEx(templatePath)
                         ?? throw new InvalidOperationException("Failed to open NiceLabel template.");
 
                     TemplatePath = templatePath;
@@ -42,8 +51,55 @@ namespace LASYS.Infrastructure.Hardware.Printers.Sato
                     TemplatePath = null;
                     throw;
                 }
+                //catch
+                //{
+                //    _label = null;
+                //    TemplatePath = null;
+                //    throw;
+                //}
             }
         }
+        private void EnsureApplication()
+        {
+            _app ??= new LGApp();
+        }
+        private void RecreateApplication()
+        {
+            try
+            {
+                if (_app != null)
+                {
+                    try
+                    {
+                        _app.Quit();
+                    }
+                    catch
+                    {
+                    }
+
+                    try
+                    {
+                        _app.Free();
+                    }
+                    catch
+                    {
+                    }
+
+                    try
+                    {
+                        Marshal.ReleaseComObject(_app);
+                    }
+                    catch
+                    {
+                    }
+                }
+            }
+            finally
+            {
+                _app = new LGApp();
+            }
+        }
+
         public void CloseTemplate()
         {
             lock (_sync)
@@ -54,15 +110,16 @@ namespace LASYS.Infrastructure.Hardware.Printers.Sato
                     {
                         _label.Free();
                     }
-                    catch { }
-
-                    if (OperatingSystem.IsWindows())
+                    catch
                     {
-                        try
-                        {
-                            Marshal.FinalReleaseComObject(_label);
-                        }
-                        catch { }
+                    }
+
+                    try
+                    {
+                        Marshal.ReleaseComObject(_label);
+                    }
+                    catch
+                    {
                     }
 
                     _label = null;
@@ -71,6 +128,33 @@ namespace LASYS.Infrastructure.Hardware.Printers.Sato
                 TemplatePath = null;
             }
         }
+        //public void CloseTemplate()
+        //{
+        //    lock (_sync)
+        //    {
+        //        if (_label != null)
+        //        {
+        //            try
+        //            {
+        //                _label.Free();
+        //            }
+        //            catch { }
+
+        //            if (OperatingSystem.IsWindows())
+        //            {
+        //                try
+        //                {
+        //                    Marshal.FinalReleaseComObject(_label);
+        //                }
+        //                catch { }
+        //            }
+
+        //            _label = null;
+        //        }
+
+        //        TemplatePath = null;
+        //    }
+        //}
         public bool GeneratePreview(string outputDirectory, string fileName, int width = 800, int height = 600)
         {
             try
