@@ -1,9 +1,12 @@
 ﻿
+Imports System.IO
+
 Public Class Form1
     Private Sub btnAutoLogin_Click(sender As Object, e As EventArgs) Handles btnAutoLogin.Click
 
-        Dim appPath As String = "C:\Project\TERUMO\LASYS\src\LASYS.DesktopApp\bin\x86\Debug\net8.0-windows\LASYS.DesktopApp.exe"
-
+        'Dim appPath As String = "C:\Project\TERUMO\LASYS\src\LASYS.DesktopApp\bin\x86\Debug\net8.0-windows\LASYS.DesktopApp.exe"
+        Dim installDir As String = Path.Combine(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "InnovaThinkCorporation"), "current")
+        Dim appPath As String = Path.Combine(installDir, "LASYS.DesktopApp.exe")
         Dim username As String = txtUsername.Text
 
         Dim psi As New ProcessStartInfo()
