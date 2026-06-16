@@ -46,9 +46,6 @@ namespace LASYS.DesktopApp
                 })
                 .Build();
 
-            //var configuration = host.Services.GetRequiredService<IConfiguration>();
-            //var conn = configuration.GetConnectionString("TestConnection");
-
             var splashPresenter = host.Services.GetRequiredService<SplashPresenter>();
             splashPresenter.View.ShowDialog();
 

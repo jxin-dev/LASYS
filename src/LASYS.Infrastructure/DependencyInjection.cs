@@ -93,15 +93,8 @@ public static class DependencyInjection
         services.AddScoped<IProductRepository, ProductRepository>();
         services.AddScoped<IMasterLabelRepository, MasterLabelRepository>();
         services.AddScoped<IPrintLabelRepository, PrintLabelRepository>();
-
-
-
-
         services.AddScoped<IWorkOrderRepository, WorkOrderRepository>();
-        services.AddScoped<WorkOrderService>();
-
-        services.AddScoped<IProductRepository, ProductRepository>();
-
+     
         return services;
     }
 
