@@ -12,6 +12,9 @@ namespace LASYS.DesktopApp.Views.UserControls
 {
     public partial class LabelPrintingControl : UserControl, ILabelPrintingView
     {
+        private readonly Image _cameraOn = Properties.Resources.camera_on_24;
+        private readonly Image _cameraOff = Properties.Resources.camera_off_24;
+
         private readonly Image _pauseIcon = Properties.Resources.pause24;
         private readonly Image _resumeIcon = Properties.Resources.resume24;
         private readonly Image _stopIcon = Properties.Resources.stopbatch24;
@@ -23,7 +26,7 @@ namespace LASYS.DesktopApp.Views.UserControls
         public event EventHandler? PausePrintingRequested;
         public event EventHandler? ResumePrintingRequested;
         public event EventHandler? StopPrintingRequested;
-        public event EventHandler? StartCameraPreviewRequested;
+        public event EventHandler? CameraPreviewRequested;
 
         private PrintJobStatus _currentJobStatus = PrintJobStatus.Initializing;
 
@@ -99,16 +102,12 @@ namespace LASYS.DesktopApp.Views.UserControls
                 }
             };
 
-            Load += delegate
-            {
-                BeginInvoke(() =>
-                {
-                    StartCameraPreviewRequested?.Invoke(this, EventArgs.Empty); // start streaming immediately on load
-                });
-            };
-
+          
+            btnCameraPreview.Image = _cameraOn;
+            btnCameraPreview.Click += (_, _) => CameraPreviewRequested?.Invoke(this, EventArgs.Empty);
 
         }
+
 
         private void RegisterHideEvent(Control parent)
         {
@@ -607,15 +606,6 @@ namespace LASYS.DesktopApp.Views.UserControls
             _resizablePanel.ShowTab("Activity Logs", true);
         }
 
-        public void DisplayCameraFrame(Bitmap frame)
-        {
-            if (picCameraPreview == null) return;
-
-            var old = picCameraPreview.Image;
-            picCameraPreview.Image = (Bitmap)frame.Clone();
-
-            old?.Dispose();
-        }
 
         public void UpdatePrintingResults(uint targetQuantity, long setNumber, long batchNumber, long startSequence, long remaining, long totalPrinted, long totalPassed, long totalFailed, long labelSample)
         {
@@ -635,6 +625,39 @@ namespace LASYS.DesktopApp.Views.UserControls
             lblTotalPassed.Text = totalPassed.ToString();
             lblTotalFailed.Text = totalFailed.ToString();
             lblLabelSample.Text = labelSample.ToString();
+        }
+
+        public void SetCameraPreview(UserControl control)
+        {
+            control.Anchor =
+                AnchorStyles.Top |
+                AnchorStyles.Right;
+
+            //control.Size = new Size(320, 240);
+
+            control.Location = new Point(btnCameraPreview.Left - control.Width - 5, pnlContent.Top + 5);
+
+            Controls.Add(control);
+
+            control.BringToFront();
+
+            control.Visible = false;
+        }
+
+        public void ToggleCameraPreview(bool visible)
+        {
+            foreach (Control c in Controls)
+            {
+                if (c is CameraPreviewControl)
+                {
+                    c.Visible = visible;
+                    break;
+                }
+            }
+
+            btnCameraPreview.Image = visible
+                ? _cameraOff
+                : _cameraOn;
         }
     }
 }

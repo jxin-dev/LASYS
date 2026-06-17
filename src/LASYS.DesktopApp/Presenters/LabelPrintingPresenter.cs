@@ -1,7 +1,6 @@
 ﻿using System.Diagnostics;
 using LASYS.Application.Common.Enums;
 using LASYS.Application.Common.Messaging;
-using LASYS.Application.Common.Results;
 using LASYS.Application.Events;
 using LASYS.Application.Features.BatchPrinting.Commands.InitializeBatchPrint;
 using LASYS.Application.Features.BatchPrinting.Commands.PauseBatchPrint;
@@ -12,17 +11,15 @@ using LASYS.Application.Features.BatchPrinting.Enums;
 using LASYS.Application.Features.BatchPrinting.Events;
 using LASYS.Application.Features.BatchPrinting.Models;
 using LASYS.Application.Features.BatchPrinting.Services;
-using LASYS.Application.Features.Devices.Enums;
 using LASYS.Application.Features.Devices.Events;
 using LASYS.Application.Features.Devices.Models;
-using LASYS.Application.Features.Devices.Queries.GetCameraStatus;
 using LASYS.Application.Features.LabelInstructions.GetLabelInstructionContext;
 using LASYS.Application.Features.LabelInstructions.GetWorkOrderListBySectionId;
 using LASYS.Application.Features.PrintLabels.Helpers;
 using LASYS.Application.Interfaces.Services;
 using LASYS.Application.Interfaces.Services.Camera;
-using LASYS.DesktopApp.Views.Forms;
 using LASYS.DesktopApp.Views.Interfaces;
+using LASYS.Infrastructure.Hardware.Camera;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -38,7 +35,9 @@ namespace LASYS.DesktopApp.Presenters
         private readonly IMainView _mainView;
         private readonly INiceLabelTemplateService _niceLabelTemplateService;
         private readonly IDeviceManager _deviceManager;
-        private readonly IFrameHub _frameHub;
+
+        private readonly CameraPreviewPresenter _cameraPreviewPresenter;
+        private bool _isCameraVisible;
 
         private Guid _cameraSubId;
         private PrintJobStatus _printJobStatus;
@@ -59,11 +58,9 @@ namespace LASYS.DesktopApp.Presenters
             _mainView = mainView;
             _niceLabelTemplateService = niceLabelTemplateService;
             _deviceManager = deviceManager;
-            _frameHub = frameHub;
 
             View = (UserControl)view;
 
-            SubscribeCamera();
 
             // VIEW EVENTS
             _view.BackToWorkOrdersRequested += OnBackToWorkOrdersRequested;
@@ -71,7 +68,6 @@ namespace LASYS.DesktopApp.Presenters
             _view.PausePrintingRequested += OnPausePrintingRequested;
             _view.ResumePrintingRequested += OnResumePrintingRequested;
             _view.StopPrintingRequested += OnStopPrintingRequested;
-            _view.StartCameraPreviewRequested += OnStartCameraPreviewRequested;
 
             // DEVICE EVENTS
             _deviceManager.DeviceStatusChanged += OnDeviceStatusChanged;
@@ -81,6 +77,25 @@ namespace LASYS.DesktopApp.Presenters
             _batchPrintService.OperatorDecisionRequired += OnDecisionRequired;
             _batchPrintService.JobStateChanged += OnJobStateChanged;
             _batchPrintService.LogGenerated += OnLogGenerated;
+
+
+            // CAMERA PREVIEW
+            _cameraPreviewPresenter = services.GetRequiredService<CameraPreviewPresenter>();
+
+            _view.SetCameraPreview(_cameraPreviewPresenter.View);
+
+            _view.CameraPreviewRequested += OnCameraPreviewRequested;
+        }
+
+        private async void OnCameraPreviewRequested(object? sender, EventArgs e)
+        {
+            if (!_deviceManager.Camera.IsStreaming)
+            {
+                await _deviceManager.Camera.StartStreamingAsync(
+                    () => _deviceManager.Camera.DefaultResolution);
+            }
+            _isCameraVisible = !_isCameraVisible;
+            _view.ToggleCameraPreview(_isCameraVisible);
         }
 
         private void OnStartCameraPreviewRequested(object? sender, EventArgs e)
@@ -88,22 +103,6 @@ namespace LASYS.DesktopApp.Presenters
             //_deviceManager.Camera.StartStreamingAsync(() => _deviceManager.Camera.DefaultResolution);
         }
 
-        private void UnsubscribeCamera()
-        {
-            _frameHub.Unsubscribe(_cameraSubId);
-        }
-        private void SubscribeCamera()
-        {
-            _cameraSubId = _frameHub.Subscribe(frame =>
-            {
-                _view.InvokeOnUI(() =>
-                {
-                    _view.DisplayCameraFrame(frame); // YOU MUST ADD THIS IN VIEW
-                });
-
-                frame.Dispose();
-            });
-        }
         private void SyncDeviceStates()
         {
             foreach (Application.Features.Devices.Enums.DeviceType device in Enum.GetValues(typeof(Application.Features.Devices.Enums.DeviceType)))
@@ -287,7 +286,6 @@ namespace LASYS.DesktopApp.Presenters
             }
             _niceLabelTemplateService.CloseTemplate();
 
-            UnsubscribeCamera();
             var workOrdersPresenter = _services.GetRequiredService<WorkOrdersPresenter>();
             _mainView?.LoadView(workOrdersPresenter.View, true); //false always new
             _mainView?.SetActiveNavigation(_mainView.WorkOrdersNavItem);

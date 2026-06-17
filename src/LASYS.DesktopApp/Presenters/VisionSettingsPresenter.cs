@@ -9,6 +9,7 @@ using LASYS.Application.Interfaces.Services;
 using LASYS.Application.Interfaces.Services.Camera;
 using LASYS.DesktopApp.Events;
 using LASYS.DesktopApp.Views.Interfaces;
+using LASYS.Infrastructure.Hardware.DeviceManagement;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using OpenCvSharp;
@@ -22,19 +23,20 @@ namespace LASYS.DesktopApp.Presenters
         private readonly IVisionSettingsView _view;
         private readonly IOCRService _ocrService;
         private readonly ICalibrationService _calibrationService;
-        private readonly ICameraService _cameraService;
+        //private readonly ICameraService _cameraService;
+        private readonly IDeviceManager _deviceManager;
         private readonly IServiceProvider _serviceProvider;
         private readonly IMediator _mediator;
 
         private readonly IFrameHub _frameHub;
         private Guid _cameraSubId;
 
-        public VisionSettingsPresenter(IVisionSettingsView view, ICameraService cameraService, IOCRService ocrService, ICalibrationService calibrationService, IServiceProvider serviceProvider, IMediator mediator, IFrameHub frameHub)
+        public VisionSettingsPresenter(IVisionSettingsView view, IDeviceManager deviceManager, IOCRService ocrService, ICalibrationService calibrationService, IServiceProvider serviceProvider, IMediator mediator, IFrameHub frameHub)
         {
             _view = view;
             View = (UserControl)view;
 
-            _cameraService = cameraService;
+            _deviceManager = deviceManager;
             _ocrService = ocrService;
             _calibrationService = calibrationService;
             _serviceProvider = serviceProvider;
@@ -54,7 +56,7 @@ namespace LASYS.DesktopApp.Presenters
             _view.OCRTriggered += OnOCRTriggered;
             _view.OCRCalibrationPreview += OnOCRCalibraionPreview;
 
-            _cameraService.CameraNotification += OnCameraNotification;
+            _deviceManager.Camera.CameraNotification += OnCameraNotification;
 
             _ocrService.OCRRegionDetected += OnOCRRegionDetected;
             _ocrService.OCRRegionPreview += OnOCRRegionPreview;
@@ -140,7 +142,7 @@ namespace LASYS.DesktopApp.Presenters
 
         private void OnCameraResolutionSelected(object? sender, string e)
         {
-            _cameraService.SetResolution(e);
+            _deviceManager.Camera.SetResolution(e);
         }
 
         private void OnCameraNotification(object? sender, CameraNotificationEventArgs e)
@@ -155,7 +157,7 @@ namespace LASYS.DesktopApp.Presenters
             var resolutionKey = e.Resolution;
             var focusValue = e.Focus;
 
-            var cameraResolutions = _cameraService.GetCameraResolutions();
+            var cameraResolutions = _deviceManager.Camera.GetCameraResolutions();
 
             if (cameraResolutions.TryGetValue(resolutionKey, out var resolution))
             {
@@ -173,7 +175,7 @@ namespace LASYS.DesktopApp.Presenters
                     Focus = focusValue
                 };
 
-                _cameraService.SaveCameraConfigAsync(config);
+                _deviceManager.Camera.SaveCameraConfigAsync(config);
 
             }
         }
@@ -182,9 +184,9 @@ namespace LASYS.DesktopApp.Presenters
         {
             try
             {
-                await _cameraService.PreviewCameraAsync(e.CameraName);
+                await _deviceManager.Camera.PreviewCameraAsync(e.CameraName);
                 // Start streaming in background safely
-                _ = _cameraService.StartStreamingAsync(
+                _ = _deviceManager.Camera.StartStreamingAsync(
                     HandleFrame,
                     GetSafePictureBoxSize)
                     .ContinueWith(t =>
@@ -205,13 +207,13 @@ namespace LASYS.DesktopApp.Presenters
 
         private async void OnLoadCamerasRequested(object? sender, EventArgs e)
         {
-            var config = await _cameraService.LoadCameraConfigAsync();
-            var cameras = _cameraService.GetCameras();
+            var config = await _deviceManager.Camera.LoadCameraConfigAsync();
+            var cameras = _deviceManager.Camera.GetCameras();
             _view.InvokeOnUI(() =>
             {
                 if (cameras != null && cameras.Any())
                 {
-                    var cameraResolution = _cameraService.GetCameraResolutions().Keys.ToList();
+                    var cameraResolution = _deviceManager.Camera.GetCameraResolutions().Keys.ToList();
                     _view.SetCameraList(cameras);
                     _view.SetCameraResolutions(cameraResolution);
 
@@ -231,7 +233,7 @@ namespace LASYS.DesktopApp.Presenters
 
         private void OnFocuseValueChanged(object? sender, int e)
         {
-            _cameraService.SetFocus(e);
+            _deviceManager.Camera.SetFocus(e);
         }
         private void OnOCRRegionDetected(object? sender, OCRRegionEventArgs e)
         {
@@ -325,7 +327,7 @@ namespace LASYS.DesktopApp.Presenters
                 {
                     token.ThrowIfCancellationRequested();
 
-                    var snapshot = _cameraService.GetSnapshot();
+                    var snapshot = _deviceManager.Camera.GetSnapshot();
                     if (snapshot == null)
                         continue;
 

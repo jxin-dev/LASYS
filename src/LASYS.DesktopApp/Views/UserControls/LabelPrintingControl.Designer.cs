@@ -29,7 +29,7 @@
         private void InitializeComponent()
         {
             pnlContent = new Panel();
-            picCameraPreview = new PictureBox();
+            btnCameraPreview = new Button();
             lblPrintingProgress = new Label();
             pbPrintingProgress = new ProgressBar();
             groupBox4 = new GroupBox();
@@ -72,7 +72,6 @@
             btnBack = new Button();
             label1 = new Label();
             pnlContent.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)picCameraPreview).BeginInit();
             groupBox4.SuspendLayout();
             groupBox3.SuspendLayout();
             groupBox2.SuspendLayout();
@@ -85,7 +84,7 @@
             // 
             pnlContent.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             pnlContent.BackColor = Color.White;
-            pnlContent.Controls.Add(picCameraPreview);
+            pnlContent.Controls.Add(btnCameraPreview);
             pnlContent.Controls.Add(lblPrintingProgress);
             pnlContent.Controls.Add(pbPrintingProgress);
             pnlContent.Controls.Add(groupBox4);
@@ -97,16 +96,15 @@
             pnlContent.Size = new Size(1235, 515);
             pnlContent.TabIndex = 4;
             // 
-            // picCameraPreview
+            // btnCameraPreview
             // 
-            picCameraPreview.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            picCameraPreview.BorderStyle = BorderStyle.FixedSingle;
-            picCameraPreview.Location = new Point(1054, 3);
-            picCameraPreview.Name = "picCameraPreview";
-            picCameraPreview.Size = new Size(178, 125);
-            picCameraPreview.SizeMode = PictureBoxSizeMode.StretchImage;
-            picCameraPreview.TabIndex = 6;
-            picCameraPreview.TabStop = false;
+            btnCameraPreview.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            btnCameraPreview.Image = Properties.Resources.camera_on_24;
+            btnCameraPreview.Location = new Point(1197, 4);
+            btnCameraPreview.Name = "btnCameraPreview";
+            btnCameraPreview.Size = new Size(34, 29);
+            btnCameraPreview.TabIndex = 7;
+            btnCameraPreview.UseVisualStyleBackColor = true;
             // 
             // lblPrintingProgress
             // 
@@ -587,7 +585,6 @@
             Size = new Size(1242, 573);
             pnlContent.ResumeLayout(false);
             pnlContent.PerformLayout();
-            ((System.ComponentModel.ISupportInitialize)picCameraPreview).EndInit();
             groupBox4.ResumeLayout(false);
             groupBox4.PerformLayout();
             groupBox3.ResumeLayout(false);
@@ -646,6 +643,6 @@
         private Button btnPauseResume;
         private Label lblPrintingProgress;
         private ProgressBar pbPrintingProgress;
-        private PictureBox picCameraPreview;
+        private Button btnCameraPreview;
     }
 }

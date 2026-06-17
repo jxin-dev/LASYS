@@ -3,7 +3,6 @@ using LASYS.Application.Features.BatchPrinting.Enums;
 using LASYS.Application.Features.BatchPrinting.Events;
 using LASYS.Application.Features.BatchPrinting.Models;
 using LASYS.Application.Features.Devices.Models;
-using LASYS.Application.Features.LabelInstructions.GetLabelInstructionContext;
 using LASYS.DesktopApp.Views.Forms;
 
 namespace LASYS.DesktopApp.Views.Interfaces
@@ -16,6 +15,10 @@ namespace LASYS.DesktopApp.Views.Interfaces
         event EventHandler PausePrintingRequested;
         event EventHandler ResumePrintingRequested;
         event EventHandler StopPrintingRequested;
+
+        event EventHandler CameraPreviewRequested;
+        void SetCameraPreview(UserControl control);
+        void ToggleCameraPreview(bool visible);
 
         void SetPrintingState(PrintJobStatus status);
         void UpdateProgress(int printedCount, int totalQuantity);
@@ -32,8 +35,6 @@ namespace LASYS.DesktopApp.Views.Interfaces
         //void UpdateBarcodeStatus(string status, string details);
         void UpdateDeviceStatus(DeviceStatus status);
 
-        void DisplayCameraFrame(Bitmap frame);
-        event EventHandler StartCameraPreviewRequested;
     }
 
 }

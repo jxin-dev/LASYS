@@ -47,9 +47,11 @@ namespace LASYS.DesktopApp.Extensions
             services.AddTransient<IOcrItemLookupView, OcrItemLookupForm>();
             services.AddTransient<OcrItemLookupPresenter>();
 
+            services.AddTransient<ICameraPreviewView, CameraPreviewControl>();
+            services.AddTransient<CameraPreviewPresenter>();
+
             // Services
             services.AddSingleton<ICurrentUser, CurrentUser>();
-
             services.AddSingleton<IPrintingState, PrintingState>();
 
 

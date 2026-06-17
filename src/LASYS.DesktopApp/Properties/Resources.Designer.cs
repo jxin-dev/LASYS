@@ -63,6 +63,26 @@ namespace LASYS.DesktopApp.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap camera_off_24 {
+            get {
+                object obj = ResourceManager.GetObject("camera_off_24", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap camera_on_24 {
+            get {
+                object obj = ResourceManager.GetObject("camera_on_24", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap check_small24 {
             get {
                 object obj = ResourceManager.GetObject("check_small24", resourceCulture);
