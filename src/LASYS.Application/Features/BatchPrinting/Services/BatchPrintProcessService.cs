@@ -484,7 +484,7 @@ namespace LASYS.Application.Features.BatchPrinting.Services
 
             NotifyJobStateChanged(job.JobId);
 
-            return StepResult.Success; //uncomment for real implementation
+            //return StepResult.Success; //uncomment for real implementation
 
             var isPrinted = await _deviceManager.Printer.IsPrinted(prnFileLocation);
             //LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Info, $"Printing label {job.CurrentSequenceFormat}/{job.LastSequenceFormat}"));
@@ -498,6 +498,7 @@ namespace LASYS.Application.Features.BatchPrinting.Services
         private async Task<StepResult> ValidateBarcodeAsync(PrintJobState job, int pairNumber, int totalPairs, CancellationToken cancellationToken)
         {
             EnsureCanContinue(job);
+            //return StepResult.Success; //IUNCOMMENT MO TO KUNG MAGTETEST KA NG PRINTING FLOW
 
             var waitScannedTextTask = _deviceManager.Barcode.WaitForBarcodeAsync(cancellationToken);
             await _deviceManager.Barcode.ScanAsync();
@@ -576,9 +577,6 @@ namespace LASYS.Application.Features.BatchPrinting.Services
                     cancellationToken);
             }
             return StepResult.Success;
-
-            //return await RequestOperatorDecisionAsync(new OperatorDecisionRequiredEventArgs(ValidationFailure.BarcodeMismatch, job.CurrentSequenceFormat, pairNumber, totalPairs), cancellationToken);
-
         }
 
         private static bool Matches(BarcodeValidationResult result, string ai, string expected)
