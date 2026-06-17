@@ -1,7 +1,10 @@
-﻿using System.IO.Ports;
+﻿using System.Diagnostics;
+using System.IO.Ports;
 using System.Management;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Text.RegularExpressions;
+using System.Threading;
 using LASYS.Application.Common.Messaging;
 using LASYS.Application.Contracts;
 using LASYS.Application.Events;
@@ -26,8 +29,7 @@ namespace LASYS.Infrastructure.Hardware.Barcode
 
         public DeviceStatus CurrentStatus { get; private set; } = DeviceStatusFactory.Create(DeviceType.BarcodeScanner, DeviceStatusCode.NotConfigured);
 
-
-        private bool _isWaitingForScan;
+        private TaskCompletionSource<string?>? _scanTcs;
 
         private readonly byte[] TRIGGER_ON = [0x7E, 0x80, 0x02, 0x00, 0x00, 0x00, 0x01, 0x01, 0x82, 0x7E];
         private readonly byte[] TRIGGER_OFF = [0x7E, 0x80, 0x02, 0x00, 0x00, 0x00, 0x01, 0x00, 0x83, 0x7E];
@@ -99,9 +101,9 @@ namespace LASYS.Infrastructure.Hardware.Barcode
 
                 SetStatus(DeviceStatusCode.Connected, $"The barcode scanner was initialized on port {config.Port}.");
 
-               //BarcodeStatusChanged?.Invoke(this,new BarcodeStatusEventArgs(
-               //         BarcodeStatus.BarcodeConnected,
-               //         $"The barcode scanner was initialized on port {config.Port}."));
+                //BarcodeStatusChanged?.Invoke(this,new BarcodeStatusEventArgs(
+                //         BarcodeStatus.BarcodeConnected,
+                //         $"The barcode scanner was initialized on port {config.Port}."));
             }
             catch
             {
@@ -125,9 +127,11 @@ namespace LASYS.Infrastructure.Hardware.Barcode
         {
             try
             {
-                if (_port == null || !_port.IsOpen) return;
+                if (_port == null || !_port.IsOpen)
+                    return;
 
                 var incoming = _port.ReadExisting();
+
                 if (string.IsNullOrEmpty(incoming))
                     return;
 
@@ -136,115 +140,92 @@ namespace LASYS.Infrastructure.Hardware.Barcode
                 while (true)
                 {
                     var content = _buffer.ToString();
-                    var index = content.IndexOf(_port.NewLine, StringComparison.Ordinal);
-                    if (index < 0) break;
+
+                    var index = content.IndexOfAny(new[] { '\r', '\n' });
+
+                    if (index < 0)
+                        break;
 
                     var barcode = content.Substring(0, index).Trim();
-                    _buffer.Remove(0, index + _port.NewLine.Length);
+
+                    _buffer.Remove(0, index + 1);
+
+                    while (_buffer.Length > 0 &&
+                           (_buffer[0] == '\r' || _buffer[0] == '\n'))
+                    {
+                        _buffer.Remove(0, 1);
+                    }
 
                     if (string.IsNullOrWhiteSpace(barcode))
                         continue;
 
-                    lock (_scanLock)
+                    barcode = Regex.Replace(barcode, @"^[^0-9]+", string.Empty);
+
+                    if (_scanTcs == null || _scanTcs.Task.IsCompleted)
+                        break;
+
+                    StopScan();
+
+                    if (_scanTcs.TrySetResult(barcode))
                     {
-                        if (!_isWaitingForScan)
-                            return;
+                        BarcodeScanned?.Invoke(
+                            this,
+                            new BarcodeScannedEventArgs(barcode));
 
-                        _isWaitingForScan = false;
+                        SetStatus(
+                            DeviceStatusCode.Connected,
+                            $"Scanned barcode: {barcode}");
                     }
-
-                    BarcodeScanned?.Invoke(this,
-                        new BarcodeScannedEventArgs(barcode));
-                    SetStatus(DeviceStatusCode.Connected, $"Scanned barcode: {barcode}");
-                    //BarcodeStatusChanged?.Invoke(this, new BarcodeStatusEventArgs(BarcodeStatus.BarcodeScanned, $"Scanned barcode: {barcode}"));
 
                     break;
                 }
-
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                StopScan();
+
+                _scanTcs?.TrySetException(ex);
+
                 SetStatus(DeviceStatusCode.Error);
-                //BarcodeStatusChanged?.Invoke(this, new BarcodeStatusEventArgs(BarcodeStatus.BarcodeError));
             }
         }
 
         public async Task ScanAsync()
         {
-            lock (_scanLock)
-            {
-                if (_isWaitingForScan)
-                {
-                    SetStatus(DeviceStatusCode.Scanning);
-                    //BarcodeStatusChanged?.Invoke(this, new BarcodeStatusEventArgs(BarcodeStatus.BarcodeScanning));
-                    return;
-                }
-
-                _isWaitingForScan = true;
-            }
-
             if (_port == null)
             {
-                lock (_scanLock)
-                {
-                    _isWaitingForScan = false;
-                }
                 SetStatus(DeviceStatusCode.Disconnected);
-                //BarcodeStatusChanged?.Invoke(this, new BarcodeStatusEventArgs(BarcodeStatus.BarcodeDisconnected));
                 return;
             }
 
             try
             {
-                // Ensure port is open
                 lock (_syncRoot)
                 {
-                    if (!_port.IsOpen) _port.Open();
+                    if (!_port.IsOpen)
+                        _port.Open();
+
                     _port.DiscardInBuffer();
                     _port.DiscardOutBuffer();
+
+                    _port.BaseStream.Write(
+                        TRIGGER_ON,
+                        0,
+                        TRIGGER_ON.Length);
                 }
 
-                lock (_syncRoot)
-                {
-                    _port.BaseStream.Write(TRIGGER_ON, 0, TRIGGER_ON.Length);
-                }
+                SetStatus(DeviceStatusCode.Scanning);
 
-                await Task.Delay(100);
-
-                lock (_syncRoot)
-                {
-                    _port.BaseStream.Write(TRIGGER_OFF, 0, TRIGGER_OFF.Length);
-                }
-                SetStatus(DeviceStatusCode.Connected);
-                //BarcodeStatusChanged?.Invoke(this, new BarcodeStatusEventArgs(BarcodeStatus.BarcodeConnected));
-
-
-                _ = Task.Run(async () =>
-                {
-                    await Task.Delay(10000);
-
-                    lock (_scanLock)
-                    {
-                        if (!_isWaitingForScan)
-                            return;
-
-                        _isWaitingForScan = false;
-                    }
-                    SetStatus(DeviceStatusCode.Timeout);
-                    //BarcodeStatusChanged?.Invoke(this, new BarcodeStatusEventArgs(BarcodeStatus.BarcodeTimeout));
-                });
+                await Task.CompletedTask;
             }
             catch (Exception ex)
             {
-                lock (_scanLock)
-                {
-                    _isWaitingForScan = false;
-                }
+                Console.Error.WriteLine(
+                    $"Failed to trigger scan: {ex.Message}");
 
-                Console.Error.WriteLine($"Failed to trigger scan: {ex.Message}");
                 SetStatus(DeviceStatusCode.Error);
-                //BarcodeStatusChanged?.Invoke(this, new BarcodeStatusEventArgs(BarcodeStatus.BarcodeError));
-                _isWaitingForScan = false; // reset flag on error
+
+                _scanTcs?.TrySetException(ex);
             }
         }
         //
@@ -369,14 +350,19 @@ namespace LASYS.Infrastructure.Hardware.Barcode
                 return SerialPort.GetPortNames().ToList();
             }
 
-            using (var searcher = new ManagementObjectSearcher("SELECT * FROM Win32_PnPEntity WHERE Name LIKE '%(COM%' AND Name LIKE '%USB%'"))
+            using (var searcher = new ManagementObjectSearcher("SELECT * FROM Win32_PnPEntity WHERE Name LIKE '%Cino FuzzyScan USB Virtual COM Port%'"))
             {
                 foreach (var obj in searcher.Get())
                 {
                     var name = obj["Name"]?.ToString();
-                    if (!string.IsNullOrEmpty(name))
+                    if (string.IsNullOrWhiteSpace(name))
+                        continue;
+
+                    var match = Regex.Match(name, @"COM\d+");
+
+                    if (match.Success)
                     {
-                        ports.Add(name);
+                        ports.Add(match.Value);
                     }
                 }
             }
@@ -393,6 +379,56 @@ namespace LASYS.Infrastructure.Hardware.Barcode
                                  .ToList()
                                  .AsReadOnly();
             return list;
+        }
+
+        public async Task<string?> WaitForBarcodeAsync(CancellationToken token)
+        {
+            _scanTcs = new TaskCompletionSource<string?>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            try
+            {
+                var completedTask = await Task.WhenAny(
+                    _scanTcs.Task,
+                    Task.Delay(TimeSpan.FromSeconds(10), token));
+
+                if (completedTask != _scanTcs.Task)
+                {
+                    StopScan();
+                    SetStatus(DeviceStatusCode.Timeout);
+                    return null;
+                }
+
+                return await _scanTcs.Task;
+            }
+            catch (OperationCanceledException)
+            {
+                StopScan();
+                throw;
+            }
+            finally
+            {
+                _scanTcs = null;
+            }
+        }
+        private void StopScan()
+        {
+            try
+            {
+                lock (_syncRoot)
+                {
+                    if (_port?.IsOpen == true)
+                    {
+                        _port.BaseStream.Write(
+                            TRIGGER_OFF,
+                            0,
+                            TRIGGER_OFF.Length);
+                    }
+                }
+            }
+            catch
+            {
+                // Ignore scanner shutdown errors
+            }
         }
     }
 }

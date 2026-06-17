@@ -27,7 +27,7 @@ namespace LASYS.Application.Common.Mappings
 
     public static class NiceLabelDataMappings
     {
-        private const string BarcodeDateFormat = "yyMMdd";
+        public const string BarcodeDateFormat = "yyMMdd";
         private const string DisplayDateFormat = "yyyy-MM-dd";
         public static NiceLabelVariableCollection ToLabelData(LabelPrintingContext context)
         {

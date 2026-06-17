@@ -1,16 +1,21 @@
 ﻿using DirectShowLib;
+using LASYS.Application.Common.Mappings;
 using LASYS.Application.Common.Messaging;
 using LASYS.Application.Common.Utilities;
 using LASYS.Application.Events;
+using LASYS.Application.Features.BarcodeValidation;
+using LASYS.Application.Features.BarcodeValidation.ValidateLabelBarcode;
 using LASYS.Application.Features.BatchPrinting.Enums;
 using LASYS.Application.Features.BatchPrinting.Events;
 using LASYS.Application.Features.BatchPrinting.Helpers;
 using LASYS.Application.Features.BatchPrinting.Models;
 using LASYS.Application.Features.Devices.Events;
 using LASYS.Application.Features.LabelInstructions.GetLabelInstructionContext;
+using LASYS.Application.Features.Products;
 using LASYS.Application.Interfaces.Context;
 using LASYS.Application.Interfaces.Persistence.Repositories;
 using LASYS.Application.Interfaces.Services;
+using MediatR;
 
 namespace LASYS.Application.Features.BatchPrinting.Services
 {
@@ -21,6 +26,7 @@ namespace LASYS.Application.Features.BatchPrinting.Services
         private readonly INiceLabelTemplateService _niceLabelTemplateService;
         private readonly IDeviceManager _deviceManager;
         private readonly IPrintLabelRepository _printLabelRepository;
+        private readonly IMediator _mediator;
 
         private TaskCompletionSource<StepResult>? _decisionTcs;
 
@@ -28,13 +34,14 @@ namespace LASYS.Application.Features.BatchPrinting.Services
         public event EventHandler<PrintJobState>? JobStateChanged;
         public event EventHandler<LogEventArgs>? LogGenerated;
 
-        public BatchPrintProcessService(ICurrentUser currentUser, IPrintJobController jobController, INiceLabelTemplateService niceLabelTemplateService, IDeviceManager deviceManager, IPrintLabelRepository printLabelRepository)
+        public BatchPrintProcessService(ICurrentUser currentUser, IPrintJobController jobController, INiceLabelTemplateService niceLabelTemplateService, IDeviceManager deviceManager, IPrintLabelRepository printLabelRepository, IMediator mediator)
         {
             _currentUser = currentUser;
             _jobController = jobController;
             _niceLabelTemplateService = niceLabelTemplateService;
             _deviceManager = deviceManager;
             _printLabelRepository = printLabelRepository;
+            _mediator = mediator;
         }
 
 
@@ -490,13 +497,94 @@ namespace LASYS.Application.Features.BatchPrinting.Services
         }
         private async Task<StepResult> ValidateBarcodeAsync(PrintJobState job, int pairNumber, int totalPairs, CancellationToken cancellationToken)
         {
-
             EnsureCanContinue(job);
 
-            return StepResult.Success; //uncomment for real implementation
+            var waitScannedTextTask = _deviceManager.Barcode.WaitForBarcodeAsync(cancellationToken);
+            await _deviceManager.Barcode.ScanAsync();
+            var barcodeScanned = await waitScannedTextTask;
+            if (string.IsNullOrWhiteSpace(barcodeScanned))
+            {
+                return await RequestOperatorDecisionAsync(
+                    new OperatorDecisionRequiredEventArgs(
+                        ValidationFailure.BarcodeMismatch,
+                        job.CurrentSequenceFormat,
+                        pairNumber,
+                        totalPairs),
+                    cancellationToken);
+            }
 
-            return await RequestOperatorDecisionAsync(new OperatorDecisionRequiredEventArgs(ValidationFailure.BarcodeMismatch, job.CurrentSequenceFormat, pairNumber, totalPairs), cancellationToken);
+            bool isEumdr = job.Context.ProductDetails!.IsEumdr;
+            var validationResult = await _mediator.Send(new ValidateLabelBarcodeQuery(barcodeScanned, isEumdr), cancellationToken);
+            if (!validationResult.IsValid)
+            {
+                LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Error, validationResult.ErrorMessage));
 
+                return await RequestOperatorDecisionAsync(
+                    new OperatorDecisionRequiredEventArgs(
+                        ValidationFailure.BarcodeMismatch,
+                        job.CurrentSequenceFormat,
+                        pairNumber,
+                        totalPairs),
+                    cancellationToken);
+            }
+
+            var barcodeTypeValue = Enum.Parse<BarcodeType>(job.Context.ProductDetails!.BarcodeType, ignoreCase: true);
+            int barcodeType = (int)barcodeTypeValue;
+            var barcodeNumber = $"{barcodeType}{job.Context.ProductDetails!.BarcodeNumber}";
+
+            if (!Matches(validationResult, "01", barcodeNumber))
+            {
+                return await RequestOperatorDecisionAsync(
+                    new OperatorDecisionRequiredEventArgs(
+                        ValidationFailure.BarcodeMismatch,
+                        job.CurrentSequenceFormat,
+                        pairNumber,
+                        totalPairs),
+                    cancellationToken);
+            }
+            if (!Matches(validationResult, "17", job.Context.LabelInstructionDetails!.ExpirationDate?.ToString(NiceLabelDataMappings.BarcodeDateFormat)!))
+            {
+                return await RequestOperatorDecisionAsync(
+                    new OperatorDecisionRequiredEventArgs(
+                        ValidationFailure.BarcodeMismatch,
+                        job.CurrentSequenceFormat,
+                        pairNumber,
+                        totalPairs),
+                    cancellationToken);
+            }
+
+            if (!Matches(validationResult, "10", job.Context.LabelInstructionDetails!.LotNo))
+            {
+                return await RequestOperatorDecisionAsync(
+                    new OperatorDecisionRequiredEventArgs(
+                        ValidationFailure.BarcodeMismatch,
+                        job.CurrentSequenceFormat,
+                        pairNumber,
+                        totalPairs),
+                    cancellationToken);
+            }
+
+            if (isEumdr &&
+                !Matches(validationResult, "11", job.Context.LabelInstructionDetails!.ManufactureDate?.ToString(NiceLabelDataMappings.BarcodeDateFormat)!))
+            {
+                return await RequestOperatorDecisionAsync(
+                    new OperatorDecisionRequiredEventArgs(
+                        ValidationFailure.BarcodeMismatch,
+                        job.CurrentSequenceFormat,
+                        pairNumber,
+                        totalPairs),
+                    cancellationToken);
+            }
+            return StepResult.Success;
+
+            //return await RequestOperatorDecisionAsync(new OperatorDecisionRequiredEventArgs(ValidationFailure.BarcodeMismatch, job.CurrentSequenceFormat, pairNumber, totalPairs), cancellationToken);
+
+        }
+
+        private static bool Matches(BarcodeValidationResult result, string ai, string expected)
+        {
+            return result.ApplicationIdentifiers.TryGetValue(
+                ai, out var actual) && string.Equals(actual, expected, StringComparison.OrdinalIgnoreCase);
         }
         private async Task<StepResult> ValidateOcrAsync(PrintJobState job, int pairNumber, int totalPairs, CancellationToken cancellationToken)
         {

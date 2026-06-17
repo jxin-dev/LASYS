@@ -89,15 +89,15 @@ namespace LASYS.DesktopApp.Presenters
             var config = await _barcodeService.LoadAsync();
             if (config?.Port != null)
             {
-                //var usbPorts = _barcodeService.GetUSBVirtualCOMPortList();
-                var usbPorts = _barcodeService.GetManualCOMList();
+                var usbPorts = _barcodeService.GetUSBVirtualCOMPortList();
+                //var usbPorts = _barcodeService.GetManualCOMList();
                 _view.SetUSBVirtualCOMPortList(usbPorts);
                 _view.SetSelectedPort(config.Port);
             }
             else
             {
-                //var usbPorts = _barcodeService.GetUSBVirtualCOMPortList();
-                var usbPorts = _barcodeService.GetManualCOMList();
+                var usbPorts = _barcodeService.GetUSBVirtualCOMPortList();
+                //var usbPorts = _barcodeService.GetManualCOMList();
                 _view.SetUSBVirtualCOMPortList(usbPorts);
                 OnBarcodeStatusChanged(this, new BarcodeStatusEventArgs(BarcodeStatus.BarcodeNotConfigured));
             }

@@ -25,5 +25,7 @@ namespace LASYS.Application.Interfaces.Services
         Task ScanAsync();
         Task SetManualModeAsync();
 
+        Task<string?> WaitForBarcodeAsync(CancellationToken token);
+
     }
 }

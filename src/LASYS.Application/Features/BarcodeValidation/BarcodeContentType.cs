@@ -1,6 +1,6 @@
 ﻿namespace LASYS.Application.Features.BarcodeValidation
 {
-    public enum BarcodeType
+    public enum BarcodeContentType
     {
         Label,
         Instruction

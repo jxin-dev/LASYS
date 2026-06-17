@@ -2,5 +2,5 @@
 
 namespace LASYS.Application.Features.BarcodeValidation.ValidateLabelBarcode
 {
-    public sealed record ValidateLabelBarcodeQuery(string BarcodeScannedText) : IRequest<BarcodeValidationResult>;
+    public sealed record ValidateLabelBarcodeQuery(string? BarcodeScannedText, bool IsEumdr) : IRequest<BarcodeValidationResult>;
 }

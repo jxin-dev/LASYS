@@ -2,22 +2,22 @@
 {
     public static class Gs1ApplicationIdentifierDefinition
     {
-        public static readonly Dictionary<string, int> Label = new()
+        public static readonly Dictionary<string, Gs1AiDefinition> Label = new()
         {
-            { "01", 14 }, 
-            { "17", 6 }, // Expiry Date
-            { "11", 6 }, // Manufacture Date - this is only applicable if eumdr
-            { "10", 6 }, // Lot Number - need to included the line length. need to analyze bec. the line length is not fixed: example the line is X or AB
+            { "01", new() { Length = 14 } }, // GTIN
+            { "17", new() { Length = 6 } },  // Expiry Date
+            { "11", new() { Length = 6 } },  // Manufacture Date
+            { "10", new() { IsVariableLength = true } } // Lot Number
         };
 
-        public static readonly Dictionary<string, int> Instruction = new()
+        public static readonly Dictionary<string, Gs1AiDefinition> Instruction = new()
         {
-            { "91", 13 },
-            { "92", 0 }, //not yet identified the length check it on the source code and sample barcode for instruction barcode 
-            { "01", 0 }, //not yet identified the length check it on the source code and sample barcode for instruction barcode
-            { "17", 0 }, //not yet identified the length check it on the source code and sample barcode for instruction barcode
-            { "11", 0 }, //not yet identified the length check it on the source code and sample barcode for instruction barcode
-            { "10", 0 } //not yet identified the length check it on the source code and sample barcode for instruction barcode
+            //{ "91", 13 },
+            //{ "92", 0 }, //not yet identified the length check it on the source code and sample barcode for instruction barcode 
+            //{ "01", 0 }, //not yet identified the length check it on the source code and sample barcode for instruction barcode
+            //{ "17", 0 }, //not yet identified the length check it on the source code and sample barcode for instruction barcode
+            //{ "11", 0 }, //not yet identified the length check it on the source code and sample barcode for instruction barcode
+            //{ "10", 0 } //not yet identified the length check it on the source code and sample barcode for instruction barcode
 
         };
     }

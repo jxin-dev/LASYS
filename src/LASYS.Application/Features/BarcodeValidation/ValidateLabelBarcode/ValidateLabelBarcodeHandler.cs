@@ -11,7 +11,7 @@ namespace LASYS.Application.Features.BarcodeValidation.ValidateLabelBarcode
         }
         public Task<BarcodeValidationResult> Handle(ValidateLabelBarcodeQuery request, CancellationToken cancellationToken)
         {
-            var result = _barcodeParser.Parse(request.BarcodeScannedText, BarcodeType.Label);
+            var result = _barcodeParser.Parse(request.BarcodeScannedText, BarcodeContentType.Label, request.IsEumdr);
 
             return Task.FromResult(result);
         }
