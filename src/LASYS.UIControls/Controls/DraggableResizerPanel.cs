@@ -119,15 +119,15 @@
         }
 
 
-        protected override CreateParams CreateParams
-        {
-            get
-            {
-                var cp = base.CreateParams;
-                cp.ExStyle |= 0x02000000;  // WS_EX_COMPOSITED
-                return cp;
-            }
-        }
+        //protected override CreateParams CreateParams
+        //{
+        //    get
+        //    {
+        //        var cp = base.CreateParams;
+        //        cp.ExStyle |= 0x02000000;  // WS_EX_COMPOSITED
+        //        return cp;
+        //    }
+        //}
         public void AddTab(string title, Control contentControl)
         {
             if (tabContents.ContainsKey(title))
@@ -241,47 +241,83 @@
 
         private void ShowPanel()
         {
-            if (this.Parent == null)
+            if (Parent == null)
                 return;
 
-            // previous animation
-            _animationTimer?.Stop();
-            _animationTimer?.Dispose();
+            int maxHeight = (int)(Parent.ClientSize.Height * HeightPercentage);
+            int targetHeight = Math.Max(
+                MinimumPanelHeight,
+                Math.Min(DefaultPanelHeight, maxHeight));
 
-            int maxHeight = (int)(this.Parent.ClientSize.Height * HeightPercentage);
-            int targetHeight = Math.Max(MinimumPanelHeight, Math.Min(DefaultPanelHeight, maxHeight));
+            SuspendLayout();
 
-            // Show sections first
             contentPanel.Visible = true;
             toolbar.Visible = true;
             resizerBar.Visible = true;
+            Show();
+            BringToFront();
+            Height = targetHeight;
 
-            this.Show();
-            this.BringToFront();
+            ResumeLayout(true);
 
-            // Start from collapsed height
-            int startHeight = this.Height;
-            int step = 20;
+            Refresh();
+            contentPanel.Refresh();
 
-            var timer = new System.Windows.Forms.Timer { Interval = 10 };
-
-            timer.Tick += (s, e) =>
+            foreach (Control c in contentPanel.Controls)
             {
-                if (this.Height < targetHeight)
-                {
-                    this.Height = Math.Min(targetHeight, this.Height + step);
-                }
-                else
-                {
-                    timer.Stop();
-                    timer.Dispose();
-                }
-            };
-
-            timer.Start();
+                c.Refresh();
+            }
         }
 
-     
+        //private void ShowPanel()
+        //{
+        //    if (this.Parent == null)
+        //        return;
+
+        //    // previous animation
+        //    _animationTimer?.Stop();
+        //    _animationTimer?.Dispose();
+
+        //    int maxHeight = (int)(this.Parent.ClientSize.Height * HeightPercentage);
+        //    int targetHeight = Math.Max(MinimumPanelHeight, Math.Min(DefaultPanelHeight, maxHeight));
+
+        //    // Show sections first
+        //    contentPanel.Visible = true;
+        //    toolbar.Visible = true;
+        //    resizerBar.Visible = true;
+
+        //    this.Show();
+        //    this.BringToFront();
+
+        //    // Start from collapsed height
+        //    int startHeight = this.Height;
+        //    int step = 20;
+
+        //    var timer = new System.Windows.Forms.Timer { Interval = 10 };
+
+        //    timer.Tick += (s, e) =>
+        //    {
+        //        if (this.Height < targetHeight)
+        //        {
+        //            this.Height = Math.Min(targetHeight, this.Height + step);
+        //        }
+        //        else
+        //        {
+        //            timer.Stop();
+        //            timer.Dispose();
+        //            Application.DoEvents();
+        //            foreach (Control c in contentPanel.Controls)
+        //            {
+        //                c.PerformLayout();
+        //                c.Update();
+        //            }
+        //        }
+        //    };
+
+        //    timer.Start();
+        //}
+
+
         public void HidePanel()
         {
             _animationTimer?.Stop();

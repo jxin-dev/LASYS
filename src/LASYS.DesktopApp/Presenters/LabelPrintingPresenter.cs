@@ -37,7 +37,11 @@ namespace LASYS.DesktopApp.Presenters
         private readonly IDeviceManager _deviceManager;
 
         private readonly CameraPreviewPresenter _cameraPreviewPresenter;
+        private readonly LabelTemplatePreviewPresenter _labelTemplatePreviewPresenter;
+
         private bool _isCameraVisible;
+        private bool _isLabelTemplateVisible;
+
 
         private Guid _cameraSubId;
         private PrintJobStatus _printJobStatus;
@@ -81,10 +85,24 @@ namespace LASYS.DesktopApp.Presenters
 
             // CAMERA PREVIEW
             _cameraPreviewPresenter = services.GetRequiredService<CameraPreviewPresenter>();
-
-            _view.SetCameraPreview(_cameraPreviewPresenter.View);
-
+            _view.SetPreview(_cameraPreviewPresenter.View);
             _view.CameraPreviewRequested += OnCameraPreviewRequested;
+
+            _labelTemplatePreviewPresenter = services.GetRequiredService<LabelTemplatePreviewPresenter>();
+            _view.SetPreview(_labelTemplatePreviewPresenter.View);
+            _view.LabelTemplatePreviewRequested += OnLabelTemplatePreviewRequested;
+
+        }
+
+        private void OnLabelTemplatePreviewRequested(object? sender, EventArgs e)
+        {
+            _isLabelTemplateVisible = !_isLabelTemplateVisible;
+            if (_isLabelTemplateVisible)
+            {
+                _isCameraVisible = false;
+                _view.ToggleCameraPreview(false);
+            }
+            _view.ToggleLabelTemplatePreview(_isLabelTemplateVisible);
         }
 
         private async void OnCameraPreviewRequested(object? sender, EventArgs e)
@@ -94,7 +112,13 @@ namespace LASYS.DesktopApp.Presenters
                 await _deviceManager.Camera.StartStreamingAsync(
                     () => _deviceManager.Camera.DefaultResolution);
             }
+
             _isCameraVisible = !_isCameraVisible;
+            if (_isCameraVisible)
+            {
+                _isLabelTemplateVisible = false;
+                _view.ToggleLabelTemplatePreview(false);
+            }
             _view.ToggleCameraPreview(_isCameraVisible);
         }
 
@@ -192,22 +216,18 @@ namespace LASYS.DesktopApp.Presenters
 
 
 
-        private void OnDecisionRequired(object? sender, OperatorDecisionRequiredEventArgs e)
+        private async void OnDecisionRequired(object? sender, OperatorDecisionRequiredEventArgs e)
         {
 
             try
             {
                 _view.InvokeOnUI(() => _view.ToggleActivityLogs());
-
-                _view.InvokeOnUI(() =>
-                {
-                    var errorPresenter = _services.GetRequiredService<ErrorPresenter>();
-                    errorPresenter.View.MessageText = errorPresenter.GetErrorMessage(e);
-
-                    errorPresenter.View.Configure(e.FailureType);
-
-                    _view.ShowError(errorPresenter.View);
-                });
+                await Task.Delay(250);
+                var errorPresenter = _services.GetRequiredService<ErrorPresenter>();
+                errorPresenter.View.MessageText = errorPresenter.GetErrorMessage(e);
+                errorPresenter.View.Configure(e.FailureType);
+                _view.InvokeOnUI(() => _view.ShowError(errorPresenter.View));
+                
             }
             finally
             {

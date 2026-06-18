@@ -389,7 +389,7 @@ namespace LASYS.Infrastructure.Hardware.Barcode
             {
                 var completedTask = await Task.WhenAny(
                     _scanTcs.Task,
-                    Task.Delay(TimeSpan.FromSeconds(10), token));
+                    Task.Delay(TimeSpan.FromSeconds(2), token));
 
                 if (completedTask != _scanTcs.Task)
                 {

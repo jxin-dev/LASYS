@@ -17,8 +17,12 @@ namespace LASYS.DesktopApp.Views.Interfaces
         event EventHandler StopPrintingRequested;
 
         event EventHandler CameraPreviewRequested;
-        void SetCameraPreview(UserControl control);
+        event EventHandler LabelTemplatePreviewRequested;
+        //void SetCameraPreview(UserControl control);
         void ToggleCameraPreview(bool visible);
+
+        void SetPreview(UserControl control);
+        void ToggleLabelTemplatePreview(bool visible);
 
         void SetPrintingState(PrintJobStatus status);
         void UpdateProgress(int printedCount, int totalQuantity);

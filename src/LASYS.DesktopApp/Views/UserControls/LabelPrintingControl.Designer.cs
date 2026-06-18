@@ -71,6 +71,7 @@
             pnlHeader = new Panel();
             btnBack = new Button();
             label1 = new Label();
+            btnLabelTemplatePreview = new Button();
             pnlContent.SuspendLayout();
             groupBox4.SuspendLayout();
             groupBox3.SuspendLayout();
@@ -84,6 +85,7 @@
             // 
             pnlContent.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             pnlContent.BackColor = Color.White;
+            pnlContent.Controls.Add(btnLabelTemplatePreview);
             pnlContent.Controls.Add(btnCameraPreview);
             pnlContent.Controls.Add(lblPrintingProgress);
             pnlContent.Controls.Add(pbPrintingProgress);
@@ -575,6 +577,16 @@
             label1.TabIndex = 0;
             label1.Text = "Label Printing";
             // 
+            // btnLabelTemplatePreview
+            // 
+            btnLabelTemplatePreview.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            btnLabelTemplatePreview.Image = Properties.Resources.label_on_24;
+            btnLabelTemplatePreview.Location = new Point(1198, 34);
+            btnLabelTemplatePreview.Name = "btnLabelTemplatePreview";
+            btnLabelTemplatePreview.Size = new Size(34, 29);
+            btnLabelTemplatePreview.TabIndex = 8;
+            btnLabelTemplatePreview.UseVisualStyleBackColor = true;
+            // 
             // LabelPrintingControl
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
@@ -644,5 +656,6 @@
         private Label lblPrintingProgress;
         private ProgressBar pbPrintingProgress;
         private Button btnCameraPreview;
+        private Button btnLabelTemplatePreview;
     }
 }

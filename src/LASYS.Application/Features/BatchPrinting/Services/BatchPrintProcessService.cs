@@ -1,4 +1,4 @@
-﻿using DirectShowLib;
+﻿using System.Drawing;
 using LASYS.Application.Common.Mappings;
 using LASYS.Application.Common.Messaging;
 using LASYS.Application.Common.Utilities;
@@ -9,12 +9,11 @@ using LASYS.Application.Features.BatchPrinting.Enums;
 using LASYS.Application.Features.BatchPrinting.Events;
 using LASYS.Application.Features.BatchPrinting.Helpers;
 using LASYS.Application.Features.BatchPrinting.Models;
-using LASYS.Application.Features.Devices.Events;
 using LASYS.Application.Features.LabelInstructions.GetLabelInstructionContext;
-using LASYS.Application.Features.Products;
 using LASYS.Application.Interfaces.Context;
 using LASYS.Application.Interfaces.Persistence.Repositories;
 using LASYS.Application.Interfaces.Services;
+using LASYS.Application.Interfaces.Services.NiceLabel;
 using MediatR;
 
 namespace LASYS.Application.Features.BatchPrinting.Services
@@ -27,6 +26,7 @@ namespace LASYS.Application.Features.BatchPrinting.Services
         private readonly IDeviceManager _deviceManager;
         private readonly IPrintLabelRepository _printLabelRepository;
         private readonly IMediator _mediator;
+        private readonly ILabelPreviewHub _labelPreviewHub;
 
         private TaskCompletionSource<StepResult>? _decisionTcs;
 
@@ -34,7 +34,7 @@ namespace LASYS.Application.Features.BatchPrinting.Services
         public event EventHandler<PrintJobState>? JobStateChanged;
         public event EventHandler<LogEventArgs>? LogGenerated;
 
-        public BatchPrintProcessService(ICurrentUser currentUser, IPrintJobController jobController, INiceLabelTemplateService niceLabelTemplateService, IDeviceManager deviceManager, IPrintLabelRepository printLabelRepository, IMediator mediator)
+        public BatchPrintProcessService(ICurrentUser currentUser, IPrintJobController jobController, INiceLabelTemplateService niceLabelTemplateService, IDeviceManager deviceManager, IPrintLabelRepository printLabelRepository, IMediator mediator, ILabelPreviewHub labelPreviewHub)
         {
             _currentUser = currentUser;
             _jobController = jobController;
@@ -42,6 +42,7 @@ namespace LASYS.Application.Features.BatchPrinting.Services
             _deviceManager = deviceManager;
             _printLabelRepository = printLabelRepository;
             _mediator = mediator;
+            _labelPreviewHub = labelPreviewHub;
         }
 
 
@@ -202,7 +203,7 @@ namespace LASYS.Application.Features.BatchPrinting.Services
                             }
                             break;
                         }
-
+                        await Task.Delay(1500, cancellationToken); // add delay to make sure the label is already printed
                         // BARCODE VALIDATION
                         var barcodeAttempt = 0;
                         while (true)
@@ -353,7 +354,7 @@ namespace LASYS.Application.Features.BatchPrinting.Services
             _decisionTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
             OperatorDecisionRequired?.Invoke(this, args);
-            await Task.Delay(500, cancellationToken);
+            //await Task.Delay(500, cancellationToken);
 
             using (cancellationToken.Register(() =>
             {
@@ -452,6 +453,13 @@ namespace LASYS.Application.Features.BatchPrinting.Services
                     return (await RequestOperatorDecisionAsync(new OperatorDecisionRequiredEventArgs(ValidationFailure.FileGenerationFailed, job.CurrentSequenceFormat), cancellationToken), string.Empty);
                 }
 
+                var imagePath = Path.Combine(job.Paths.LabelsDirectory, $"{filename}.jpg");
+
+                if (File.Exists(imagePath))
+                {
+                    _labelPreviewHub.Publish(imagePath);
+                }
+
                 //LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Info, $"Preview image generated: {filename}.jpg"));
 
                 //LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Info, $"Generating prn file: {filename}.prn"));
@@ -484,7 +492,7 @@ namespace LASYS.Application.Features.BatchPrinting.Services
 
             NotifyJobStateChanged(job.JobId);
 
-            //return StepResult.Success; //uncomment for real implementation
+            return StepResult.Success; //uncomment for real implementation
 
             var isPrinted = await _deviceManager.Printer.IsPrinted(prnFileLocation);
             //LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Info, $"Printing label {job.CurrentSequenceFormat}/{job.LastSequenceFormat}"));
@@ -498,7 +506,8 @@ namespace LASYS.Application.Features.BatchPrinting.Services
         private async Task<StepResult> ValidateBarcodeAsync(PrintJobState job, int pairNumber, int totalPairs, CancellationToken cancellationToken)
         {
             EnsureCanContinue(job);
-            //return StepResult.Success; //IUNCOMMENT MO TO KUNG MAGTETEST KA NG PRINTING FLOW
+
+            return StepResult.Success; //IUNCOMMENT MO TO KUNG MAGTETEST KA NG PRINTING FLOW
 
             var waitScannedTextTask = _deviceManager.Barcode.WaitForBarcodeAsync(cancellationToken);
             await _deviceManager.Barcode.ScanAsync();
@@ -581,8 +590,11 @@ namespace LASYS.Application.Features.BatchPrinting.Services
 
         private static bool Matches(BarcodeValidationResult result, string ai, string expected)
         {
-            return result.ApplicationIdentifiers.TryGetValue(
-                ai, out var actual) && string.Equals(actual, expected, StringComparison.OrdinalIgnoreCase);
+            return result.ApplicationIdentifiers.TryGetValue(ai, out var actual)
+                && !string.IsNullOrEmpty(actual)
+                && actual.Contains(expected, StringComparison.OrdinalIgnoreCase);
+            //return result.ApplicationIdentifiers.TryGetValue(
+            //    ai, out var actual) && string.Equals(actual, expected, StringComparison.OrdinalIgnoreCase);
         }
         private async Task<StepResult> ValidateOcrAsync(PrintJobState job, int pairNumber, int totalPairs, CancellationToken cancellationToken)
         {

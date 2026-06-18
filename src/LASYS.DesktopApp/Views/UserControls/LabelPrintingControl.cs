@@ -1,4 +1,5 @@
-﻿using LASYS.Application.Common.Messaging;
+﻿using System.Windows.Forms;
+using LASYS.Application.Common.Messaging;
 using LASYS.Application.Features.BatchPrinting.Enums;
 using LASYS.Application.Features.BatchPrinting.Events;
 using LASYS.Application.Features.BatchPrinting.Models;
@@ -15,6 +16,9 @@ namespace LASYS.DesktopApp.Views.UserControls
         private readonly Image _cameraOn = Properties.Resources.camera_on_24;
         private readonly Image _cameraOff = Properties.Resources.camera_off_24;
 
+        private readonly Image _labelPreviewOn = Properties.Resources.label_on_24;
+        private readonly Image _labelPreviewOff = Properties.Resources.label_off_24;
+
         private readonly Image _pauseIcon = Properties.Resources.pause24;
         private readonly Image _resumeIcon = Properties.Resources.resume24;
         private readonly Image _stopIcon = Properties.Resources.stopbatch24;
@@ -27,6 +31,7 @@ namespace LASYS.DesktopApp.Views.UserControls
         public event EventHandler? ResumePrintingRequested;
         public event EventHandler? StopPrintingRequested;
         public event EventHandler? CameraPreviewRequested;
+        public event EventHandler? LabelTemplatePreviewRequested;
 
         private PrintJobStatus _currentJobStatus = PrintJobStatus.Initializing;
 
@@ -106,6 +111,8 @@ namespace LASYS.DesktopApp.Views.UserControls
             btnCameraPreview.Image = _cameraOn;
             btnCameraPreview.Click += (_, _) => CameraPreviewRequested?.Invoke(this, EventArgs.Empty);
 
+            btnLabelTemplatePreview.Image = _labelPreviewOn;
+            btnLabelTemplatePreview.Click += (_, _) => LabelTemplatePreviewRequested?.Invoke(this, EventArgs.Empty);
         }
 
 
@@ -198,23 +205,24 @@ namespace LASYS.DesktopApp.Views.UserControls
                 e.Item!.Selected = false;
             };
 
-            _logListView.OwnerDraw = true;
+    
+            //_logListView.OwnerDraw = false;
 
-            _logListView.DrawColumnHeader += (s, e) =>
-            {
-                using var font = new Font("Segoe UI", 9, FontStyle.Bold);
-                e.Graphics.FillRectangle(Brushes.WhiteSmoke, e.Bounds);
-                TextRenderer.DrawText(
-                    e.Graphics,
-                    e.Header!.Text,
-                    font,
-                    e.Bounds,
-                    Color.Black,
-                    TextFormatFlags.Left | TextFormatFlags.VerticalCenter);
-            };
+            //_logListView.DrawColumnHeader += (s, e) =>
+            //{
+            //    using var font = new Font("Segoe UI", 9, FontStyle.Bold);
+            //    e.Graphics.FillRectangle(Brushes.WhiteSmoke, e.Bounds);
+            //    TextRenderer.DrawText(
+            //        e.Graphics,
+            //        e.Header!.Text,
+            //        font,
+            //        e.Bounds,
+            //        Color.Black,
+            //        TextFormatFlags.Left | TextFormatFlags.VerticalCenter);
+            //};
 
-            _logListView.DrawItem += (s, e) => e.DrawDefault = true;
-            _logListView.DrawSubItem += (s, e) => e.DrawDefault = true;
+            //_logListView.DrawItem += (s, e) => e.DrawDefault = true;
+            //_logListView.DrawSubItem += (s, e) => e.DrawDefault = true;
 
             _logListView.Resize += (s, e) =>
             {
@@ -392,34 +400,38 @@ namespace LASYS.DesktopApp.Views.UserControls
 
         public void ShowError(ErrorForm errorForm)
         {
+            // Force layout updates first
+            pnlContent.Update();
 
-            // Create a semi-transparent overlay
+            var panelBounds = new Rectangle(
+                pnlContent.PointToScreen(Point.Empty),
+                pnlContent.ClientSize);
+
             var modalBackground = new Form
             {
                 StartPosition = FormStartPosition.Manual,
                 FormBorderStyle = FormBorderStyle.None,
-                Opacity = 0.5, // 50% transparent
+                Bounds = panelBounds,
+                Opacity = 0.5,
                 BackColor = Color.Black,
-                Size = pnlContent.Size,
-                Location = pnlContent.PointToScreen(Point.Empty),
                 ShowInTaskbar = false,
-                Owner = this.FindForm()
+                Owner = FindForm()
             };
 
-            modalBackground.Show();
-
-            errorForm.Text = "Validation Error";
-            var containerScreenLocation = pnlContent.PointToScreen(Point.Empty);
-            int x = containerScreenLocation.X + (pnlContent.Width - errorForm.Width) / 2;
-            int y = containerScreenLocation.Y + (pnlContent.Height - errorForm.Height) / 2;
-            errorForm.StartPosition = FormStartPosition.Manual;
-            errorForm.Location = new Point(x, y);
-            errorForm.ControlBox = false;// Removes the close button (Alt+F4 still works unless handled)
-            //errorForm.TopMost = true;
-            //errorForm.BringToFront();
             try
             {
-                errorForm.ShowDialog(modalBackground);// Make it modal over the overlay
+                modalBackground.Show();
+                modalBackground.Update();
+
+                errorForm.Text = "Validation Error";
+                errorForm.ControlBox = false;
+
+                // Let WinForms center it relative to the overlay
+                errorForm.StartPosition = FormStartPosition.CenterParent;
+
+                errorForm.Invalidate(true);
+                errorForm.Update();
+                errorForm.ShowDialog(modalBackground);
             }
             finally
             {
@@ -514,7 +526,10 @@ namespace LASYS.DesktopApp.Views.UserControls
             item.SubItems.Add(message);
 
             item.ForeColor = GetColor(type);
-            _logListView!.Items.Add(item);
+
+            _logListView.Items.Add(item);
+            _logListView.AutoResizeColumns(ColumnHeaderAutoResizeStyle.None);
+            _logListView.Refresh();
 
             if (type == MessageType.Error || type == MessageType.Warning)
             {
@@ -604,6 +619,9 @@ namespace LASYS.DesktopApp.Views.UserControls
         public void ToggleActivityLogs()
         {
             _resizablePanel.ShowTab("Activity Logs", true);
+            _logListView?.Invalidate();
+            _logListView?.Update();
+            _logListView?.Refresh();
         }
 
 
@@ -627,7 +645,7 @@ namespace LASYS.DesktopApp.Views.UserControls
             lblLabelSample.Text = labelSample.ToString();
         }
 
-        public void SetCameraPreview(UserControl control)
+        public void SetPreview(UserControl control)
         {
             control.Anchor =
                 AnchorStyles.Top |
@@ -646,18 +664,48 @@ namespace LASYS.DesktopApp.Views.UserControls
 
         public void ToggleCameraPreview(bool visible)
         {
-            foreach (Control c in Controls)
-            {
-                if (c is CameraPreviewControl)
-                {
-                    c.Visible = visible;
-                    break;
-                }
-            }
+            var cameraPreview = Controls.OfType<CameraPreviewControl>().FirstOrDefault();
+            var labelPreview = Controls.OfType<LabelTemplatePreviewControl>().FirstOrDefault();
 
-            btnCameraPreview.Image = visible
+            if (cameraPreview == null)
+                return;
+
+            bool showCamera = !cameraPreview.Visible;
+
+            // Hide label preview whenever camera button is clicked
+            if (labelPreview != null)
+                labelPreview.Visible = false;
+
+            cameraPreview.Visible = showCamera;
+
+            btnCameraPreview.Image = showCamera
                 ? _cameraOff
                 : _cameraOn;
+
+            btnLabelTemplatePreview.Image = _labelPreviewOn;
+        }
+
+        public void ToggleLabelTemplatePreview(bool visible)
+        {
+            var cameraPreview = Controls.OfType<CameraPreviewControl>().FirstOrDefault();
+            var labelPreview = Controls.OfType<LabelTemplatePreviewControl>().FirstOrDefault();
+
+            if (labelPreview == null)
+                return;
+
+            bool showLabel = !labelPreview.Visible;
+
+            // Hide camera preview whenever label button is clicked
+            if (cameraPreview != null)
+                cameraPreview.Visible = false;
+
+            labelPreview.Visible = showLabel;
+
+            btnLabelTemplatePreview.Image = showLabel
+                ? _labelPreviewOff
+                : _labelPreviewOn;
+
+            btnCameraPreview.Image = _cameraOn;
         }
     }
 }

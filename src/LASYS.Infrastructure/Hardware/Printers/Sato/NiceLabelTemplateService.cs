@@ -166,8 +166,10 @@ namespace LASYS.Infrastructure.Hardware.Printers.Sato
 
                 lock (_sync)
                 {
-                    return Label.GetLabelPreview(outputImagePath, width, height);
+                    Label.GetLabelPreview(outputImagePath, width, height);
                 }
+                Thread.Sleep(100);
+                return File.Exists(outputImagePath)&& new FileInfo(outputImagePath).Length > 0;
             }
             catch
             {

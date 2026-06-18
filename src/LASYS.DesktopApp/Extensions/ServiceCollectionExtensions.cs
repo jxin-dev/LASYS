@@ -50,6 +50,9 @@ namespace LASYS.DesktopApp.Extensions
             services.AddTransient<ICameraPreviewView, CameraPreviewControl>();
             services.AddTransient<CameraPreviewPresenter>();
 
+            services.AddTransient<ILabelTemplatePreviewView, LabelTemplatePreviewControl>();
+            services.AddTransient<LabelTemplatePreviewPresenter>();
+
             // Services
             services.AddSingleton<ICurrentUser, CurrentUser>();
             services.AddSingleton<IPrintingState, PrintingState>();

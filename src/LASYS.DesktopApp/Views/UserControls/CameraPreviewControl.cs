@@ -1,6 +1,4 @@
-﻿using System.Windows.Forms;
-using LASYS.Application.Common.Enums;
-using LASYS.DesktopApp.Views.Interfaces;
+﻿using LASYS.DesktopApp.Views.Interfaces;
 
 namespace LASYS.DesktopApp.Views.UserControls
 {

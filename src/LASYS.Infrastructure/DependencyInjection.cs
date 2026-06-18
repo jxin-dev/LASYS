@@ -5,6 +5,7 @@ using LASYS.Application.Interfaces.Persistence.Repositories;
 using LASYS.Application.Interfaces.Persistence.TableMappings;
 using LASYS.Application.Interfaces.Services;
 using LASYS.Application.Interfaces.Services.Camera;
+using LASYS.Application.Interfaces.Services.NiceLabel;
 using LASYS.Infrastructure.Hardware.Barcode;
 using LASYS.Infrastructure.Hardware.Camera;
 using LASYS.Infrastructure.Hardware.DeviceManagement;
@@ -127,6 +128,7 @@ public static class DependencyInjection
     {
         services.AddSingleton<ICameraService, CameraService>();
         services.AddSingleton<IFrameHub, FrameHub>();
+
         return services;
     }
 
@@ -140,7 +142,8 @@ public static class DependencyInjection
     private static IServiceCollection AddSatoLabelPrinterServices(this IServiceCollection services)
     {
         services.AddSingleton<IPrinterService, PrinterService>();
-        services.AddSingleton<INiceLabelTemplateService, NiceLabelTemplateService>();  
+        services.AddSingleton<INiceLabelTemplateService, NiceLabelTemplateService>();
+        services.AddSingleton<ILabelPreviewHub, LabelPreviewHub>();
         return services;
     }
 }
