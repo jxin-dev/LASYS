@@ -36,10 +36,10 @@
             // 
             // picPreview
             // 
-            picPreview.BackColor = SystemColors.ControlDarkDark;
-            picPreview.Location = new Point(3, 3);
+            picPreview.BackColor = SystemColors.Control;
+            picPreview.Location = new Point(1, 1);
             picPreview.Name = "picPreview";
-            picPreview.Size = new Size(415, 266);
+            picPreview.Size = new Size(419, 271);
             picPreview.TabIndex = 1;
             picPreview.TabStop = false;
             // 
