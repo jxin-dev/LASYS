@@ -64,8 +64,6 @@ namespace LASYS.Application.Features.BatchPrinting.Models
                     context.MasterLabelDetails!.BoxType.ToString()),
                 Status = remaining == 0 ? PrintJobStatus.Printed : PrintJobStatus.Ready
             };
-
-
         }
 
         public void SetCurrentPair(int pairNumber, int pairCount)
@@ -80,6 +78,7 @@ namespace LASYS.Application.Features.BatchPrinting.Models
             {
                 PrintedCount++;
                 Context.PrintDetails.NextSequence++;
+                Context.PrintDetails.TotalPrinted++;
                 CurrentLabelStatus = Context.LabelInstructionDetails!.PrintType;
             }
         }

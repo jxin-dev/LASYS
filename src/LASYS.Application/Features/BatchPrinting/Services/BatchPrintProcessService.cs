@@ -1,6 +1,7 @@
 ﻿using System.Drawing;
 using LASYS.Application.Common.Mappings;
 using LASYS.Application.Common.Messaging;
+using LASYS.Application.Common.Results;
 using LASYS.Application.Common.Utilities;
 using LASYS.Application.Events;
 using LASYS.Application.Features.BarcodeValidation;
@@ -137,7 +138,7 @@ namespace LASYS.Application.Features.BatchPrinting.Services
                         {
                             LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Info, $"Retrying label files generation attempt for label {job.CurrentSequenceFormat}. Attempt {generationAttempt}."));
                         }
-
+                        //var generationLabelFilesResult = new {Result = StepResult.Success, PrnPath = string.Empty };
                         var generationLabelFilesResult = await GenerateLabelFilesAsync(job, job.Context.PrintDetails!.NextSequence, cancellationToken);
                         if (generationLabelFilesResult.Result == StepResult.Success)
                         {
@@ -153,7 +154,7 @@ namespace LASYS.Application.Features.BatchPrinting.Services
                         }
                         if (generationLabelFilesResult.Result == StepResult.Stop)
                         {
-                            await SaveFailedLabelAsync(job);
+                            //await SaveFailedLabelAsync(job);
                             LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Error, $"Label generation failed. Job stopped by {_currentUser.FullName} on label {job.CurrentSequenceFormat}."));
                             _jobController.Stop(jobId);
                             EnsureCanContinue(job);
@@ -479,7 +480,7 @@ namespace LASYS.Application.Features.BatchPrinting.Services
             }
             catch (Exception ex)
             {
-                //LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Error, $"Fatal error generating label files: {ex.Message}"));
+                LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Error, $"Fatal error generating label files: {ex.Message}"));
 
                 return (await RequestOperatorDecisionAsync(new OperatorDecisionRequiredEventArgs(ValidationFailure.FileGenerationFailed, job.CurrentSequenceFormat), cancellationToken), string.Empty);
             }

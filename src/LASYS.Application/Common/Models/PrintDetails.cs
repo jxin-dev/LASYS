@@ -11,7 +11,7 @@
         public long NextSequence { get; set; }
         public long BatchNumber { get; set; }
         public long SetNumber { get; set; }
-        public long GetRemainingPrintQuantity(uint? targetPrintQuantity) => ((targetPrintQuantity ?? 0) - TotalPrinted) + TotalFailed;
+        public long GetRemainingPrintQuantity(uint? targetPrintQuantity) => ((targetPrintQuantity ?? 0) - TotalPassed);
 
         public PrintDetails IncrementPassed() => this with
         {
