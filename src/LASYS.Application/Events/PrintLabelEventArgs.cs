@@ -3,13 +3,13 @@
     public class PrintLabelEventArgs : EventArgs
     {
         public string ItemCode { get; }
-        public int RevisionNumber { get; }
+        public uint MasterRevision { get; }
         public string BoxType { get; }
         public string FilePath { get; }
-        public PrintLabelEventArgs(string itemCode, int revisionNumber, string boxType, string filePath)
+        public PrintLabelEventArgs(string itemCode, uint masterRevision, string boxType, string filePath)
         {
             ItemCode = itemCode;
-            RevisionNumber = revisionNumber;
+            MasterRevision = masterRevision;
             BoxType = boxType;
             FilePath = filePath;
         }

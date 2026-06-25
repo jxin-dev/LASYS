@@ -1,15 +1,27 @@
 ﻿using System.Collections.Concurrent;
 using System.Diagnostics;
-using System.Drawing;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+using LASYS.Application.Common.Enums;
+using LASYS.Application.Common.Mappings;
+using LASYS.Application.Common.Messaging;
+using LASYS.Application.Common.Models;
+using LASYS.Application.Common.Utilities;
 using LASYS.Application.Contracts;
 using LASYS.Application.Events;
+using LASYS.Application.Features.BatchPrinting.Enums;
+using LASYS.Application.Features.BatchPrinting.Events;
+using LASYS.Application.Features.BatchPrinting.Helpers;
+using LASYS.Application.Features.BatchPrinting.Models;
+using LASYS.Application.Features.LabelInstructions.GetLabelInstructionContext;
 using LASYS.Application.Features.OCRCalibration.GetOcrLabelFilePath;
 using LASYS.Application.Features.OCRCalibration.PrintLabel;
+using LASYS.Application.Features.OCRCalibration.PrintSampleLabel;
+using LASYS.Application.Features.PrintLabels.Helpers;
 using LASYS.Application.Interfaces.Services;
 using LASYS.Application.Interfaces.Services.Camera;
 using LASYS.DesktopApp.Events;
 using LASYS.DesktopApp.Views.Interfaces;
-using LASYS.Infrastructure.Hardware.DeviceManagement;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using OpenCvSharp;
@@ -23,15 +35,15 @@ namespace LASYS.DesktopApp.Presenters
         private readonly IVisionSettingsView _view;
         private readonly IOCRService _ocrService;
         private readonly ICalibrationService _calibrationService;
-        //private readonly ICameraService _cameraService;
         private readonly IDeviceManager _deviceManager;
         private readonly IServiceProvider _serviceProvider;
         private readonly IMediator _mediator;
+        private readonly INiceLabelTemplateService _niceLabelTemplateService;
 
         private readonly IFrameHub _frameHub;
         private Guid _cameraSubId;
 
-        public VisionSettingsPresenter(IVisionSettingsView view, IDeviceManager deviceManager, IOCRService ocrService, ICalibrationService calibrationService, IServiceProvider serviceProvider, IMediator mediator, IFrameHub frameHub)
+        public VisionSettingsPresenter(IVisionSettingsView view, IDeviceManager deviceManager, IOCRService ocrService, ICalibrationService calibrationService, IServiceProvider serviceProvider, IMediator mediator, IFrameHub frameHub, INiceLabelTemplateService niceLabelTemplateService)
         {
             _view = view;
             View = (UserControl)view;
@@ -42,6 +54,7 @@ namespace LASYS.DesktopApp.Presenters
             _serviceProvider = serviceProvider;
             _mediator = mediator;
             _frameHub = frameHub;
+            _niceLabelTemplateService = niceLabelTemplateService;
 
             SubscribeCamera();
 
@@ -72,6 +85,103 @@ namespace LASYS.DesktopApp.Presenters
             _view.PrintLabelRequested += OnPrintLabelRequested;
         }
 
+        private async void OnPrintLabelRequested(object? sender, PrintLabelEventArgs e)
+        {
+            try
+            {
+                var result = await _mediator.Send(new PrintSampleLabelCommand(e.ItemCode, e.MasterRevision, e.BoxType, e.FilePath));
+                if (!result.IsSuccess)
+                {
+                    _view.ShowError(result.Error!);
+                    return;
+                }
+
+                var context = result.Value!;
+                var labelInstruction = context.LabelInstructionDetails!;
+                var masterLabel = context.MasterLabelDetails!;
+                var niceLabelPath = masterLabel?.FilePath;
+                var niceLabelFile = masterLabel?.LabelFile;
+
+
+                var sw = Stopwatch.StartNew();
+
+                string filePath = NiceLabelFilePathBuilder.Build(labelInstruction.ItemCode, labelInstruction.MasterLabelRevNumber, masterLabel!.BoxType);
+                bool isNiceLabelExist = !string.IsNullOrWhiteSpace(niceLabelPath) && File.Exists(niceLabelPath);
+
+                if (isNiceLabelExist)
+                    await NiceLabelFilePathBuilder.CopyFileAsync(niceLabelPath!, filePath);
+                else
+                    await NiceLabelFilePathBuilder.CreateFileAsync(filePath, niceLabelFile!);
+
+                sw.Stop();
+
+                Debug.WriteLine($"{DateTime.Now}-Template saved in {sw.ElapsedMilliseconds}ms");
+
+                var isTemplateLoaded = _niceLabelTemplateService.IsTemplateLoaded;
+                if (!isTemplateLoaded)
+                {
+                    _niceLabelTemplateService.LoadTemplate(filePath);
+                }
+
+                await PrintSampleLabelAsync(context);
+            }
+            catch (Exception)
+            {
+
+                throw;
+            }
+            finally
+            {
+                _niceLabelTemplateService.CloseTemplate();
+            }
+
+
+        }
+
+        private async Task PrintSampleLabelAsync(LabelPrintingContext context)
+        {
+            try
+            {
+                var formattedCurrentSequence = SequenceFormatter.Format(1, 5);
+
+                NiceLabelVariableCollection labelData = NiceLabelDataMappings.ToLabelData(context);
+                labelData.Add("BOX_NO", formattedCurrentSequence);
+
+                var templateVariables = _niceLabelTemplateService.GetTemplateVariables().ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+                var variablesToSet = labelData.Variables.Where(x => templateVariables.Contains(x.Key)).ToDictionary(x => x.Key, x => x.Value);
+
+                _niceLabelTemplateService.SetVariables(variablesToSet);
+
+                var filename = PrintFileNameBuilder.BuildOCRSample(context.LabelInstructionDetails!.ItemCode);
+
+                var sampleDirectory = PrintJobPathBuilder.CreateSampleDirectory(context.LabelInstructionDetails!.ItemCode);
+
+                var isPreviewGenerated = _niceLabelTemplateService.GeneratePreview(sampleDirectory, filename);
+
+                var imagePath = Path.Combine(sampleDirectory, $"{filename}.jpg");
+
+                var isPrnGenerated = _niceLabelTemplateService.GeneratePrn(sampleDirectory, filename, out string prnPath);
+
+                if (!isPrnGenerated || string.IsNullOrWhiteSpace(prnPath) || !File.Exists(prnPath))
+                {
+                    _view.ShowError("The generated PRN file could not be found.");
+                    return;
+                }
+
+                var isPrinted = await _deviceManager.Printer.IsPrinted(prnPath);
+                if (!isPrinted)
+                {
+                    _view.ShowError("The printer failed to print the label. Please check the printer and try again.");
+                }
+
+            }
+            catch (Exception ex)
+            {
+                _view.ShowError(ex.Message);
+            }
+        }
+
         private void UnsubscribeCamera()
         {
             _frameHub.Unsubscribe(_cameraSubId);
@@ -89,16 +199,12 @@ namespace LASYS.DesktopApp.Presenters
             });
         }
 
-        private void OnPrintLabelRequested(object? sender, PrintLabelEventArgs e)
-        {
-            var result = _mediator.Send(new PrintLabelCommand(e.ItemCode, e.RevisionNumber, e.BoxType, e.FilePath));
 
-        }
 
         private async void OnOcrItemChosen(Product product)
         {
             var result = await _mediator.Send(new GetOcrLabelFilePathQuery(
-                product.ItemCode,(uint)product.RevisionNo,product.BoxType));
+                product.ItemCode, (uint)product.RevisionNo, product.BoxType));
 
             if (!result.IsSuccess)
             {
@@ -114,7 +220,7 @@ namespace LASYS.DesktopApp.Presenters
                 return;
             }
 
-            _view.SetSelectedOcrItem(new(product.ItemCode, (uint)product.RevisionNo, product.BoxType, filePath), product.Coordinates);
+            _view.SetSelectedOcrItem(product.ItemCode, (uint)product.RevisionNo, product.BoxType, product.Coordinates);
 
         }
 
@@ -122,9 +228,9 @@ namespace LASYS.DesktopApp.Presenters
         {
             var ocrItemLookupPresenter = _serviceProvider.GetRequiredService<OcrItemLookupPresenter>();
             var selected = ocrItemLookupPresenter.Show();
-            if (selected != null)
+            if (selected.ItemCode != null)
             {
-                _view.InvokeOnUI(() => _view.SetSelectedOcrItem(selected, null));
+                _view.InvokeOnUI(() => _view.SetSelectedOcrItem(selected.ItemCode, selected.MasterLabelRevNumber, selected.BoxType, null));
             }
         }
 
@@ -358,8 +464,8 @@ namespace LASYS.DesktopApp.Presenters
                     _view.DisplayOCRResult("----- SUMMARY -----");
 
                     foreach (var item in summary
-                        .OrderByDescending(x => x.Value) 
-                        .ThenBy(x => x.Key))             
+                        .OrderByDescending(x => x.Value)
+                        .ThenBy(x => x.Key))
                     {
                         _view.DisplayOCRResult($"{item.Key} → {item.Value}");
                     }

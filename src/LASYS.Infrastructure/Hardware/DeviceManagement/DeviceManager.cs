@@ -36,9 +36,17 @@ namespace LASYS.Infrastructure.Hardware.DeviceManagement
 
         public async Task InitializeAllAsync()
         {
-            await Camera.InitializeAsync();
-            await Barcode.InitializeAsync();
-            await Printer.InitializeAsync();
+            try
+            {
+                await Camera.InitializeAsync();
+                await Barcode.InitializeAsync();
+                await Printer.InitializeAsync();
+            }
+            catch (Exception)
+            {
+
+            }
+          
         }
 
         public async Task ShutdownAllAsync()

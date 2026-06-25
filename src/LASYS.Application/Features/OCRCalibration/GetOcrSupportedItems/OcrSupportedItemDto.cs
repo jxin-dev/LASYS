@@ -1,4 +1,12 @@
-﻿namespace LASYS.Application.Features.OCRCalibration.GetOcrSupportedItems
+﻿using LASYS.Application.Common.Enums;
+
+namespace LASYS.Application.Features.OCRCalibration.GetOcrSupportedItems
 {
-    public record OcrSupportedItemDto(string ItemCode, uint RevisionNumber, string BoxType, string FilePath);
+    public sealed record OcrSupportedItemDto
+    {
+        public string ItemCode { get; init; } = string.Empty;
+        public uint LabelInstructionRevNumber { get; init; }
+        public uint MasterLabelRevNumber { get; init; }
+        public IReadOnlyCollection<BoxType>? AvailableBoxTypes { get; init; } = [];
+    };
 }

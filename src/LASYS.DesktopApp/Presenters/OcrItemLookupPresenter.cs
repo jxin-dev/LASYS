@@ -1,35 +1,71 @@
-﻿using LASYS.Application.Features.OCRCalibration.GetOcrSupportedItems;
+﻿using LASYS.Application.Common.Enums;
+using LASYS.Application.Features.OCRCalibration.GetOcrSupportedItems;
+using LASYS.DesktopApp.Events;
 using LASYS.DesktopApp.Views.Interfaces;
 using MediatR;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace LASYS.DesktopApp.Presenters
 {
     public class OcrItemLookupPresenter
     {
         private readonly IOcrItemLookupView _view;
+        private readonly IServiceProvider _serviceProvider;
         private readonly IMediator _mediator;
 
-        private OcrSupportedItemDto? _selectedItem;
-        public OcrItemLookupPresenter(IOcrItemLookupView view, IMediator mediator)
+        private (string ItemCode, uint MasterLabelRevNumber, string BoxType) _selectedItem;
+        public OcrItemLookupPresenter(IOcrItemLookupView view, IMediator mediator, IServiceProvider serviceProvider)
         {
             _view = view;
             _mediator = mediator;
+            _serviceProvider = serviceProvider;
+
             _view.ViewLoaded += LoadItemsAsync;
-            _view.ItemSelected += OnItemSelected;
+            //_view.ItemSelected += OnItemSelected;
+            _view.LabelPrintingRequested += OnLabelPrintingRequested;
         }
 
-        private void OnItemSelected(OcrSupportedItemDto item)
+        private void OnLabelPrintingRequested(object? sender, SampleLabelPrintingRequestedEventArgs e)
         {
-            if (item.FilePath == "NO FILE PATH")
+            var labelBoxTypePresenter = _serviceProvider.GetRequiredService<LabelBoxTypePresenter>();
+            var item = e.Item;
+            if (string.IsNullOrWhiteSpace(item.ItemCode))
             {
-                _view.ShowError("The selected item does not have a valid file path. Please select another item.");
+                //_view.ShowNotification("Item Code or Lot Number is missing.", "Error", MessageBoxIcon.Error);
                 return;
             }
-            _selectedItem = item;
+
+            var result = labelBoxTypePresenter.Show(item.AvailableBoxTypes);
+
+            if (result is null)
+                return;
+
+            _selectedItem = (e.Item.ItemCode, e.Item.MasterLabelRevNumber, GetBoxTypeCode(result.Value));
             _view.Close();
         }
+        private static string GetBoxTypeCode(BoxType boxType) => boxType switch
+        {
+            BoxType.CaseLabel => "CASE",
+            BoxType.UnitBox => "UB",
+            BoxType.AdditionalUnitBox => "AUB",
+            BoxType.OuterUnitBox => "OUB",
+            BoxType.CartonBox => "CB",
+            BoxType.AdditionalCartonBox => "ACB",
+            BoxType.OuterCartonBox => "OCB",
+            _ => throw new ArgumentOutOfRangeException(nameof(boxType))
+        };
+        //private void OnItemSelected(OcrSupportedItemDto item)
+        //{
+        //    //if (item.FilePath == "NO FILE PATH")
+        //    //{
+        //    //    _view.ShowError("The selected item does not have a valid file path. Please select another item.");
+        //    //    return;
+        //    //}
+        //    _selectedItem = item;
+        //    _view.Close();
+        //}
 
-        public OcrSupportedItemDto? Show()
+        public (string ItemCode, uint MasterLabelRevNumber, string BoxType) Show()
         {
             _view.ShowDialog();
             return _selectedItem;
@@ -44,8 +80,11 @@ namespace LASYS.DesktopApp.Presenters
                 _view.ShowError(result.ErrorOrDefault);
                 return;
             }
-
-            _view.DisplayItems(result.Value!);
+            var paginatedList = result.Value;
+            if (paginatedList?.Items != null && paginatedList.Items.Count > 0)
+            {
+                _view.InvokeOnUI(() => _view.DisplayItems(paginatedList.Items, paginatedList.TotalPages));
+            }
         }
     }
 }

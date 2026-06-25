@@ -61,12 +61,9 @@ namespace LASYS.Application.Common.Mappings
                 .Add("DVR_NUMBER", productDetails.DvrNumber)
                 .Add("ROCHE", masterLabelDetails.Roche)
                 .Add("PSS_BARCODE", pssBarcode);
-
-
-
-
             //BOX_NO variable name use for sequence number
         }
+      
     }
 }
 

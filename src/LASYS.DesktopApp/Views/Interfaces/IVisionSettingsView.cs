@@ -44,7 +44,7 @@ namespace LASYS.DesktopApp.Views.Interfaces
         void ShowCameraNotification(string message, string caption, bool isError = false);
 
         event EventHandler SelectOcrItemRequested;
-        void SetSelectedOcrItem(OcrSupportedItemDto selected, Coordinates? coordinates = null);
+        void SetSelectedOcrItem(string ItemCode, uint Revision, string BoxType, Coordinates? coordinates = null);
 
         event Action<Product> OcrItemChosen;
         void ShowError(string message);

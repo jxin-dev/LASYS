@@ -7,6 +7,8 @@ namespace LASYS.Application.Features.PrintLabels.Helpers
     {
         private const string PrintJobsFolderName = "labelfiles";
         private const string TemplatesFolderName = "templates";
+        private const string SampleFolderName = "sample";
+
         public static async Task CreateFileAsync(string filePath, byte[] compressedBytes, CancellationToken cancellationToken = default)
         {
             string? directory = Path.GetDirectoryName(filePath);
@@ -66,6 +68,18 @@ namespace LASYS.Application.Features.PrintLabels.Helpers
             string itemFolder = GetPrintLabelsDirectory(itemCode);
 
             string templateDirectory = Path.Combine(itemFolder, TemplatesFolderName);
+
+            string fileName =
+                $"{Clean(itemCode)}_R{revisionNumber}_{boxType}.lbl";
+
+            return Path.Combine(templateDirectory, fileName);
+        }
+
+        public static string SampleLabelDirectory(string itemCode, uint revisionNumber, BoxType boxType)
+        {
+            string itemFolder = GetPrintLabelsDirectory(itemCode);
+
+            string templateDirectory = Path.Combine(itemFolder, SampleFolderName);
 
             string fileName =
                 $"{Clean(itemCode)}_R{revisionNumber}_{boxType}.lbl";

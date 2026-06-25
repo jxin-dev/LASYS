@@ -48,6 +48,7 @@
             // 
             // flowButtons
             // 
+            flowButtons.BackColor = Color.Transparent;
             flowButtons.Dock = DockStyle.Top;
             flowButtons.Location = new Point(0, 44);
             flowButtons.Name = "flowButtons";
@@ -58,6 +59,7 @@
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
+            BackColor = Color.DarkSeaGreen;
             ClientSize = new Size(250, 125);
             Controls.Add(flowButtons);
             Controls.Add(lblHeader);

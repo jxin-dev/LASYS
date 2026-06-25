@@ -27,15 +27,23 @@ namespace LASYS.Application.Features.LabelInstructions.GetLabelInstructionsBySec
             SELECT 
                 NULLIF(
                     CONCAT_WS(',',
-                        CASE WHEN TRIM(IFNULL(t1.UB_LBL_INS_CODE, ''))  <> '' THEN 'UB' END,
-                        CASE WHEN TRIM(IFNULL(t1.AUB_LBL_INS_CODE, '')) <> '' THEN 'AUB' END,
-                        CASE WHEN TRIM(IFNULL(t1.OUB_LBL_INS_CODE, '')) <> '' THEN 'OUB' END,
-                        CASE WHEN TRIM(IFNULL(t1.CB_LBL_INS_CODE, ''))  <> '' THEN 'CB' END,
-                        CASE WHEN TRIM(IFNULL(t1.ACB_LBL_INS_CODE, '')) <> '' THEN 'ACB' END,
-                        CASE WHEN TRIM(IFNULL(t1.OCB_LBL_INS_CODE, '')) <> '' THEN 'OCB' END
+                        CASE WHEN TRIM(IFNULL(pr.PRINT_CASE_LABEL_FLAG, '')) <> '' AND p.IS_CASE_OCR_SUPPORTED = 1 THEN 'CASE' END,
+                        CASE WHEN TRIM(IFNULL(t1.UB_LBL_INS_CODE, ''))  <> '' AND p.IS_UB_OCR_SUPPORTED = 1 THEN 'UB' END,
+                        CASE WHEN TRIM(IFNULL(t1.AUB_LBL_INS_CODE, '')) <> '' AND p.IS_AUB_OCR_SUPPORTED = 1 THEN 'AUB' END,
+                        CASE WHEN TRIM(IFNULL(t1.OUB_LBL_INS_CODE, '')) <> '' AND p.IS_OUB_OCR_SUPPORTED = 1 THEN 'OUB' END,
+                        CASE WHEN TRIM(IFNULL(t1.CB_LBL_INS_CODE, ''))  <> '' AND p.IS_CB_OCR_SUPPORTED = 1 THEN 'CB' END,
+                        CASE WHEN TRIM(IFNULL(t1.ACB_LBL_INS_CODE, '')) <> '' AND p.IS_ACB_OCR_SUPPORTED = 1 THEN 'ACB' END,
+                        CASE WHEN TRIM(IFNULL(t1.OCB_LBL_INS_CODE, '')) <> '' AND p.IS_OCB_OCR_SUPPORTED = 1 THEN 'OCB' END
                     ),
                     NULL
                 ) AS AvailableBoxTypes,
+                p.IS_UB_OCR_SUPPORTED,
+                p.IS_AUB_OCR_SUPPORTED,
+                p.IS_OUB_OCR_SUPPORTED,
+                p.IS_CB_OCR_SUPPORTED,
+                p.IS_ACB_OCR_SUPPORTED,
+                p.IS_OCB_OCR_SUPPORTED,
+                p.IS_CASE_OCR_SUPPORTED,
                 pr.SECTION_ASSIGNMENTS AS SectionAssignments,
                 t1.LINE_CODE AS LineCode,
 	            t1.ITEM_CODE AS ItemCode,
@@ -126,7 +134,16 @@ namespace LASYS.Application.Features.LabelInstructions.GetLabelInstructionsBySec
 	            (t1.OCB_LBL_INS_STATUS IN ('For Printing','Printed') AND t1.OCB_LBL_INS_VERDICT = 'Approved' AND t1.OCB_Lbl_Status IN ('Not Printed','Partially Printed','Completely Printed')) OR
 	            (t1.CB_LBL_INS_STATUS IN ('For Printing','Printed') AND t1.CB_LBL_INS_VERDICT = 'Approved' AND t1.CB_Lbl_Status IN ('Not Printed','Partially Printed','Completely Printed')))
             AND pr.ACTIVE_FLAG IS NOT NULL
-            AND FIND_IN_SET(@SectionId, pr.SECTION_ASSIGNMENTS) > 0
+            AND FIND_IN_SET(@SectionId, pr.SECTION_ASSIGNMENTS) > 0 
+            AND (
+                (TRIM(IFNULL(t1.UB_LBL_INS_CODE, '')) <> '' AND p.IS_UB_OCR_SUPPORTED = 1)
+             OR (TRIM(IFNULL(t1.AUB_LBL_INS_CODE, '')) <> '' AND p.IS_AUB_OCR_SUPPORTED = 1)
+             OR (TRIM(IFNULL(t1.OUB_LBL_INS_CODE, '')) <> '' AND p.IS_OUB_OCR_SUPPORTED = 1)
+             OR (TRIM(IFNULL(t1.CB_LBL_INS_CODE, '')) <> '' AND p.IS_CB_OCR_SUPPORTED = 1)
+             OR (TRIM(IFNULL(t1.ACB_LBL_INS_CODE, '')) <> '' AND p.IS_ACB_OCR_SUPPORTED = 1)
+             OR (TRIM(IFNULL(t1.OCB_LBL_INS_CODE, '')) <> '' AND p.IS_OCB_OCR_SUPPORTED = 1)
+             OR (TRIM(IFNULL(pr.PRINT_CASE_LABEL_FLAG, '')) <> '' AND p.IS_CASE_OCR_SUPPORTED = 1) -- if CASE is supported
+            )
             GROUP BY t1.ITEM_CODE, t1.LOT_NO, t1.LABEL_INS_REV_NUMBER, t1.MASTER_LABEL_REVISION_NUMBER 
             ORDER BY t1.history_datetime DESC
             ";
@@ -169,7 +186,7 @@ namespace LASYS.Application.Features.LabelInstructions.GetLabelInstructionsBySec
         {
             var details = new Dictionary<BoxType, BoxLabelInstructionDetails>();
 
-            if (x.UbInstructionCode != null && !string.IsNullOrEmpty(x.UbInstructionCode))
+            if (x.UbInstructionCode != null && !string.IsNullOrEmpty(x.UbInstructionCode) && x.IS_UB_OCR_SUPPORTED == true)
             {
                 details[BoxType.UnitBox] = new BoxLabelInstructionDetails
                 {
@@ -184,7 +201,7 @@ namespace LASYS.Application.Features.LabelInstructions.GetLabelInstructionsBySec
                 };
             }
 
-            if (x.AubInstructionCode != null && !string.IsNullOrEmpty(x.AubInstructionCode))
+            if (x.AubInstructionCode != null && !string.IsNullOrEmpty(x.AubInstructionCode) && x.IS_AUB_OCR_SUPPORTED == true)
             {
                 details[BoxType.AdditionalUnitBox] = new BoxLabelInstructionDetails
                 {
@@ -199,7 +216,7 @@ namespace LASYS.Application.Features.LabelInstructions.GetLabelInstructionsBySec
                 };
             }
 
-            if (x.OubInstructionCode != null && !string.IsNullOrEmpty(x.OubInstructionCode))
+            if (x.OubInstructionCode != null && !string.IsNullOrEmpty(x.OubInstructionCode) && x.IS_OUB_OCR_SUPPORTED == true)
             {
                 details[BoxType.OuterUnitBox] = new BoxLabelInstructionDetails
                 {
@@ -214,7 +231,7 @@ namespace LASYS.Application.Features.LabelInstructions.GetLabelInstructionsBySec
                 };
             }
             
-            if (x.CbInstructionCode != null && !string.IsNullOrEmpty(x.CbInstructionCode))
+            if (x.CbInstructionCode != null && !string.IsNullOrEmpty(x.CbInstructionCode) && x.IS_CB_OCR_SUPPORTED == true)
             {
                 details[BoxType.CartonBox] = new BoxLabelInstructionDetails
                 {
@@ -229,7 +246,7 @@ namespace LASYS.Application.Features.LabelInstructions.GetLabelInstructionsBySec
                 };
             }
 
-            if (x.AcbInstructionCode != null && !string.IsNullOrEmpty(x.AcbInstructionCode))
+            if (x.AcbInstructionCode != null && !string.IsNullOrEmpty(x.AcbInstructionCode) && x.IS_ACB_OCR_SUPPORTED == true)
             {
                 details[BoxType.AdditionalCartonBox] = new BoxLabelInstructionDetails
                 {
@@ -244,7 +261,7 @@ namespace LASYS.Application.Features.LabelInstructions.GetLabelInstructionsBySec
                 };
             }
 
-            if (x.OcbInstructionCode != null && !string.IsNullOrEmpty(x.OcbInstructionCode))
+            if (x.OcbInstructionCode != null && !string.IsNullOrEmpty(x.OcbInstructionCode) && x.IS_OCB_OCR_SUPPORTED == true)
             {
                 details[BoxType.OuterCartonBox] = new BoxLabelInstructionDetails
                 {

@@ -35,6 +35,18 @@ namespace LASYS.Application.Features.BatchPrinting.Helpers
 
             return value.Trim();
         }
+
+        public static string CreateSampleDirectory(string itemCode)
+        {
+            var printLabelsDirectory = NiceLabelFilePathBuilder.GetPrintJobsDirectory();
+
+            var root = Path.Combine(printLabelsDirectory, Clean(itemCode));
+            var sampleDirectory = Path.Combine(root, "sample");
+
+            Directory.CreateDirectory(sampleDirectory);
+
+            return sampleDirectory;
+        }
     }
 
 }

@@ -807,7 +807,7 @@ namespace LASYS.DesktopApp.Views.UserControls
 
             _printSampleLabelButton.Click += (sender, e) => 
             {
-                PrintLabelRequested?.Invoke(this, new PrintLabelEventArgs(_txtItemCode!.Text.Trim(), int.Parse(_txtRevisionNumber!.Text.Trim()), _txtBoxType!.Text.Trim(), _selectedFilePath));
+                PrintLabelRequested?.Invoke(this, new PrintLabelEventArgs(_txtItemCode!.Text.Trim(), uint.Parse(_txtRevisionNumber!.Text.Trim()), _txtBoxType!.Text.Trim(), _selectedFilePath));
             };
 
             labelInfoLayout.Paint += (s, e) =>
@@ -1191,14 +1191,12 @@ namespace LASYS.DesktopApp.Views.UserControls
         {
             picCameraPreview.Invalidate();
         }
-
-        public void SetSelectedOcrItem(OcrSupportedItemDto selected, Coordinates? coordinates = null)
+        public void SetSelectedOcrItem(string ItemCode, uint Revision, string BoxType, Coordinates? coordinates = null)
         {
-            _txtItemCode!.Text = selected.ItemCode.Trim();
-            _txtRevisionNumber!.Text = selected.RevisionNumber.ToString();
-            _txtBoxType!.Text = selected.BoxType;
-            _selectedFilePath = selected.FilePath;
-            
+            _txtItemCode!.Text = ItemCode.Trim();
+            _txtRevisionNumber!.Text = Revision.ToString();
+            _txtBoxType!.Text = BoxType;
+
             if (coordinates != null)
             {
                 _txtX!.Text = coordinates.X.ToString();
@@ -1209,13 +1207,30 @@ namespace LASYS.DesktopApp.Views.UserControls
                 _txtImgHeight!.Text = coordinates.ImageHeight.ToString();
             }
         }
+        //public void SetSelectedOcrItem(OcrSupportedItemDto selected, Coordinates? coordinates = null)
+        //{
+        //    //_txtItemCode!.Text = selected.ItemCode.Trim();
+        //    //_txtRevisionNumber!.Text = selected.RevisionNumber.ToString();
+        //    //_txtBoxType!.Text = selected.BoxType;
+        //    //_selectedFilePath = selected.FilePath;
+
+        //    if (coordinates != null)
+        //    {
+        //        _txtX!.Text = coordinates.X.ToString();
+        //        _txtY!.Text = coordinates.Y.ToString();
+        //        _txtWidth!.Text = coordinates.Width.ToString();
+        //        _txtHeight!.Text = coordinates.Height.ToString();
+        //        _txtImgWidth!.Text = coordinates.ImageWidth.ToString();
+        //        _txtImgHeight!.Text = coordinates.ImageHeight.ToString();
+        //    }
+        //}
 
         public void ShowError(string message)
         {
             MessageBox.Show(message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
 
-      
+       
     }
 }
 public static class ControlExtensions

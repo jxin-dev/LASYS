@@ -6,6 +6,10 @@
         {
             return $"{Clean(itemCode)}_LOT-{Clean(lotNo)}_{sequence}";
         }
+        public static string BuildOCRSample(string itemCode)
+        {
+            return $"{Clean(itemCode)}_OCRSample";
+        }
         private static string Clean(string value)
         {
             foreach (var invalidChar in Path.GetInvalidFileNameChars())
