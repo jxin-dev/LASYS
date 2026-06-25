@@ -8,7 +8,7 @@ namespace LASYS.Infrastructure.Hardware.Printers.Sato
 {
     public sealed class NiceLabelTemplateService : INiceLabelTemplateService
     {
-        //private readonly object _sync = new();
+        private readonly object _sync = new();
 
         private LGApp? _app;
         private LGLabel? _label;
@@ -23,8 +23,8 @@ namespace LASYS.Infrastructure.Hardware.Printers.Sato
             if (!File.Exists(templatePath))
                 throw new FileNotFoundException("Label template not found.", templatePath);
 
-            //lock (_sync)
-            //{
+            lock (_sync)
+            {
                 //_app ??= new LGApp();
                 EnsureApplication();
                 CloseTemplate();
@@ -57,7 +57,7 @@ namespace LASYS.Infrastructure.Hardware.Printers.Sato
                 //    TemplatePath = null;
                 //    throw;
                 //}
-            //}
+            }
         }
         private void EnsureApplication()
         {
@@ -102,8 +102,8 @@ namespace LASYS.Infrastructure.Hardware.Printers.Sato
 
         public void CloseTemplate()
         {
-            //lock (_sync)
-            //{
+            lock (_sync)
+            {
                 if (_label != null)
                 {
                     try
@@ -126,7 +126,7 @@ namespace LASYS.Infrastructure.Hardware.Printers.Sato
                 }
 
                 TemplatePath = null;
-            //}
+            }
         }
         //public void CloseTemplate()
         //{
@@ -164,10 +164,10 @@ namespace LASYS.Infrastructure.Hardware.Printers.Sato
 
                 var outputImagePath = Path.Combine(outputDirectory, $"{fileName}.jpg");
 
-                //lock (_sync)
-                //{
+                lock (_sync)
+                {
                     Label.GetLabelPreview(outputImagePath, width, height);
-                //}
+                }
 
                 return File.Exists(outputImagePath)&& new FileInfo(outputImagePath).Length > 0;
             }
@@ -185,8 +185,8 @@ namespace LASYS.Infrastructure.Hardware.Printers.Sato
                 Directory.CreateDirectory(outputDirectory);
                 prnPath = Path.Combine(outputDirectory, $"{fileName}.prn");
 
-                //lock (_sync)
-                //{
+                lock (_sync)
+                {
                     Label.PrinterPort = prnPath;
 
                     var success = Label.Print("1");
@@ -195,13 +195,12 @@ namespace LASYS.Infrastructure.Hardware.Printers.Sato
 
                     if (!success)
                         return false;
-                //}
+                }
 
                 return File.Exists(prnPath);
             }
             catch
             {
-                throw;
                 return false;
             }
         }
@@ -210,8 +209,8 @@ namespace LASYS.Infrastructure.Hardware.Printers.Sato
         {
             var variables = new List<string>();
 
-            //lock (_sync)
-            //{
+            lock (_sync)
+            {
                 for (int i = 1; i <= Label.Variables.Count; i++)
                 {
                     var variable = Label.Variables.Item(i);
@@ -219,7 +218,7 @@ namespace LASYS.Infrastructure.Hardware.Printers.Sato
                     if (variable != null)
                         variables.Add(variable.Name);
                 }
-            //}
+            }
 
             return variables;
 
@@ -229,28 +228,28 @@ namespace LASYS.Infrastructure.Hardware.Printers.Sato
 
         public void SetVariable(string variableName, string value)
         {
-            //lock (_sync)
-            //{
+            lock (_sync)
+            {
                 var variable = Label.Variables.FindByName(variableName);
 
                 if (variable == null)
                     return;
 
                 variable.SetValue(value);
-            //}
+            }
         }
 
         public void SetVariables(IReadOnlyDictionary<string, string> variables)
         {
-            //lock (_sync)
-            //{
+            lock (_sync)
+            {
                 foreach (var variable in variables)
                 {
                     var v = Label.Variables.FindByName(variable.Key);
                     if (v != null)
                         v.SetValue(variable.Value);
                 }
-            //}
+            }
         }
         public void Dispose()
         {
