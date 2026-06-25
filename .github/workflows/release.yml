@@ -82,7 +82,7 @@ jobs:
         run: |
           $version = "${{ github.ref_name }}".TrimStart('v')
           $file = Get-ChildItem ./releases/*-Setup.exe | Select-Object -First 1
-          $newName = "lasys-$version-win.exe"
+          $newName = "LASYS-OCR $version-win.exe"
           Rename-Item `
             -Path $file.FullName `
             -NewName $newName
