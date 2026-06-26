@@ -5,5 +5,8 @@
         void DisplayFrame(Bitmap frame);
         void InvokeOnUI(Action action);
         UserControl View { get; }
+        void ShowOcrRegion(Rectangle region);
+        void HideOcrRegion();
+        Size PictureBoxSize { get; }
     }
 }

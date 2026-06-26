@@ -8,6 +8,7 @@
         BarcodeMismatch,
         ScannerNotDetected,
         OcrUnreadable,
-        OcrMismatch
+        OcrMismatch,
+        OcrCalibrationNotFound
     }
 }

@@ -4,6 +4,7 @@ namespace LASYS.DesktopApp.Views.UserControls
 {
     public partial class CameraPreviewControl : UserControl, ICameraPreviewView
     {
+        private Rectangle? _ocrRegion;
         public CameraPreviewControl()
         {
             InitializeComponent();
@@ -13,9 +14,22 @@ namespace LASYS.DesktopApp.Views.UserControls
             {
                 picPreview?.Image?.Dispose();
             };
+            picPreview.Paint += PicPreview_Paint;
+        }
+
+        private void PicPreview_Paint(object? sender, PaintEventArgs e)
+        {
+            if (_ocrRegion is not Rectangle region)
+                return;
+
+            using var pen = new Pen(Color.LimeGreen, 2);
+
+            e.Graphics.DrawRectangle(pen, region);
         }
 
         public UserControl View => this;
+
+        public Size PictureBoxSize => picPreview.ClientSize; //If you change to PictureBoxSizeMode.Zoom
 
         public void DisplayFrame(Bitmap frame)
         {
@@ -30,6 +44,12 @@ namespace LASYS.DesktopApp.Views.UserControls
             old?.Dispose();
         }
 
+        public void HideOcrRegion()
+        {
+            _ocrRegion = null;
+            picPreview.Invalidate();
+        }
+
         public void InvokeOnUI(Action action)
         {
             if (IsDisposed)
@@ -40,6 +60,11 @@ namespace LASYS.DesktopApp.Views.UserControls
             else
                 action();
         }
-      
+
+        public void ShowOcrRegion(Rectangle region)
+        {
+            _ocrRegion = region;
+            picPreview.Invalidate();
+        }
     }
 }

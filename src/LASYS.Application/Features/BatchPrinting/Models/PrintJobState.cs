@@ -19,6 +19,7 @@ namespace LASYS.Application.Features.BatchPrinting.Models
         public LabelPrintingContext Context { get; private set; } = default!;
         public string ItemCode => Context.LabelInstructionDetails?.ItemCode ?? throw new InvalidOperationException("ItemCode is not available.");
         public string LotNo => Context.LabelInstructionDetails?.LotNo ?? throw new InvalidOperationException("LotNo is not available.");
+        public uint Revision => Context.LabelInstructionDetails?.MasterLabelRevNumber ?? throw new InvalidOperationException("MasterLabelRevNumber is not available.");
         public BoxType BoxType => Context.MasterLabelDetails?.BoxType ?? throw new InvalidOperationException("BoxType is not available.");
         public bool IsPairedType => Context.ProductDetails?.IsPairedBoxType ?? throw new InvalidOperationException("IsPairedBoxType is not available.");
         public int SequenceLength { get; init; } = 6;

@@ -1,4 +1,5 @@
 ﻿using System.Drawing;
+using LASYS.Application.Common.Enums;
 using LASYS.Application.Contracts;
 using LASYS.Application.Interfaces.Services;
 using Newtonsoft.Json;
@@ -106,5 +107,30 @@ namespace LASYS.Infrastructure.OCR
                 throw;
             }
         }
+
+        public async Task<Coordinates?> GetCoordinatesAsync(string itemCode, uint revision, BoxType boxType)
+        {
+            var config = await LoadAsync();
+            if (!BoxTypeCodeMap.TryGetValue(boxType, out var boxTypeCode))
+                return null;
+
+            return config.Products
+                .FirstOrDefault(p =>
+                    p.ItemCode == itemCode &&
+                    p.RevisionNo == revision &&
+                    p.BoxType.Equals(boxTypeCode, StringComparison.OrdinalIgnoreCase))
+                ?.Coordinates;
+        }
+
+        private static readonly Dictionary<BoxType, string> BoxTypeCodeMap = new()
+        {
+            [BoxType.CaseLabel] = "CASE",
+            [BoxType.UnitBox] = "UB",
+            [BoxType.AdditionalUnitBox] = "AUB",
+            [BoxType.OuterUnitBox] = "OUB",
+            [BoxType.CartonBox] = "CB",
+            [BoxType.AdditionalCartonBox] = "ACB",
+            [BoxType.OuterCartonBox] = "OCB",
+        };
     }
 }

@@ -25,6 +25,8 @@ namespace LASYS.Application.Features.BatchPrinting.Services
         private readonly IPrintJobController _jobController;
         private readonly INiceLabelTemplateService _niceLabelTemplateService;
         private readonly IDeviceManager _deviceManager;
+        private readonly IOCRService _ocrService;
+        private readonly ICalibrationService _calibrationService;
         private readonly IPrintLabelRepository _printLabelRepository;
         private readonly IMediator _mediator;
         private readonly ILabelPreviewHub _labelPreviewHub;
@@ -35,7 +37,7 @@ namespace LASYS.Application.Features.BatchPrinting.Services
         public event EventHandler<PrintJobState>? JobStateChanged;
         public event EventHandler<LogEventArgs>? LogGenerated;
 
-        public BatchPrintProcessService(ICurrentUser currentUser, IPrintJobController jobController, INiceLabelTemplateService niceLabelTemplateService, IDeviceManager deviceManager, IPrintLabelRepository printLabelRepository, IMediator mediator, ILabelPreviewHub labelPreviewHub)
+        public BatchPrintProcessService(ICurrentUser currentUser, IPrintJobController jobController, INiceLabelTemplateService niceLabelTemplateService, IDeviceManager deviceManager, IPrintLabelRepository printLabelRepository, IMediator mediator, ILabelPreviewHub labelPreviewHub, IOCRService ocrService, ICalibrationService calibrationService)
         {
             _currentUser = currentUser;
             _jobController = jobController;
@@ -44,6 +46,8 @@ namespace LASYS.Application.Features.BatchPrinting.Services
             _printLabelRepository = printLabelRepository;
             _mediator = mediator;
             _labelPreviewHub = labelPreviewHub;
+            _ocrService = ocrService;
+            _calibrationService = calibrationService;
         }
 
 
@@ -433,7 +437,7 @@ namespace LASYS.Application.Features.BatchPrinting.Services
 
             try
             {
-                var formattedCurrentSequence = SequenceFormatter.Format(sequence, 5);
+                var formattedCurrentSequence = SequenceFormatter.Format(sequence, job.SequenceLength);
 
                 var labelData = job.LabelData.Clone().Add("BOX_NO", formattedCurrentSequence);
 
@@ -510,7 +514,7 @@ namespace LASYS.Application.Features.BatchPrinting.Services
         {
             EnsureCanContinue(job);
 
-            //return StepResult.Success; //IUNCOMMENT MO TO KUNG MAGTETEST KA NG PRINTING FLOW
+            return StepResult.Success; //IUNCOMMENT MO TO KUNG MAGTETEST KA NG PRINTING FLOW
 
             // Ensure scanner is connected
             if (!_deviceManager.Barcode.IsConnected)
@@ -619,15 +623,40 @@ namespace LASYS.Application.Features.BatchPrinting.Services
         }
         private async Task<StepResult> ValidateOcrAsync(PrintJobState job, int pairNumber, int totalPairs, CancellationToken cancellationToken)
         {
-
             EnsureCanContinue(job);
+
+            var coordinates = await _calibrationService.GetCoordinatesAsync(job.ItemCode, job.Revision, job.BoxType);
+            if (coordinates == null)
+            {
+                return await RequestOperatorDecisionAsync(
+                    new OperatorDecisionRequiredEventArgs(
+                        ValidationFailure.OcrCalibrationNotFound,
+                        job.CurrentSequenceFormat,
+                        pairNumber,
+                        totalPairs),
+                    cancellationToken);
+            }
+            var snapshot = _deviceManager.Camera.GetSnapshot();
+            if (snapshot == null)
+            {
+                return await RequestOperatorDecisionAsync(
+                    new OperatorDecisionRequiredEventArgs(
+                        ValidationFailure.OcrMismatch,
+                        job.CurrentSequenceFormat,
+                        pairNumber,
+                        totalPairs),
+                    cancellationToken);
+            }
+
+            var result = await _ocrService.ReadTextAsync(snapshot, coordinates);
+            if(result != job.CurrentSequenceFormat)
+            {
+                return await RequestOperatorDecisionAsync(new OperatorDecisionRequiredEventArgs(ValidationFailure.OcrMismatch, job.CurrentSequenceFormat, pairNumber, totalPairs, ocrResult: result), cancellationToken);
+            }
 
             return StepResult.Success; //uncomment for real implementation
 
-            var result = await RequestOperatorDecisionAsync(new OperatorDecisionRequiredEventArgs(ValidationFailure.OcrMismatch, job.CurrentSequenceFormat, pairNumber, totalPairs), cancellationToken); ;
 
-
-            return result;
         }
 
         public void Pause(Guid jobId)

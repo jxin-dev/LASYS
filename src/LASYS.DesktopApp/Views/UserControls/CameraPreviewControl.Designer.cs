@@ -40,6 +40,7 @@
             picPreview.Location = new Point(0, 0);
             picPreview.Name = "picPreview";
             picPreview.Size = new Size(421, 272);
+            picPreview.SizeMode = PictureBoxSizeMode.Zoom;
             picPreview.TabIndex = 0;
             picPreview.TabStop = false;
             // 

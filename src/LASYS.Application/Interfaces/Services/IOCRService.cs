@@ -1,4 +1,5 @@
-﻿using LASYS.Application.Events;
+﻿using LASYS.Application.Contracts;
+using LASYS.Application.Events;
 using OpenCvSharp;
 using DrawingSize = System.Drawing.Size;
 
@@ -11,6 +12,7 @@ namespace LASYS.Application.Interfaces.Services
         event EventHandler<OCRReadingEventArgs> OCRReading;
         event EventHandler<OCRRegionEventArgs> OCRRegionPreview;
         Task<string> ReadTextAsync(Mat mat, DrawingSize viewerSize, int x,int y,int width,int height,int imageWidth,int imageHeight);
+        Task<string> ReadTextAsync(Mat snapshot, Coordinates coordinates);
 
         void PreviewRegion(DrawingSize viewerSize, int x, int y, int width, int height, int imageWidth, int imageHeight);
 

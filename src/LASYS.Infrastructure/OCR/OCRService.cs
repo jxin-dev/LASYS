@@ -1,4 +1,5 @@
 ﻿using System.Drawing;
+using LASYS.Application.Contracts;
 using LASYS.Application.Events;
 using LASYS.Application.Interfaces.Services;
 using OpenCvSharp;
@@ -59,6 +60,92 @@ namespace LASYS.Infrastructure.OCR
 
             return Rectangle.Round(viewerRect);
         }
+
+        public async Task<string> ReadTextAsync(Mat snapshot, Coordinates coordinates)
+        {
+            if (snapshot == null || snapshot.Empty())
+            {
+                OCRCompleted?.Invoke(this, new OCRCompletedEventArgs(string.Empty, false));
+                return string.Empty;
+            }
+            var scaleX = snapshot.Width / (double)coordinates.ImageWidth;
+            var scaleY = snapshot.Height / (double)coordinates.ImageHeight;
+
+            int newX = (int)(coordinates.X * scaleX);
+            int newY = (int)(coordinates.Y * scaleY);
+            int newWidth = (int)(coordinates.Width * scaleX);
+            int newHeight = (int)(coordinates.Height * scaleY);
+
+            newX = Math.Clamp(newX, 0, snapshot.Width - 1);
+            newY = Math.Clamp(newY, 0, snapshot.Height - 1);
+            newWidth = Math.Clamp(newWidth, 1, snapshot.Width - newX);
+            newHeight = Math.Clamp(newHeight, 1, snapshot.Height - newY);
+
+            var region = new CvRect(newX, newY, newWidth, newHeight);
+            OCRRegionDetected?.Invoke(this, new OCRRegionEventArgs(new Rectangle(region.X, region.Y, region.Width, region.Height)));
+
+            return await ProcessRegionAsync(snapshot, region);
+        }
+        private async Task<string> ProcessRegionAsync(Mat snapshot, CvRect region)
+        {
+            await _ocrSemaphore.WaitAsync();
+            OCRReading?.Invoke(this, new OCRReadingEventArgs(true));
+
+            bool success = false;
+            string result = string.Empty;
+
+            try
+            {
+                result = await Task.Run(() =>
+                {
+                    using (snapshot)
+                    {
+                        using Mat roiMat = new Mat(snapshot, region).Clone();
+
+                        using Mat resized = new();
+                        Cv2.Resize(
+                            roiMat,
+                            resized,
+                            new OpenCvSharp.Size(),
+                            2.0,
+                            2.0,
+                            InterpolationFlags.Cubic);
+
+                        using Mat gray = new();
+                        Cv2.CvtColor(resized, gray, ColorConversionCodes.BGR2GRAY);
+
+                        using Mat claheResult = new();
+                        using (var clahe = Cv2.CreateCLAHE(2.0, new OpenCvSharp.Size(8, 8)))
+                        {
+                            clahe.Apply(gray, claheResult);
+                        }
+
+                        using Mat thresholded = new();
+                        Cv2.Threshold(
+                            claheResult,
+                            thresholded,
+                            0,
+                            255,
+                            ThresholdTypes.Binary | ThresholdTypes.Otsu);
+
+                        using Bitmap bitmap = thresholded.ToBitmap();
+                        using var pix = PixConverter.ToPix(bitmap);
+                        using var page = _engine!.Process(pix);
+
+                        return page.GetText()?.Trim() ?? string.Empty;
+                    }
+                });
+
+                success = !string.IsNullOrWhiteSpace(result);
+                return result;
+            }
+            finally
+            {
+                OCRReading?.Invoke(this, new OCRReadingEventArgs(false));
+                OCRCompleted?.Invoke(this, new OCRCompletedEventArgs(result, success));
+                _ocrSemaphore.Release();
+            }
+        }
         public async Task<string> ReadTextAsync(Mat mat, DrawingSize viewerSize, int x, int y, int width, int height, int imageWidth, int imageHeight)
         {
 
@@ -71,7 +158,7 @@ namespace LASYS.Infrastructure.OCR
 
             // SNAPSHOT FIRST (thread-safe)
             Mat snapshot = mat.Clone();
-           
+
             var scaleX = snapshot.Width / (double)imageWidth;
             var scaleY = snapshot.Height / (double)imageHeight;
 
@@ -148,7 +235,7 @@ namespace LASYS.Infrastructure.OCR
 
                        return text;
                    }
-                   
+
 
                });
 
@@ -186,5 +273,6 @@ namespace LASYS.Infrastructure.OCR
 
             OCRRegionPreview?.Invoke(this, new OCRRegionEventArgs(viewerRegion));
         }
+
     }
 }
