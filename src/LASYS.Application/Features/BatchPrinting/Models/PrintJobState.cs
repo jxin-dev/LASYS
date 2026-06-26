@@ -113,7 +113,7 @@ namespace LASYS.Application.Features.BatchPrinting.Models
         {
             CurrentStage = ProcessingStage.Saved;
             Context.PrintDetails!.TotalPassed++;
-Context.PrintDetails.TotalPrinted++;
+            Context.PrintDetails.TotalPrinted++;
         }
 
         public void MarkFailed()

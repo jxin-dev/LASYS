@@ -6,6 +6,7 @@
         FileGenerationFailed,
         PrinterUnavailable,
         BarcodeMismatch,
+        ScannerNotDetected,
         OcrUnreadable,
         OcrMismatch
     }

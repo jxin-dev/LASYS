@@ -44,6 +44,7 @@ namespace LASYS.Application.Features.BatchPrinting.Events
                 ValidationFailure.BarcodeMismatch => $"Barcode validation failed on {SequenceNo}.\n{FormatPairText()}\n{AppendBarcodeDetails()}",
                 ValidationFailure.OcrMismatch => $"OCR validation failed on {SequenceNo}\n{FormatPairText()}\n{AppendOcrDetails()}",
                 ValidationFailure.SaveFailed => $"Saving printed label failed on {SequenceNo}.\n{FormatPairText}",
+                ValidationFailure.ScannerNotDetected => $"Barcode scanner was not detected.\nPlease check that the scanner is connected and try again.",
                 _ => $"Validation failure of type {FailureType} occurred for sequence {SequenceNo}."
             };
         }

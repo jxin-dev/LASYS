@@ -429,6 +429,8 @@ namespace LASYS.Application.Features.BatchPrinting.Services
         private async Task<(StepResult Result, string PrnPath)> GenerateLabelFilesAsync(PrintJobState job, long sequence, CancellationToken cancellationToken)
         {
             EnsureCanContinue(job);
+            //return (await RequestOperatorDecisionAsync(new OperatorDecisionRequiredEventArgs(ValidationFailure.FileGenerationFailed, job.CurrentSequenceFormat), cancellationToken), string.Empty);
+
             try
             {
                 var formattedCurrentSequence = SequenceFormatter.Format(sequence, 5);
@@ -508,7 +510,25 @@ namespace LASYS.Application.Features.BatchPrinting.Services
         {
             EnsureCanContinue(job);
 
-            return StepResult.Success; //IUNCOMMENT MO TO KUNG MAGTETEST KA NG PRINTING FLOW
+            //return StepResult.Success; //IUNCOMMENT MO TO KUNG MAGTETEST KA NG PRINTING FLOW
+
+            // Ensure scanner is connected
+            if (!_deviceManager.Barcode.IsConnected)
+            {
+                await _deviceManager.Barcode.InitializeAsync();
+
+                if (!_deviceManager.Barcode.IsConnected)
+                {
+                    return await RequestOperatorDecisionAsync(
+                        new OperatorDecisionRequiredEventArgs(
+                            ValidationFailure.ScannerNotDetected,
+                            job.CurrentSequenceFormat,
+                            pairNumber,
+                            totalPairs),
+                        cancellationToken);
+                }
+            }
+
 
             var waitScannedTextTask = _deviceManager.Barcode.WaitForBarcodeAsync(cancellationToken);
             await _deviceManager.Barcode.ScanAsync();
