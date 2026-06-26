@@ -78,7 +78,7 @@ namespace LASYS.Application.Features.BatchPrinting.Models
             {
                 PrintedCount++;
                 Context.PrintDetails.NextSequence++;
-                Context.PrintDetails.TotalPrinted++;
+
                 CurrentLabelStatus = Context.LabelInstructionDetails!.PrintType;
             }
         }
