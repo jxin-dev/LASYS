@@ -23,7 +23,6 @@ namespace LASYS.Infrastructure.Hardware.Camera
         private readonly string _configPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "camera.config.json");
         public event EventHandler<CameraConfigEventArgs>? CameraConfigIssue;
 
-        //public event EventHandler<CameraStatusEventArgs>? CameraStatusChanged;
         public event EventHandler<DeviceStatusChangedEventArgs>? DeviceStatusChanged;
         public DeviceStatus CurrentStatus { get; private set; } = DeviceStatusFactory.Create(DeviceType.Camera, DeviceStatusCode.NotConfigured);
 
@@ -53,11 +52,6 @@ namespace LASYS.Infrastructure.Hardware.Camera
         public bool IsStreaming => _isStreaming;
 
 
-        //public CameraService()
-        //{
-        //    _cts = new CancellationTokenSource();
-        //}
-
         public CameraService(IFrameHub frameHub)
         {
             _frameHub = frameHub;
@@ -82,28 +76,13 @@ namespace LASYS.Infrastructure.Hardware.Camera
             await OpenCameraAsync(_activeConfig);
         }
 
-        // ----------------------------------------------------
-        // Camera resolution
-        // ----------------------------------------------------
-        //public CameraInfo? ResolveCamera(CameraConfig config)
-        //{
-        //    var cameras = GetCameras();
-
-        //    return cameras.FirstOrDefault(c =>
-        //               c.Index == config.Index &&
-        //               string.Equals(c.Name, config.Name, StringComparison.OrdinalIgnoreCase))
-        //           ?? cameras.FirstOrDefault(c =>
-        //               string.Equals(c.Name, config.Name, StringComparison.OrdinalIgnoreCase));
-        //}
-
-
-
+        
         private async Task OpenCameraAsync(CameraConfig config)
         {
             ReleaseCamera();
 
             using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(_cts.Token);
-            timeoutCts.CancelAfter(TimeSpan.FromSeconds(5));
+            //timeoutCts.CancelAfter(TimeSpan.FromSeconds(5));
             var resolutions = GetCameraResolutions();
             try
             {
@@ -114,26 +93,13 @@ namespace LASYS.Infrastructure.Hardware.Camera
                     {
                         if (string.IsNullOrWhiteSpace(config.Name))
                             SetStatus(DeviceStatusCode.NotConfigured);
-                        //CameraStatusChanged?.Invoke(this, new CameraStatusEventArgs(CameraStatus.CameraNotConfigured));
                         else
                             SetStatus(DeviceStatusCode.NotDetected);
-                            //CameraStatusChanged?.Invoke(this, new CameraStatusEventArgs(CameraStatus.CameraNotDetected, $"No camera device was found using the configured device name ({config.Name})"));
-
+                            
                         CameraDisconnected?.Invoke(this, EventArgs.Empty);
                         return;
                     }
 
-                    //var cameraInfo = ResolveCamera(config);
-                    //if (cameraInfo == null)
-                    //{
-                    //    CameraStatusChanged?.Invoke(this, new CameraStatusEventArgs(
-                    //            $"Device unavailable ({config.Name})", true));
-                    //    CameraDisconnected?.Invoke(this, EventArgs.Empty);
-                    //    return;
-                    //}
-                    //var cameraIndex = cameraInfo.Index;
-
-                    //var capture = new VideoCapture(cameraIndex);
                     var capture = new VideoCapture(cameraIndex, VideoCaptureAPIs.DSHOW);
 
 
@@ -178,14 +144,12 @@ namespace LASYS.Infrastructure.Hardware.Camera
                 if (!_cts.IsCancellationRequested)
                 {
                     SetStatus(DeviceStatusCode.Timeout);
-                    //CameraStatusChanged?.Invoke(this, new CameraStatusEventArgs(CameraStatus.CameraTimeout));
                     CameraDisconnected?.Invoke(this, EventArgs.Empty);
                 }
             }
             catch (Exception)
             {
                 SetStatus(DeviceStatusCode.Error);
-                //CameraStatusChanged?.Invoke(this, new CameraStatusEventArgs(CameraStatus.CameraError));
             }
 
         }
@@ -203,9 +167,8 @@ namespace LASYS.Infrastructure.Hardware.Camera
                 if (_capture == null || !_capture.IsOpened())
                 {
                     SetStatus(DeviceStatusCode.Disconnected);
-                    //CameraStatusChanged?.Invoke(this, new CameraStatusEventArgs(CameraStatus.CameraDisconnected));
                     CameraDisconnected?.Invoke(this, EventArgs.Empty);
-                    return Task.CompletedTask;
+                    //return Task.CompletedTask;
                 }
 
                 _isStreaming = true;
@@ -237,6 +200,8 @@ namespace LASYS.Infrastructure.Hardware.Camera
 
                     if (!TryReadFrame(frame) || frame.Empty())
                     {
+                        _isCameraConnected = false;
+                        ReleaseCamera();
                         CreateEmptyFrame(getTargetResolution);
                         SetStatus(DeviceStatusCode.Disconnected);
                         CameraDisconnected?.Invoke(this, EventArgs.Empty);
@@ -296,117 +261,113 @@ namespace LASYS.Infrastructure.Hardware.Camera
             using var mat = new Mat(size.Height, size.Width, MatType.CV_8UC3, Scalar.All(0));
             PublishFrame(mat);
         }
-        public Task StartStreamingAsync(
-            Action<Mat, Bitmap> onFrameCaptured,
-            Func<DrawingSize> getTargetResolution)
-        {
+        //public Task StartStreamingAsync(
+        //    Action<Mat, Bitmap> onFrameCaptured,
+        //    Func<DrawingSize> getTargetResolution)
+        //{
 
-            lock (_captureLock)
-            {
-                if (_isStreaming)
-                    return Task.CompletedTask; // Already streaming
+        //    lock (_captureLock)
+        //    {
+        //        if (_isStreaming)
+        //            return Task.CompletedTask; // Already streaming
 
-                if (_capture == null || !_capture.IsOpened())
-                {
-                    SetStatus(DeviceStatusCode.Disconnected);
-                    //CameraStatusChanged?.Invoke(this, new CameraStatusEventArgs(CameraStatus.CameraDisconnected));
-                    CameraDisconnected?.Invoke(this, EventArgs.Empty);
-                    return Task.CompletedTask;
-                }
+        //        if (_capture == null || !_capture.IsOpened())
+        //        {
+        //            SetStatus(DeviceStatusCode.Disconnected);
+        //            CameraDisconnected?.Invoke(this, EventArgs.Empty);
+        //            return Task.CompletedTask;
+        //        }
 
-                _isStreaming = true;
-                _cts ??= new CancellationTokenSource();
-            }
+        //        _isStreaming = true;
+        //        _cts ??= new CancellationTokenSource();
+        //    }
 
 
-            _isCameraConnected = false;
+        //    _isCameraConnected = false;
 
-            var token = _cts.Token;
+        //    var token = _cts.Token;
 
-            _streamingTask = Task.Factory.StartNew(() =>
-            {
-                var frameInterval = TimeSpan.FromMilliseconds(100);
-                var lastUpdate = DateTime.Now;
+        //    _streamingTask = Task.Factory.StartNew(() =>
+        //    {
+        //        var frameInterval = TimeSpan.FromMilliseconds(100);
+        //        var lastUpdate = DateTime.Now;
 
-                while (!token.IsCancellationRequested)
-                {
-                    if (!IsCameraReady())
-                    {
-                        CreateAndCaptureEmptyFrame(getTargetResolution(), onFrameCaptured);
+        //        while (!token.IsCancellationRequested)
+        //        {
+        //            if (!IsCameraReady())
+        //            {
+        //                CreateAndCaptureEmptyFrame(getTargetResolution(), onFrameCaptured);
                         
-                        SetStatus(DeviceStatusCode.Disconnected);
-                        //CameraStatusChanged?.Invoke(this, new CameraStatusEventArgs(CameraStatus.CameraDisconnected));
+        //                SetStatus(DeviceStatusCode.Disconnected);
+        //                CameraDisconnected?.Invoke(this, EventArgs.Empty);
 
-                        CameraDisconnected?.Invoke(this, EventArgs.Empty);
+        //                Thread.Sleep(1000);
+        //                continue;
+        //            }
 
-                        Thread.Sleep(1000);
-                        continue;
-                    }
+        //            using var frame = new Mat();
+        //            using var resized = new Mat();
 
-                    using var frame = new Mat();
-                    using var resized = new Mat();
+        //            if (!TryReadFrame(frame) || frame.Empty())
+        //            {
+        //                HandleEmptyFrame(onFrameCaptured, getTargetResolution);
 
-                    if (!TryReadFrame(frame) || frame.Empty())
-                    {
-                        HandleEmptyFrame(onFrameCaptured, getTargetResolution);
+        //                SetStatus(DeviceStatusCode.Disconnected);
 
-                        SetStatus(DeviceStatusCode.Disconnected);
-                        //CameraStatusChanged?.Invoke(this, new CameraStatusEventArgs(CameraStatus.CameraDisconnected));
+        //                CameraDisconnected?.Invoke(this, EventArgs.Empty);
+        //                continue;
+        //            }
 
-                        CameraDisconnected?.Invoke(this, EventArgs.Empty);
-                        continue;
-                    }
+        //            var elapsed = DateTime.Now - lastUpdate;
+        //            if (elapsed < frameInterval)
+        //                Thread.Sleep(frameInterval - elapsed);
 
-                    var elapsed = DateTime.Now - lastUpdate;
-                    if (elapsed < frameInterval)
-                        Thread.Sleep(frameInterval - elapsed);
+        //            lastUpdate = DateTime.Now;
 
-                    lastUpdate = DateTime.Now;
+        //            var targetSize = getTargetResolution();
+        //            Cv2.Resize(frame, resized, new OpenCvSharp.Size(targetSize.Width, targetSize.Height));
 
-                    var targetSize = getTargetResolution();
-                    Cv2.Resize(frame, resized, new OpenCvSharp.Size(targetSize.Width, targetSize.Height));
+        //            HandleFrameSafe(resized, onFrameCaptured);
 
-                    HandleFrameSafe(resized, onFrameCaptured);
+        //            lock (_frameLock)
+        //            {
+        //                //LastCapturedFrame?.Dispose();
+        //                //LastCapturedFrame = resized.Clone();
+        //                if (LastCapturedFrame == null)
+        //                {
+        //                    LastCapturedFrame = resized.Clone();
+        //                }
+        //                else
+        //                {
+        //                    SetStatus(DeviceStatusCode.Connected);
+        //                    //CameraStatusChanged?.Invoke(this, new CameraStatusEventArgs(CameraStatus.CameraConnected));
+        //                    resized.CopyTo(LastCapturedFrame);
 
-                    lock (_frameLock)
-                    {
-                        //LastCapturedFrame?.Dispose();
-                        //LastCapturedFrame = resized.Clone();
-                        if (LastCapturedFrame == null)
-                        {
-                            LastCapturedFrame = resized.Clone();
-                        }
-                        else
-                        {
-                            SetStatus(DeviceStatusCode.Connected);
-                            //CameraStatusChanged?.Invoke(this, new CameraStatusEventArgs(CameraStatus.CameraConnected));
-                            resized.CopyTo(LastCapturedFrame);
+        //                    //var focus = _capture?.Get(VideoCaptureProperties.Focus);
+        //                    //Debug.WriteLine($"Focus: {focus}");
 
-                            //var focus = _capture?.Get(VideoCaptureProperties.Focus);
-                            //Debug.WriteLine($"Focus: {focus}");
+        //                    //double actualWidth = _capture.Get(VideoCaptureProperties.FrameWidth);
+        //                    //double actualHeight = _capture.Get(VideoCaptureProperties.FrameHeight);
+        //                    //Debug.WriteLine($"Camera Resolution: {actualWidth}x{actualHeight}");
+        //                }
+        //            }
 
-                            //double actualWidth = _capture.Get(VideoCaptureProperties.FrameWidth);
-                            //double actualHeight = _capture.Get(VideoCaptureProperties.FrameHeight);
-                            //Debug.WriteLine($"Camera Resolution: {actualWidth}x{actualHeight}");
-                        }
-                    }
+        //            ReportConnectedOnce();
+        //        }
 
-                    ReportConnectedOnce();
-                }
-
-            }, token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+        //    }, token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
 
 
-            return _streamingTask;
-        }
-        private void HandleFrameSafe(Mat resized, Action<Mat, Bitmap> onFrameCaptured)
-        {
-            var bitmap = resized.ToBitmap();
-            onFrameCaptured(resized, bitmap);
+        //    return _streamingTask;
+        //}
+        //private void HandleFrameSafe(Mat resized, Action<Mat, Bitmap> onFrameCaptured)
+        //{
+        //    var bitmap = resized.ToBitmap();
+        //    onFrameCaptured(resized, bitmap);
 
-            //if (_capture != null)
-            //    Debug.Write($"FH:{_capture.FrameHeight} | FW:{_capture.FrameWidth} | FPS: {_capture.Fps}\n");
-        }
+        //    //if (_capture != null)
+        //    //    Debug.Write($"FH:{_capture.FrameHeight} | FW:{_capture.FrameWidth} | FPS: {_capture.Fps}\n");
+        //}
 
 
         // ----------------------------------------------------
@@ -444,42 +405,42 @@ namespace LASYS.Infrastructure.Hardware.Camera
         public bool IsCameraReady() =>
             _capture != null && _capture.IsOpened() && !_capture.IsDisposed;
 
-        private async Task HandleDisconnectedCamera(
-            Action<Mat, Bitmap> onFrameCaptured,
-            Func<DrawingSize> getTargetResolution)
-        {
-            try
-            {
-                CreateAndCaptureEmptyFrame(getTargetResolution(), onFrameCaptured);
+        //private async Task HandleDisconnectedCamera(
+        //    Action<Mat, Bitmap> onFrameCaptured,
+        //    Func<DrawingSize> getTargetResolution)
+        //{
+        //    try
+        //    {
+        //        CreateAndCaptureEmptyFrame(getTargetResolution(), onFrameCaptured);
 
-                await Task.Delay(1000, _cts.Token);
+        //        await Task.Delay(1000, _cts.Token);
 
-                if (_activeConfig != null && !_cts.Token.IsCancellationRequested)
-                {
-                    //await OpenCameraAsync(_activeConfig);
+        //        if (_activeConfig != null && !_cts.Token.IsCancellationRequested)
+        //        {
+        //            //await OpenCameraAsync(_activeConfig);
 
-                    if (IsCameraReady())
-                    {
-                        await OpenCameraAsync(_activeConfig);
-                        _hasReportedEmptyFrame = false;
-                        _isCameraConnected = false;
-                        _streamingTask = null; // Restart streaming
-                    }
-                    else
-                    {
-                        SetStatus(DeviceStatusCode.Disconnected);
-                        //CameraStatusChanged?.Invoke(this, new CameraStatusEventArgs(CameraStatus.CameraDisconnected));
-                        CameraDisconnected?.Invoke(this, EventArgs.Empty);
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"HandleDisconnectedCamera failed: {ex}");
-            }
+        //            if (IsCameraReady())
+        //            {
+        //                await OpenCameraAsync(_activeConfig);
+        //                _hasReportedEmptyFrame = false;
+        //                _isCameraConnected = false;
+        //                _streamingTask = null; // Restart streaming
+        //            }
+        //            else
+        //            {
+        //                SetStatus(DeviceStatusCode.Disconnected);
+        //                //CameraStatusChanged?.Invoke(this, new CameraStatusEventArgs(CameraStatus.CameraDisconnected));
+        //                CameraDisconnected?.Invoke(this, EventArgs.Empty);
+        //            }
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        Debug.WriteLine($"HandleDisconnectedCamera failed: {ex}");
+        //    }
 
 
-        }
+        //}
 
         protected virtual void OnCameraDisconnected()
         {
@@ -499,32 +460,27 @@ namespace LASYS.Infrastructure.Hardware.Camera
             }
         }
 
-        private void HandleEmptyFrame(
-            Action<Mat, Bitmap> onFrameCaptured,
-            Func<DrawingSize> getTargetResolution)
-        {
-            if (_hasReportedEmptyFrame)
-                return;
+        //private void HandleEmptyFrame(
+        //    Action<Mat, Bitmap> onFrameCaptured,
+        //    Func<DrawingSize> getTargetResolution)
+        //{
+        //    if (_hasReportedEmptyFrame)
+        //        return;
 
-            _hasReportedEmptyFrame = true;
-            _isCameraConnected = false;
+        //    _hasReportedEmptyFrame = true;
+        //    _isCameraConnected = false;
 
-            //CameraStatusChanged?.Invoke(this,
-            //    new CameraStatusEventArgs(
-            //        "No image received from the camera.", true));
-            //CameraDisconnected?.Invoke(this, EventArgs.Empty);
+        //    CreateAndCaptureEmptyFrame(getTargetResolution(), onFrameCaptured);
+        //}
 
-            CreateAndCaptureEmptyFrame(getTargetResolution(), onFrameCaptured);
-        }
+        //private static void Throttle(ref DateTime lastUpdate, TimeSpan interval)
+        //{
+        //    var now = DateTime.Now;
+        //    if (now - lastUpdate < interval)
+        //        return;
 
-        private static void Throttle(ref DateTime lastUpdate, TimeSpan interval)
-        {
-            var now = DateTime.Now;
-            if (now - lastUpdate < interval)
-                return;
-
-            lastUpdate = now;
-        }
+        //    lastUpdate = now;
+        //}
 
         private void ReportConnectedOnce()
         {
@@ -534,7 +490,6 @@ namespace LASYS.Infrastructure.Hardware.Camera
             CameraConnected?.Invoke(this, EventArgs.Empty);
 
             SetStatus(DeviceStatusCode.Connected);
-            //CameraStatusChanged?.Invoke(this, new CameraStatusEventArgs(CameraStatus.CameraConnected));
 
             _isCameraConnected = true;
         }
@@ -624,7 +579,6 @@ namespace LASYS.Infrastructure.Hardware.Camera
                 if (LastCapturedFrame == null || LastCapturedFrame.Empty())
                     return null;
                 SetStatus(DeviceStatusCode.CameraCapturing);
-                //CameraStatusChanged?.Invoke(this, new CameraStatusEventArgs(CameraStatus.CameraCapturing));
                 return LastCapturedFrame.Clone();  // safe snapshot
             }
         }
@@ -650,12 +604,6 @@ namespace LASYS.Infrastructure.Hardware.Camera
                 focusValue == 0
                 ? "Auto focus is being enabled."
                 : $"Manual focus is being set to value {focusValue}.");
-
-            //CameraStatusChanged?.Invoke(this, new CameraStatusEventArgs(
-            //    CameraStatus.CameraFocusing,
-            //    focusValue == 0
-            //    ? "Auto focus is being enabled."
-            //    : $"Manual focus is being set to value {focusValue}."));
 
         }
 
@@ -686,7 +634,6 @@ namespace LASYS.Infrastructure.Hardware.Camera
                 if (!File.Exists(_configPath))
                 {
                     SetStatus(DeviceStatusCode.NotConfigured);
-                    //CameraStatusChanged?.Invoke(this, new CameraStatusEventArgs(CameraStatus.CameraNotConfigured));
                     await Task.Delay(1000);
                     return new CameraConfig();
                 }
@@ -699,7 +646,6 @@ namespace LASYS.Infrastructure.Hardware.Camera
             {
                 Console.Error.WriteLine($"Failed to load camera.config.json: {ex.Message}");
                 SetStatus(DeviceStatusCode.Error);
-                //CameraStatusChanged?.Invoke(this, new CameraStatusEventArgs(CameraStatus.CameraError));
                 await Task.Delay(1000);
                 return new CameraConfig();
             }
@@ -773,7 +719,6 @@ namespace LASYS.Infrastructure.Hardware.Camera
             {
                 Console.Error.WriteLine($"Failed to restart application: {ex.Message}");
                 SetStatus(DeviceStatusCode.Error);
-                //CameraStatusChanged?.Invoke(this, new CameraStatusEventArgs(CameraStatus.CameraError));
             }
         }
 
@@ -794,16 +739,15 @@ namespace LASYS.Infrastructure.Hardware.Camera
             Debug.WriteLine($"Camera Resolution: {actualWidth}x{actualHeight}");
         }
 
-        public async Task PreviewCameraAsync(string cameraName)
-        {
-            SetStatus(DeviceStatusCode.Configuring);
-            //CameraStatusChanged?.Invoke(this, new CameraStatusEventArgs(CameraStatus.CameraConfiguring));
-            await StopAsync();
-            var config = _activeConfig ?? new CameraConfig();
-            config.Name = cameraName;
+        //public async Task PreviewCameraAsync(string cameraName)
+        //{
+        //    SetStatus(DeviceStatusCode.Configuring);
+        //    await StopAsync();
+        //    var config = _activeConfig ?? new CameraConfig();
+        //    config.Name = cameraName;
 
-            await OpenCameraAsync(config);
-        }
+        //    await OpenCameraAsync(config);
+        //}
 
         public async Task<CameraConfig> LoadAsync()
         {
@@ -812,7 +756,6 @@ namespace LASYS.Infrastructure.Hardware.Camera
                 if (!File.Exists(_configPath))
                 {
                     SetStatus(DeviceStatusCode.NotConfigured);
-                    //CameraStatusChanged?.Invoke(this, new CameraStatusEventArgs(CameraStatus.CameraNotConfigured));
                     await Task.Delay(1000);
                     return new CameraConfig();
                 }
@@ -825,7 +768,6 @@ namespace LASYS.Infrastructure.Hardware.Camera
             {
                 Console.Error.WriteLine($"Failed to load camera.config.json: {ex.Message}");
                 SetStatus(DeviceStatusCode.Error);
-                //CameraStatusChanged?.Invoke(this, new CameraStatusEventArgs(CameraStatus.CameraError));
                 await Task.Delay(1000);
                 return new CameraConfig();
             }
@@ -842,11 +784,35 @@ namespace LASYS.Infrastructure.Hardware.Camera
             {
                 Console.Error.WriteLine($"Failed to save config: {ex.Message}");
                 SetStatus(DeviceStatusCode.Error);
-                //CameraStatusChanged?.Invoke(this, new CameraStatusEventArgs(CameraStatus.CameraError));
             }
         }
 
-       
+        public async Task<bool> ReconnectAsync()
+        {
+            if (_activeConfig == null)
+                _activeConfig = await LoadCameraConfigAsync();
+
+            ReleaseCamera();
+
+            await OpenCameraAsync(_activeConfig);
+
+            if (_capture == null || !_capture.IsOpened())
+                return false;
+
+            // Verify that the camera is actually producing frames.
+            using var frame = new Mat();
+
+            if (!TryReadFrame(frame) || frame.Empty())
+            {
+                ReleaseCamera();
+                return false;
+            }
+
+            _isCameraConnected = true;
+            _hasReportedEmptyFrame = false;
+
+            return true;
+        }
     }
 }
 

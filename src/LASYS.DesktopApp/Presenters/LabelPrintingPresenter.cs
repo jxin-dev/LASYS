@@ -105,14 +105,8 @@ namespace LASYS.DesktopApp.Presenters
             _view.ToggleLabelTemplatePreview(_isLabelTemplateVisible);
         }
 
-        private async void OnCameraPreviewRequested(object? sender, EventArgs e)
+        private void OnCameraPreviewRequested(object? sender, EventArgs e)
         {
-            if (!_deviceManager.Camera.IsStreaming)
-            {
-                await _deviceManager.Camera.StartStreamingAsync(
-                    () => _deviceManager.Camera.DefaultResolution);
-            }
-
             _isCameraVisible = !_isCameraVisible;
             if (_isCameraVisible)
             {

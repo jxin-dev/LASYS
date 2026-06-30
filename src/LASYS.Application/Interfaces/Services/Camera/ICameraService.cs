@@ -23,10 +23,11 @@ namespace LASYS.Application.Interfaces.Services.Camera
         Task InitializeAsync();
         Task StopAsync();
         DrawingSize DefaultResolution { get; }
-        Task StartStreamingAsync(Action<Mat, Bitmap> onFrameCaptured, Func<DrawingSize> getTargetResolution);
+        //Task StartStreamingAsync(Action<Mat, Bitmap> onFrameCaptured, Func<DrawingSize> getTargetResolution);
         Task StartStreamingAsync(Func<DrawingSize> getTargetResolution);
         void ReleaseCamera();
         bool IsCameraReady();
+        Task<bool> ReconnectAsync();
         void SetFocus(int focusValue);
         bool IsStreaming { get; }
 
@@ -43,7 +44,7 @@ namespace LASYS.Application.Interfaces.Services.Camera
         void RestartApplication();
         void SetResolution(string resolution);
 
-        Task PreviewCameraAsync(string cameraName);
+        //Task PreviewCameraAsync(string cameraName);
 
 
         Task<CameraConfig> LoadAsync();

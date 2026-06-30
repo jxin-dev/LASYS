@@ -7,8 +7,8 @@
         PrinterUnavailable,
         BarcodeMismatch,
         ScannerNotDetected,
-        OcrUnreadable,
         OcrMismatch,
-        OcrCalibrationNotFound
+        OcrCalibrationNotFound,
+        CameraNotDetected
     }
 }

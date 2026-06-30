@@ -1,7 +1,6 @@
 ﻿using System.Reflection;
 using LASYS.Application.Contracts;
 using LASYS.Application.Events;
-using LASYS.Application.Features.OCRCalibration.GetOcrSupportedItems;
 using LASYS.DesktopApp.Events;
 using LASYS.DesktopApp.Views.Interfaces;
 using LASYS.UIControls.Controls;
@@ -1153,6 +1152,8 @@ namespace LASYS.DesktopApp.Views.UserControls
 
             UpdateFocusUI(focus);
 
+            CameraPreviewStateChanged?.Invoke(this, new CameraSelectedEventArgs(cameraName));
+            
         }
 
         private void UpdateFocusUI(int value)

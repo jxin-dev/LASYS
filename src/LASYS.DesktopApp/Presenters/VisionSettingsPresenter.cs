@@ -290,16 +290,13 @@ namespace LASYS.DesktopApp.Presenters
         {
             try
             {
-                await _deviceManager.Camera.PreviewCameraAsync(e.CameraName);
-                // Start streaming in background safely
-                _ = _deviceManager.Camera.StartStreamingAsync(
-                    HandleFrame,
-                    GetSafePictureBoxSize)
-                    .ContinueWith(t =>
-                    {
-                        if (t.Exception != null)
-                            Debug.WriteLine(t.Exception.Flatten());
-                    }, TaskContinuationOptions.OnlyOnFaulted);
+
+                if (!_deviceManager.Camera.IsCameraReady())
+                {
+                    await _deviceManager.Camera.ReconnectAsync();
+                }
+
+                //await _deviceManager.Camera.PreviewCameraAsync(e.CameraName);
             }
             catch (OperationCanceledException)
             {

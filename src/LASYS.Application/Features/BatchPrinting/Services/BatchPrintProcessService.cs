@@ -625,6 +625,23 @@ namespace LASYS.Application.Features.BatchPrinting.Services
         {
             EnsureCanContinue(job);
 
+            if (!_deviceManager.Camera.IsCameraReady())
+            {
+                var connected = await _deviceManager.Camera.ReconnectAsync();
+
+                if (!connected)
+                {
+                    return await RequestOperatorDecisionAsync(
+                        new OperatorDecisionRequiredEventArgs(
+                            ValidationFailure.CameraNotDetected,
+                            job.CurrentSequenceFormat,
+                            pairNumber,
+                            totalPairs),
+                        cancellationToken);
+                }
+                return StepResult.Retry;
+            }
+
             var coordinates = await _calibrationService.GetCoordinatesAsync(job.ItemCode, job.Revision, job.BoxType);
             if (coordinates == null)
             {
