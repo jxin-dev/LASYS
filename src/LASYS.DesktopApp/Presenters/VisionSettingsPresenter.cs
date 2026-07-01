@@ -58,8 +58,6 @@ namespace LASYS.DesktopApp.Presenters
 
             SubscribeCamera();
 
-            _view.InitializeRequested += OnInitializeRequested;
-
             _view.ComputeImageRegionRequested += OnComputeImageRegionRequested;
             _view.SaveCalibrationClicked += OnSaveCalibrationClicked;
             _view.LoadRegisteredOcrItemsRequested += OnLoadRegisteredOcrItemsRequested;
@@ -533,32 +531,5 @@ namespace LASYS.DesktopApp.Presenters
             bitmap.Dispose(); // free temporary bitmap
 
         }
-        private void OnInitializeRequested(object? sender, EventArgs e)
-        {
-            //_cameraService.StartStreamingAsync(() => _cameraService.DefaultResolution);
-
-            //try
-            //{
-            //    // Start camera streaming in the background
-            //    _ = _cameraService.StartStreamingAsync(
-            //        HandleFrame,
-            //        GetSafePictureBoxSize)
-            //        .ContinueWith(t =>
-            //        {
-            //            if (t.Exception != null)
-            //                Debug.WriteLine(t.Exception.Flatten());
-            //        }, TaskContinuationOptions.OnlyOnFaulted);
-
-            //}
-            //catch (OperationCanceledException)
-            //{
-            //    // expected on shutdown
-            //}
-            //catch (Exception ex)
-            //{
-            //    Debug.WriteLine(ex);
-            //}
-        }
-
     }
 }

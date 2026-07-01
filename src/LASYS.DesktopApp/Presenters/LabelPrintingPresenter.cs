@@ -1,6 +1,8 @@
 ﻿using System.Diagnostics;
 using LASYS.Application.Common.Enums;
+using LASYS.Application.Common.Mappings;
 using LASYS.Application.Common.Messaging;
+using LASYS.Application.Common.Utilities;
 using LASYS.Application.Events;
 using LASYS.Application.Features.BatchPrinting.Commands.InitializeBatchPrint;
 using LASYS.Application.Features.BatchPrinting.Commands.PauseBatchPrint;
@@ -9,6 +11,7 @@ using LASYS.Application.Features.BatchPrinting.Commands.StartBatchPrint;
 using LASYS.Application.Features.BatchPrinting.Commands.StopBatchPrint;
 using LASYS.Application.Features.BatchPrinting.Enums;
 using LASYS.Application.Features.BatchPrinting.Events;
+using LASYS.Application.Features.BatchPrinting.Helpers;
 using LASYS.Application.Features.BatchPrinting.Models;
 using LASYS.Application.Features.BatchPrinting.Services;
 using LASYS.Application.Features.Devices.Events;
@@ -18,8 +21,8 @@ using LASYS.Application.Features.LabelInstructions.GetWorkOrderListBySectionId;
 using LASYS.Application.Features.PrintLabels.Helpers;
 using LASYS.Application.Interfaces.Services;
 using LASYS.Application.Interfaces.Services.Camera;
+using LASYS.Application.Interfaces.Services.NiceLabel;
 using LASYS.DesktopApp.Views.Interfaces;
-using LASYS.Infrastructure.Hardware.Camera;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -35,6 +38,7 @@ namespace LASYS.DesktopApp.Presenters
         private readonly IMainView _mainView;
         private readonly INiceLabelTemplateService _niceLabelTemplateService;
         private readonly IDeviceManager _deviceManager;
+        private readonly ILabelPreviewHub _labelPreviewHub;
 
         private readonly CameraPreviewPresenter _cameraPreviewPresenter;
         private readonly LabelTemplatePreviewPresenter _labelTemplatePreviewPresenter;
@@ -53,7 +57,8 @@ namespace LASYS.DesktopApp.Presenters
                                       IMainView mainView,
                                       INiceLabelTemplateService niceLabelTemplateService,
                                       IDeviceManager deviceManager,
-                                      IFrameHub frameHub)
+                                      IFrameHub frameHub,
+                                      ILabelPreviewHub labelPreviewHub)
         {
             _batchPrintService = batchPrintService;
             _mediator = mediator;
@@ -62,6 +67,8 @@ namespace LASYS.DesktopApp.Presenters
             _mainView = mainView;
             _niceLabelTemplateService = niceLabelTemplateService;
             _deviceManager = deviceManager;
+            _labelPreviewHub = labelPreviewHub;
+
 
             View = (UserControl)view;
 
@@ -91,7 +98,6 @@ namespace LASYS.DesktopApp.Presenters
             _labelTemplatePreviewPresenter = services.GetRequiredService<LabelTemplatePreviewPresenter>();
             _view.SetPreview(_labelTemplatePreviewPresenter.View);
             _view.LabelTemplatePreviewRequested += OnLabelTemplatePreviewRequested;
-
         }
 
         private void OnLabelTemplatePreviewRequested(object? sender, EventArgs e)
@@ -114,11 +120,6 @@ namespace LASYS.DesktopApp.Presenters
                 _view.ToggleLabelTemplatePreview(false);
             }
             _view.ToggleCameraPreview(_isCameraVisible);
-        }
-
-        private void OnStartCameraPreviewRequested(object? sender, EventArgs e)
-        {
-            //_deviceManager.Camera.StartStreamingAsync(() => _deviceManager.Camera.DefaultResolution);
         }
 
         private void SyncDeviceStates()
@@ -147,12 +148,6 @@ namespace LASYS.DesktopApp.Presenters
         {
             _view.InvokeOnUI(() => _view.AddLog(e.Type, DateTime.Now, e.Message));
         }
-
-        //public async Task LoadCameraStatusAsync()
-        //{
-        //    var status = await _mediator.Send(new GetCameraStatusQuery());
-        //    _view.InvokeOnUI(() => _view.UpdateCameraStatus(status.Message, status.Description));
-        //}
 
         private void OnJobStateChanged(object? sender, PrintJobState e)
         {
@@ -230,17 +225,6 @@ namespace LASYS.DesktopApp.Presenters
 
         }
 
-        private void OnDecision(object? sender, StepResult e)
-        {
-            var service = _services.GetRequiredService<IBatchPrintProcessService>();
-            service.SetUserDecision(e);
-
-            if (sender is Form form)
-            {
-                form.Close();
-            }
-        }
-
         public async Task InitializeDataAsync(WorkOrderItem labelInstruction, BoxType boxType)
         {
             _view.InvokeOnUI(() => _view.SetPrintingState(PrintJobStatus.Initializing));
@@ -286,10 +270,46 @@ namespace LASYS.DesktopApp.Presenters
              var printJobContext = await _mediator.Send(new InitializeBatchPrintCommand(updatedContext));
 
             _view.InvokeOnUI(() => _view.InitializePrintingContext(printJobContext));
-            //_view.InvokeOnUI(() => _view.SetPrintingState(PrintJobStatus.Ready));
-
+            // Display the label template in the preview
+            DisplayTemplate(context);
         }
 
+
+        private void DisplayTemplate(LabelPrintingContext context)
+        {
+            try
+            {
+                var currentSequence = context.PrintDetails?.NextSequence ?? 0;
+                var formattedCurrentSequence = SequenceFormatter.Format(currentSequence, 6);
+
+                var labelData = NiceLabelDataMappings.ToLabelData(context).Clone().Add("BOX_NO", formattedCurrentSequence);
+
+                var templateVariables = _niceLabelTemplateService.GetTemplateVariables().ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+                var variablesToSet = labelData.Variables.Where(x => templateVariables.Contains(x.Key)).ToDictionary(x => x.Key, x => x.Value);
+
+                _niceLabelTemplateService.SetVariables(variablesToSet);
+
+                var sampleDirectory = PrintJobPathBuilder.CreateSampleDirectory(context.LabelInstructionDetails!.ItemCode);
+
+                var filename = PrintFileNameBuilder.Build(context.LabelInstructionDetails!.ItemCode, context.LabelInstructionDetails.LotNo, formattedCurrentSequence);
+
+                var imagePath = Path.Combine(sampleDirectory, $"{filename}.jpg");
+
+                var isPreviewGenerated = _niceLabelTemplateService.GeneratePreview(sampleDirectory, filename);
+
+                if (File.Exists(imagePath))
+                {
+                    _labelPreviewHub.Publish(imagePath);
+                    OnLabelTemplatePreviewRequested(this, EventArgs.Empty);
+                }
+
+            }
+            catch (Exception ex)
+            {
+
+            }
+        }
 
         private void OnBackToWorkOrdersRequested(object? sender, EventArgs e)
         {

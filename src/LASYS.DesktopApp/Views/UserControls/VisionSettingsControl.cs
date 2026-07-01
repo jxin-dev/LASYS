@@ -54,7 +54,7 @@ namespace LASYS.DesktopApp.Views.UserControls
 
         // Events
         public event EventHandler? LoadRegisteredOcrItemsRequested;
-        public event EventHandler? InitializeRequested;
+        //public event EventHandler? InitializeRequested;
         public event EventHandler<OCRCoordinatesEventArgs>? OCRTriggered;
         public event EventHandler<int>? FocusValueChanged;
 
@@ -110,7 +110,6 @@ namespace LASYS.DesktopApp.Views.UserControls
                 BeginInvoke(() =>
                 {
                     _resizablePanel.ShowTab("Camera Settings");
-                    InitializeRequested?.Invoke(this, EventArgs.Empty); // start streaming immediately on load
                 });
             };
 
