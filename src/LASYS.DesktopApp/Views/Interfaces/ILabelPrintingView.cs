@@ -38,7 +38,6 @@ namespace LASYS.DesktopApp.Views.Interfaces
         //void UpdatePrinterStatus(string status, string details);
         //void UpdateBarcodeStatus(string status, string details);
         void UpdateDeviceStatus(DeviceStatus status);
-
     }
 
 }

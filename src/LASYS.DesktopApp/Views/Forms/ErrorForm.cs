@@ -33,11 +33,11 @@ namespace LASYS.DesktopApp.Views.Forms
                 case ValidationFailure.ScannerNotDetected:
                 case ValidationFailure.SaveFailed:
                 case ValidationFailure.CameraNotDetected:
+                case ValidationFailure.PrinterUnavailable:
                         btnRetry.Visible = true;
                         btnSkip.Visible = false;
                         btnStopBatch.Visible = true;
                         break;
-                case ValidationFailure.PrinterUnavailable:
                 case ValidationFailure.OcrCalibrationNotFound:
                     btnRetry.Visible = false;
                     btnSkip.Visible = false;

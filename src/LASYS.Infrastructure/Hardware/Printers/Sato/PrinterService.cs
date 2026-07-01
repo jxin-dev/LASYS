@@ -1,9 +1,7 @@
 ﻿using System.IO.Ports;
 using System.Management;
 using System.Runtime.InteropServices;
-using System.Text;
 using System.Text.Json;
-using System.Threading.Tasks;
 using Interop.LabelGalleryPlus3WR;
 using LASYS.Application.Common.Extensions;
 using LASYS.Application.Common.Messaging;
@@ -42,6 +40,9 @@ namespace LASYS.Infrastructure.Hardware.Printers.Sato
         public DeviceStatus CurrentStatus { get; private set; } =
             DeviceStatusFactory.Create(DeviceType.Printer, DeviceStatusCode.NotConfigured);
 
+        private PrinterConnection? _connection;
+        public PrinterConnection? Connection => _connection;
+
         private void SetStatus(DeviceStatusCode statusCode, string? descriptionOverride = null)
         {
             CurrentStatus = DeviceStatusFactory.Create(
@@ -52,50 +53,6 @@ namespace LASYS.Infrastructure.Hardware.Printers.Sato
             DeviceStatusChanged?.Invoke(this, new DeviceStatusChangedEventArgs(CurrentStatus));
 
         }
-
-        //private void EnsureByteAvailableSubscription()
-        //{
-        //    if (_printer == null || _isByteAvailableSubscribed)
-        //        return;
-
-        //    _printer.ByteAvailable += AsynDataIn;
-        //    _isByteAvailableSubscribed = true;
-        //}
-
-
-        //private void AppendSendText(byte[] data)
-        //{
-        //    string smsg = ControlCharConvert(Utils.ByteArrayToString(data));
-
-        //    SetStatus(DeviceStatusCode.DataSent, $"{DateTime.Now:HH:mm:ss.fff} | TX {data.Length} bytes | {smsg}");
-
-        //}
-        //private void AsynDataIn(object? sender, Printer.ByteAvailableEventArgs e)
-        //{
-        //    UpdatePrinterStatus(e.Data, false);
-        //}
-        //private void UpdatePrinterStatus(byte[] data, bool empty)
-        //{
-        //    var response = Encoding.ASCII.GetString(data);
-
-        //    response = response
-        //        .Replace("\x02", "") // STX
-        //        .Replace("\x03", "") // ETX
-        //        .Trim();
-
-        //    switch (response)
-        //    {
-        //        case "A000000":
-        //            SetStatus(DeviceStatusCode.Online);
-        //            break;
-
-        //        case "0000000":
-        //            SetStatus(DeviceStatusCode.Offline);
-        //            break;
-        //    }
-
-        //    string smsg = ControlCharConvert(Utils.ByteArrayToString(data));
-        //}
 
         private string ControlCharConvert(string data)
         {
@@ -261,19 +218,19 @@ namespace LASYS.Infrastructure.Hardware.Printers.Sato
                 SetStatus(DeviceStatusCode.NotConfigured);
                 return;
             }
+            
+            _connection = config.SatoPrinter;
 
             if (_printer == null)
             {
                 _printer = new Printer();
                 _printer.PermanentConnect = true;
-
-
-                //_printer.ByteAvailable -= AsynDataIn;
             }
-            //EnsureByteAvailableSubscription();
+
 
             if (config.SatoPrinter is SerialPrinterConnection serial)
             {
+
                 _printer.Interface = Printer.InterfaceType.COM;
                 _printer.COMPort = serial.ComPort;
                 _printer.COMSetting.Baudrate = serial.BaudRate;

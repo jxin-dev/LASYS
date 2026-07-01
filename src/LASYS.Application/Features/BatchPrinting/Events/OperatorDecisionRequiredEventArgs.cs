@@ -8,6 +8,7 @@ namespace LASYS.Application.Features.BatchPrinting.Events
         public string SequenceNo { get; private set; }
         public int PairNumber { get; private set; }
         public int TotalPairs { get; private set; }
+        public string? PrinterDetails { get; private set; }
         public string? BarcodeResult { get; private set; }
         public string? OcrResult { get; private set; }
 
@@ -25,7 +26,8 @@ namespace LASYS.Application.Features.BatchPrinting.Events
             int pairNumber,
             int totalPairs,
             string? barcodeResult = null,
-            string? ocrResult = null)
+            string? ocrResult = null,
+            string? printerDetails = null)
         {
             FailureType = failureType;
             SequenceNo = sequenceNo;
@@ -33,6 +35,7 @@ namespace LASYS.Application.Features.BatchPrinting.Events
             TotalPairs = totalPairs;
             BarcodeResult = barcodeResult;
             OcrResult = ocrResult;
+            PrinterDetails = printerDetails;
         }
 
         public string GetMessage()
@@ -40,7 +43,7 @@ namespace LASYS.Application.Features.BatchPrinting.Events
             return FailureType switch
             {
                 ValidationFailure.FileGenerationFailed => $"Label generation failed for sequence {SequenceNo}.",
-                ValidationFailure.PrinterUnavailable => $"Printer is unavailable for sequence {SequenceNo}.\n{FormatPairText()}",
+                ValidationFailure.PrinterUnavailable => $"Printer is unavailable for sequence {SequenceNo}.\n{FormatPairText()}\n{AppendPrinterDetails()}",
                 ValidationFailure.BarcodeMismatch => $"Barcode validation failed on {SequenceNo}.\n{FormatPairText()}\n{AppendBarcodeDetails()}",
                 ValidationFailure.OcrMismatch => $"OCR validation failed on {SequenceNo}\n{FormatPairText()}\n{AppendOcrDetails()}",
                 ValidationFailure.SaveFailed => $"Saving printed label failed on {SequenceNo}.\n{FormatPairText}",
@@ -49,6 +52,16 @@ namespace LASYS.Application.Features.BatchPrinting.Events
                 ValidationFailure.OcrCalibrationNotFound => $"Barcode scanner was not detected.\nPlease check that the scanner is connected and try again.",
                 _ => $"Validation failure of type {FailureType} occurred for sequence {SequenceNo}."
             };
+        }
+
+        private string AppendPrinterDetails()
+        {
+            if (string.IsNullOrWhiteSpace(PrinterDetails))
+            {
+                return "Please check that the printer is connected and online before retrying.";
+            }
+
+            return $"{PrinterDetails}\n\nPlease check that the printer is connected and online before retrying.";
         }
         private string AppendBarcodeDetails()
         {

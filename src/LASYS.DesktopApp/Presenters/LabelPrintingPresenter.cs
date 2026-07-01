@@ -156,8 +156,8 @@ namespace LASYS.DesktopApp.Presenters
             _view.InvokeOnUI(() => _view.UpdateProgress(e.PrintedCount, e.TotalQuantity));
 
             _view.InvokeOnUI(() => _view.UpdatePrintingResults(e.TargetQuantity, e.Context.PrintDetails!.SetNumber, e.Context.PrintDetails!.BatchNumber, e.DisplaySequence, e.RemainingQuantity, e.Context.PrintDetails!.TotalPrinted, e.Context.PrintDetails!.TotalPassed, e.Context.PrintDetails!.TotalFailed, e.Context.PrintDetails!.TotalSampled));
-            
-            if(e.Status is PrintJobStatus.Completed or PrintJobStatus.Stopped)
+
+            if (e.Status is PrintJobStatus.Completed or PrintJobStatus.Stopped)
             {
                 _view.InvokeOnUI(() => _view.UpdateQuantityControl(e));
             }
@@ -216,7 +216,7 @@ namespace LASYS.DesktopApp.Presenters
                 errorPresenter.View.MessageText = errorPresenter.GetErrorMessage(e);
                 errorPresenter.View.Configure(e.FailureType);
                 _view.InvokeOnUI(() => _view.ShowError(errorPresenter.View));
-                
+
             }
             finally
             {
@@ -227,51 +227,58 @@ namespace LASYS.DesktopApp.Presenters
 
         public async Task InitializeDataAsync(WorkOrderItem labelInstruction, BoxType boxType)
         {
-            _view.InvokeOnUI(() => _view.SetPrintingState(PrintJobStatus.Initializing));
-
-            var itemCode = labelInstruction.ItemCode;
-            var lotNo = labelInstruction.LotNo;
-            var masterLabelRevNumber = labelInstruction.MasterLabelRevNumber;
-
-            var result = await _mediator.Send(new GetLabelInstructionContextQuery(itemCode, lotNo, masterLabelRevNumber, boxType));
-
-            if (!result.IsSuccess)
+            try
             {
-                _view.InvokeOnUI(() =>
-                    _view.AddLog(MessageType.Error, DateTime.Now, $"Failed to retrieve label instruction context: {result.ErrorOrDefault}"));
-                return;
+                _view.InvokeOnUI(() => _view.SetPrintingState(PrintJobStatus.Initializing));
+                var itemCode = labelInstruction.ItemCode;
+                var lotNo = labelInstruction.LotNo;
+                var masterLabelRevNumber = labelInstruction.MasterLabelRevNumber;
+
+                var result = await _mediator.Send(new GetLabelInstructionContextQuery(itemCode, lotNo, masterLabelRevNumber, boxType));
+
+                if (!result.IsSuccess)
+                {
+                    _view.InvokeOnUI(() =>
+                        _view.AddLog(MessageType.Error, DateTime.Now, $"Failed to retrieve label instruction context: {result.ErrorOrDefault}"));
+                    return;
+                }
+
+                var context = result.Value!;
+                var masterLabel = context.MasterLabelDetails;
+                var niceLabelPath = masterLabel?.FilePath;
+                var niceLabelFile = masterLabel?.LabelFile;
+
+
+                var sw = Stopwatch.StartNew();
+
+                string filePath = NiceLabelFilePathBuilder.Build(itemCode, masterLabelRevNumber, boxType);
+                bool isNiceLabelExist = !string.IsNullOrWhiteSpace(niceLabelPath) && File.Exists(niceLabelPath);
+
+                if (isNiceLabelExist)
+                    await NiceLabelFilePathBuilder.CopyFileAsync(niceLabelPath!, filePath);
+                else
+                    await NiceLabelFilePathBuilder.CreateFileAsync(filePath, niceLabelFile!);
+
+                sw.Stop();
+
+                _view.AddLog(MessageType.Info, DateTime.Now, $"Template saved in {sw.ElapsedMilliseconds}ms");
+
+                var updatedContext = context with
+                {
+                    MasterLabelDetails = masterLabel?.WithResolvedFilePath(filePath)
+                };
+
+                var printJobContext = await _mediator.Send(new InitializeBatchPrintCommand(updatedContext));
+
+                _view.InvokeOnUI(() => _view.InitializePrintingContext(printJobContext));
+                // Display the label template in the preview
+                DisplayTemplate(context);
+            }
+            finally
+            {
+
             }
 
-            var context = result.Value!;
-            var masterLabel = context.MasterLabelDetails;
-            var niceLabelPath = masterLabel?.FilePath;
-            var niceLabelFile = masterLabel?.LabelFile;
-
-
-            var sw = Stopwatch.StartNew();
-
-            string filePath = NiceLabelFilePathBuilder.Build(itemCode, masterLabelRevNumber, boxType);
-            bool isNiceLabelExist = !string.IsNullOrWhiteSpace(niceLabelPath) && File.Exists(niceLabelPath);
-
-            if (isNiceLabelExist)
-                await NiceLabelFilePathBuilder.CopyFileAsync(niceLabelPath!, filePath);
-            else
-                await NiceLabelFilePathBuilder.CreateFileAsync(filePath, niceLabelFile!);
-
-            sw.Stop();
-
-            _view.AddLog(MessageType.Info, DateTime.Now, $"Template saved in {sw.ElapsedMilliseconds}ms");
-
-            var updatedContext = context with
-            {
-                MasterLabelDetails = masterLabel?.WithResolvedFilePath(filePath)
-            };
-
-             var printJobContext = await _mediator.Send(new InitializeBatchPrintCommand(updatedContext));
-
-            _view.InvokeOnUI(() => _view.InitializePrintingContext(printJobContext));
-            // Display the label template in the preview
-            DisplayTemplate(context);
         }
 
 

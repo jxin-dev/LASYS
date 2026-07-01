@@ -46,7 +46,7 @@ namespace LASYS.Application.Features.BatchPrinting.Models
             var remaining = context.PrintDetails != null ? context.PrintDetails.GetRemainingPrintQuantity(context.ProductDetails?.Quantity) : throw new InvalidOperationException("RemainingQuantity is not available.");
             var startSequence = context.PrintDetails?.NextSequence != null ? (int)context.PrintDetails.NextSequence : throw new InvalidOperationException("NextSequence is not available.");
             var setNumber = context.PrintDetails?.SetNumber != null ? (int)context.PrintDetails.SetNumber : throw new InvalidOperationException("SetNumber is not available.");
-            
+
             var batchNumber = context.PrintDetails.TotalPassed == 0 ? 1 : (int)((context.PrintDetails.TotalPassed - 1) / context.ProductDetails!.BatchSize) + 1;
 
             context.PrintDetails.NextSequence = startSequence;
@@ -124,8 +124,8 @@ namespace LASYS.Application.Features.BatchPrinting.Models
             CurrentLabelStatus =
                 CurrentStage >= ProcessingStage.Printed
                     ? "Failed After Printing"
-                    : "Failed During Printing"; 
-            
+                    : "Failed During Printing";
+
             Context.PrintDetails!.TotalFailed++;
             if (printed)
             {
@@ -160,11 +160,11 @@ namespace LASYS.Application.Features.BatchPrinting.Models
             var remaining = Context.PrintDetails != null ? Context.PrintDetails.GetRemainingPrintQuantity(Context.ProductDetails?.Quantity) : throw new InvalidOperationException("RemainingQuantity is not available.");
             var setNumber = Context.PrintDetails?.SetNumber != null ? (int)Context.PrintDetails.SetNumber : throw new InvalidOperationException("SetNumber is not available.");
             var batchNumber = Context.PrintDetails.TotalPassed == 0 ? 1 : (int)((Context.PrintDetails.TotalPassed - 1) / Context.ProductDetails!.BatchSize) + 1;
-            //var nextSequence = Context.PrintDetails.NextSequence;
 
-            Context.PrintDetails.SetNumber = remaining == 0 ? setNumber : ++setNumber;
+            bool printed = CurrentStage >= ProcessingStage.Printed;
+
+            Context.PrintDetails.SetNumber = printed ? (remaining == 0 ? setNumber : ++setNumber) : setNumber;
             Context.PrintDetails.BatchNumber = batchNumber;
-            //Context.PrintDetails.NextSequence = remaining == 0 ? nextSequence : ++nextSequence;
 
             // wake any paused thread
             ResumeSignal.Set();

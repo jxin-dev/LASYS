@@ -51,6 +51,12 @@ namespace LASYS.DesktopApp.Views.UserControls
         public UserControl UserControl => this;
 
         private Guid? _printJobId;
+
+        private Panel? _loadingOverlay;
+        private Panel? _loadingCard;
+        private Panel? _loadingAccent;
+        private Label? _loadingLabel;
+        private ProgressBar? _loadingProgress;
         public LabelPrintingControl()
         {
             InitializeComponent();
@@ -205,25 +211,6 @@ namespace LASYS.DesktopApp.Views.UserControls
                 e.Item!.Selected = false;
             };
 
-    
-            //_logListView.OwnerDraw = false;
-
-            //_logListView.DrawColumnHeader += (s, e) =>
-            //{
-            //    using var font = new Font("Segoe UI", 9, FontStyle.Bold);
-            //    e.Graphics.FillRectangle(Brushes.WhiteSmoke, e.Bounds);
-            //    TextRenderer.DrawText(
-            //        e.Graphics,
-            //        e.Header!.Text,
-            //        font,
-            //        e.Bounds,
-            //        Color.Black,
-            //        TextFormatFlags.Left | TextFormatFlags.VerticalCenter);
-            //};
-
-            //_logListView.DrawItem += (s, e) => e.DrawDefault = true;
-            //_logListView.DrawSubItem += (s, e) => e.DrawDefault = true;
-
             _logListView.Resize += (s, e) =>
             {
                 int otherColumnsWidth =
@@ -247,6 +234,7 @@ namespace LASYS.DesktopApp.Views.UserControls
             container.Controls.Add(logPanel, 0, 2);
 
             _resizablePanel.AddTab("Activity Logs", container);
+            _resizablePanel.ShowTab("Activity Logs", false);
         }
 
         private Color GetStatusColor(DeviceStatusCode status)
@@ -707,5 +695,6 @@ namespace LASYS.DesktopApp.Views.UserControls
 
             btnCameraPreview.Image = _cameraOn;
         }
+
     }
 }

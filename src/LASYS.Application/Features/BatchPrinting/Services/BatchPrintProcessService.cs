@@ -15,6 +15,7 @@ using LASYS.Application.Interfaces.Context;
 using LASYS.Application.Interfaces.Persistence.Repositories;
 using LASYS.Application.Interfaces.Services;
 using LASYS.Application.Interfaces.Services.NiceLabel;
+using LASYS.Application.Models.Hardware.Printer;
 using MediatR;
 
 namespace LASYS.Application.Features.BatchPrinting.Services
@@ -481,8 +482,41 @@ namespace LASYS.Application.Features.BatchPrinting.Services
             {
                 return StepResult.Success;
             }
+            var connection = _deviceManager.Printer.Connection;
 
-            return await RequestOperatorDecisionAsync(new OperatorDecisionRequiredEventArgs(ValidationFailure.PrinterUnavailable, job.CurrentSequenceFormat, pairNumber, totalPairs), cancellationToken);
+            string printerType = connection switch
+            {
+                SerialPrinterConnection serial => $"Serial ({serial.ComPort})",
+                UsbPrinterConnection usb => $"USB ({usb.UsbId})",
+                _ => "Unknown"
+            };
+
+            string printerDetails =
+            $"Printer: {_deviceManager.Printer.PrinterName ?? "Unknown Printer"}\nConnection: {printerType}";
+
+            var decision = await RequestOperatorDecisionAsync(
+                new OperatorDecisionRequiredEventArgs(
+                    ValidationFailure.PrinterUnavailable,
+                    job.CurrentSequenceFormat,
+                    pairNumber,
+                    totalPairs,
+                    printerDetails: printerDetails),
+                cancellationToken);
+
+            if (decision == StepResult.Retry)
+            {
+                LogGenerated?.Invoke(this,
+                    new LogEventArgs(
+                        MessageType.Warning,
+                        $"Reinitializing printer..."));
+
+                await _deviceManager.Printer.InitializeAsync();
+
+                return StepResult.Retry;
+            }
+
+            return decision;
+
         }
         private async Task<StepResult> ValidateBarcodeAsync(PrintJobState job, int pairNumber, int totalPairs, CancellationToken cancellationToken)
         {
