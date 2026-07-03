@@ -16,12 +16,15 @@ namespace LASYS.DesktopApp.Presenters
             _hub.PreviewGenerated += OnPreviewGenerated;
         }
 
-        private void OnPreviewGenerated(object? sender, string imagePath)
+        private void OnPreviewGenerated(object? sender, string? e)
         {
-            if (!File.Exists(imagePath))
+            if (string.IsNullOrEmpty(e) || !File.Exists(e))
+            {
+                _view.InvokeOnUI(() => _view.ResetTemplate());
                 return;
+            }
 
-            using var bitmap = new Bitmap(imagePath);
+            using var bitmap = new Bitmap(e);
 
             _view.InvokeOnUI(() =>
             {

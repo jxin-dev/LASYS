@@ -2,7 +2,8 @@
 {
     public interface ILabelPreviewHub
     {
-        event EventHandler<string>? PreviewGenerated;
+        event EventHandler<string?>? PreviewGenerated;
         void Publish(string imagePath);
+        void Clear();
     }
 }

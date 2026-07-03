@@ -29,8 +29,8 @@ namespace LASYS.DesktopApp.Extensions
             services.AddSingleton<IWorkOrdersView, WorkOrdersControl>();
             services.AddSingleton<WorkOrdersPresenter>();
 
-            services.AddTransient<ILabelPrintingView, LabelPrintingControl>();
-            services.AddTransient<LabelPrintingPresenter>();
+            services.AddSingleton<ILabelPrintingView, LabelPrintingControl>();
+            services.AddSingleton<LabelPrintingPresenter>();
 
             services.AddSingleton<IVisionSettingsView, VisionSettingsControl>();
             services.AddSingleton<VisionSettingsPresenter>();

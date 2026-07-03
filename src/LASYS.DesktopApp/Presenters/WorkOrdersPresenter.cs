@@ -1,5 +1,7 @@
-﻿using LASYS.Application.Features.LabelInstructions.GetLabelInstructionsBySectionId;
+﻿using System.Diagnostics;
+using LASYS.Application.Features.LabelInstructions.GetLabelInstructionsBySectionId;
 using LASYS.Application.Interfaces.Services;
+using LASYS.DesktopApp.Core.Interfaces;
 using LASYS.DesktopApp.Events;
 using LASYS.DesktopApp.Views.Interfaces;
 using MediatR;
@@ -16,12 +18,11 @@ namespace LASYS.DesktopApp.Presenters
         private readonly ILogService _logService;
         public UserControl View { get; }
         private bool _isLoading;
-
         public WorkOrdersPresenter(IWorkOrdersView view,
-                                   IMainView mainView,
-                                   IServiceProvider serviceProvider,
-                                   IMediator mediator,
-                                   ILogService logService)
+                                           IMainView mainView,
+                                           IServiceProvider serviceProvider,
+                                           IMediator mediator,
+                                           ILogService logService)
         {
             View = (UserControl)view;
             _view = view;
@@ -34,7 +35,6 @@ namespace LASYS.DesktopApp.Presenters
 
             _ = LoadWorkOrdersAsync();
         }
-
         private void OnLabelPrintingRequested(object? sender, LabelPrintingRequestedEventArgs e)
         {
             var labelBoxTypePresenter = _serviceProvider.GetRequiredService<LabelBoxTypePresenter>();
@@ -53,7 +53,12 @@ namespace LASYS.DesktopApp.Presenters
             var labelPrintingPresenter = _serviceProvider.GetRequiredService<LabelPrintingPresenter>();
             _mainView?.LoadView(labelPrintingPresenter.View, false); //false always new
 
-            _ = labelPrintingPresenter.InitializeDataAsync(workOrder, result.Value);
+            //_ = labelPrintingPresenter.InitializeDataAsync(workOrder, result.Value);
+            //_ = Task.Run(() => labelPrintingPresenter.InitializeDataAsync(workOrder, result.Value));
+            Task.Run(() => labelPrintingPresenter.InitializeDataAsync(workOrder, result.Value));
+
+            var mainPresenter = _serviceProvider.GetRequiredService<MainPresenter>();
+            mainPresenter.DisableNavigation();
         }
 
         private async Task LoadWorkOrdersAsync()

@@ -27,5 +27,7 @@ namespace LASYS.DesktopApp.Views.Interfaces
         NavItem PrinterManagementNavItem { get; }
         NavItem BarcodeNavItem { get; }
 
+        void SetNavigationEnabled(bool enable);
+
     }
 }

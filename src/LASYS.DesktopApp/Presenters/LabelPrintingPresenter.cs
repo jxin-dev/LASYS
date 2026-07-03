@@ -23,12 +23,13 @@ using LASYS.Application.Interfaces.Services;
 using LASYS.Application.Interfaces.Services.Camera;
 using LASYS.Application.Interfaces.Services.NiceLabel;
 using LASYS.DesktopApp.Views.Interfaces;
+using LASYS.Infrastructure.Hardware.Printers.Sato;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace LASYS.DesktopApp.Presenters
 {
-    public class LabelPrintingPresenter
+    public class LabelPrintingPresenter : IDisposable
     {
         public UserControl View { get; }
         private readonly IBatchPrintProcessService _batchPrintService;
@@ -46,10 +47,13 @@ namespace LASYS.DesktopApp.Presenters
         private bool _isCameraVisible;
         private bool _isLabelTemplateVisible;
 
+        private bool _isLoading;
 
-        private Guid _cameraSubId;
+        //private Guid _cameraSubId;
         private PrintJobStatus _printJobStatus;
         private Guid? _activePrintJobId;
+
+        //private CancellationTokenSource? _initializeCts;
         public LabelPrintingPresenter(IBatchPrintProcessService batchPrintService,
                                       IMediator mediator,
                                       IServiceProvider services,
@@ -80,13 +84,23 @@ namespace LASYS.DesktopApp.Presenters
             _view.ResumePrintingRequested += OnResumePrintingRequested;
             _view.StopPrintingRequested += OnStopPrintingRequested;
 
+
+
+
+
             // DEVICE EVENTS
+            //_deviceManager.DeviceStatusChanged -= OnDeviceStatusChanged;
             _deviceManager.DeviceStatusChanged += OnDeviceStatusChanged;
             SyncDeviceStates();
 
             // SERVICE EVENTS
+            //_batchPrintService.OperatorDecisionRequired -= OnDecisionRequired;
             _batchPrintService.OperatorDecisionRequired += OnDecisionRequired;
+
+            //_batchPrintService.JobStateChanged -= OnJobStateChanged;
             _batchPrintService.JobStateChanged += OnJobStateChanged;
+
+            //_batchPrintService.LogGenerated -= OnLogGenerated;
             _batchPrintService.LogGenerated += OnLogGenerated;
 
 
@@ -106,9 +120,9 @@ namespace LASYS.DesktopApp.Presenters
             if (_isLabelTemplateVisible)
             {
                 _isCameraVisible = false;
-                _view.ToggleCameraPreview(false);
+                _view.InvokeOnUI(() => _view.ToggleCameraPreview(false));
             }
-            _view.ToggleLabelTemplatePreview(_isLabelTemplateVisible);
+            _view.InvokeOnUI(() => _view.ToggleLabelTemplatePreview(_isLabelTemplateVisible));
         }
 
         private void OnCameraPreviewRequested(object? sender, EventArgs e)
@@ -117,9 +131,9 @@ namespace LASYS.DesktopApp.Presenters
             if (_isCameraVisible)
             {
                 _isLabelTemplateVisible = false;
-                _view.ToggleLabelTemplatePreview(false);
+                _view.InvokeOnUI(() => _view.ToggleLabelTemplatePreview(false));
             }
-            _view.ToggleCameraPreview(_isCameraVisible);
+            _view.InvokeOnUI(() => _view.ToggleCameraPreview(_isCameraVisible));
         }
 
         private void SyncDeviceStates()
@@ -227,14 +241,33 @@ namespace LASYS.DesktopApp.Presenters
 
         public async Task InitializeDataAsync(WorkOrderItem labelInstruction, BoxType boxType)
         {
+            _labelPreviewHub.Clear();
+            _view.InvokeOnUI(() => _view.ResetView());
+            //_initializeCts?.Cancel();
+            //_initializeCts?.Dispose();
+
+            //_initializeCts = new CancellationTokenSource();
+            //var token = _initializeCts.Token;
+
             try
             {
+                _view.InvokeOnUI(() => _view.SetBackButtonEnabled(false));
+                if (_isLoading)
+                    return;
+
+                _isLoading = true;
+                _view.SetLoading(true);
+
+                //token.ThrowIfCancellationRequested();
+
                 _view.InvokeOnUI(() => _view.SetPrintingState(PrintJobStatus.Initializing));
                 var itemCode = labelInstruction.ItemCode;
                 var lotNo = labelInstruction.LotNo;
                 var masterLabelRevNumber = labelInstruction.MasterLabelRevNumber;
 
                 var result = await _mediator.Send(new GetLabelInstructionContextQuery(itemCode, lotNo, masterLabelRevNumber, boxType));
+
+                //token.ThrowIfCancellationRequested();
 
                 if (!result.IsSuccess)
                 {
@@ -254,6 +287,10 @@ namespace LASYS.DesktopApp.Presenters
                 string filePath = NiceLabelFilePathBuilder.Build(itemCode, masterLabelRevNumber, boxType);
                 bool isNiceLabelExist = !string.IsNullOrWhiteSpace(niceLabelPath) && File.Exists(niceLabelPath);
 
+                //var copyTask = isNiceLabelExist ?
+                //    NiceLabelFilePathBuilder.CopyFileAsync(niceLabelPath!, filePath) :
+                //    NiceLabelFilePathBuilder.CreateFileAsync(filePath, niceLabelFile!);
+
                 if (isNiceLabelExist)
                     await NiceLabelFilePathBuilder.CopyFileAsync(niceLabelPath!, filePath);
                 else
@@ -261,7 +298,7 @@ namespace LASYS.DesktopApp.Presenters
 
                 sw.Stop();
 
-                _view.AddLog(MessageType.Info, DateTime.Now, $"Template saved in {sw.ElapsedMilliseconds}ms");
+                _view.InvokeOnUI(() => _view.AddLog(MessageType.Info, DateTime.Now, $"Template saved in {sw.ElapsedMilliseconds}ms"));
 
                 var updatedContext = context with
                 {
@@ -269,14 +306,34 @@ namespace LASYS.DesktopApp.Presenters
                 };
 
                 var printJobContext = await _mediator.Send(new InitializeBatchPrintCommand(updatedContext));
+                //var batchTask = _mediator.Send(new InitializeBatchPrintCommand(updatedContext));
+                //await Task.WhenAll(copyTask, batchTask);
+                //var printJobContext = await batchTask;
+
+                //token.ThrowIfCancellationRequested();
 
                 _view.InvokeOnUI(() => _view.InitializePrintingContext(printJobContext));
+
                 // Display the label template in the preview
+                //token.ThrowIfCancellationRequested();
                 DisplayTemplate(context);
+            }
+            catch (OperationCanceledException)
+            {
+                // Previous initialization was cancelled.
+                // No logging needed.
+            }
+            catch (Exception ex)
+            {
+                _view.InvokeOnUI(() =>
+                    _view.AddLog(MessageType.Error, DateTime.Now, ex.Message));
             }
             finally
             {
-
+                _isLoading = false;
+                _view.SetLoading(false);
+                _view.InvokeOnUI(() => _view.SetBackButtonEnabled(true));
+                OnLabelTemplatePreviewRequested(this, EventArgs.Empty);
             }
 
         }
@@ -286,16 +343,27 @@ namespace LASYS.DesktopApp.Presenters
         {
             try
             {
+                //token.ThrowIfCancellationRequested();
+
                 var currentSequence = context.PrintDetails?.NextSequence ?? 0;
+
+                //token.ThrowIfCancellationRequested();
+
                 var formattedCurrentSequence = SequenceFormatter.Format(currentSequence, 6);
 
                 var labelData = NiceLabelDataMappings.ToLabelData(context).Clone().Add("BOX_NO", formattedCurrentSequence);
 
+                //token.ThrowIfCancellationRequested();
+
                 var templateVariables = _niceLabelTemplateService.GetTemplateVariables().ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+                //token.ThrowIfCancellationRequested();
 
                 var variablesToSet = labelData.Variables.Where(x => templateVariables.Contains(x.Key)).ToDictionary(x => x.Key, x => x.Value);
 
                 _niceLabelTemplateService.SetVariables(variablesToSet);
+
+                //token.ThrowIfCancellationRequested();
 
                 var sampleDirectory = PrintJobPathBuilder.CreateSampleDirectory(context.LabelInstructionDetails!.ItemCode);
 
@@ -305,10 +373,11 @@ namespace LASYS.DesktopApp.Presenters
 
                 var isPreviewGenerated = _niceLabelTemplateService.GeneratePreview(sampleDirectory, filename);
 
+                //token.ThrowIfCancellationRequested();
+
                 if (File.Exists(imagePath))
                 {
                     _labelPreviewHub.Publish(imagePath);
-                    OnLabelTemplatePreviewRequested(this, EventArgs.Empty);
                 }
 
             }
@@ -325,12 +394,28 @@ namespace LASYS.DesktopApp.Presenters
                 _mainView.ShowNavigationBlocked("Cannot navigate while printing is in progress.");
                 return;
             }
+
+            //Dispose();
             _niceLabelTemplateService.CloseTemplate();
 
             var workOrdersPresenter = _services.GetRequiredService<WorkOrdersPresenter>();
             _mainView?.LoadView(workOrdersPresenter.View, true); //false always new
             _mainView?.SetActiveNavigation(_mainView.WorkOrdersNavItem);
+
+            var mainPresenter = _services.GetRequiredService<MainPresenter>();
+            mainPresenter.EnableNavigation();
+
+            _view.ToggleLabelTemplatePreview(false);
         }
 
+        public void Dispose()
+        {
+            // SERVICE EVENTS
+            _batchPrintService.OperatorDecisionRequired -= OnDecisionRequired;
+            _batchPrintService.JobStateChanged -= OnJobStateChanged;
+            _batchPrintService.LogGenerated -= OnLogGenerated;
+
+            _deviceManager.DeviceStatusChanged -= OnDeviceStatusChanged;
+        }
     }
 }

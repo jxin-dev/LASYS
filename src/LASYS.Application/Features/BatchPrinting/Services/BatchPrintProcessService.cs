@@ -1,7 +1,5 @@
-﻿using System.Drawing;
-using LASYS.Application.Common.Mappings;
+﻿using LASYS.Application.Common.Mappings;
 using LASYS.Application.Common.Messaging;
-using LASYS.Application.Common.Results;
 using LASYS.Application.Common.Utilities;
 using LASYS.Application.Events;
 using LASYS.Application.Features.BarcodeValidation;
@@ -491,8 +489,10 @@ namespace LASYS.Application.Features.BatchPrinting.Services
                 _ => "Unknown"
             };
 
-            string printerDetails =
-            $"Printer: {_deviceManager.Printer.PrinterName ?? "Unknown Printer"}\nConnection: {printerType}";
+            string printerDetails = $"Printer: {_deviceManager.Printer.PrinterName ?? "Unknown Printer"} \nConnection: {printerType}";
+
+            LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Error, printerDetails));
+
 
             var decision = await RequestOperatorDecisionAsync(
                 new OperatorDecisionRequiredEventArgs(

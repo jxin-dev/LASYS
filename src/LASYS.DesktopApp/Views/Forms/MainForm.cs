@@ -161,5 +161,10 @@ namespace LASYS.DesktopApp.Views.Forms
         {
             _sideNav.SetActiveItem(_lastSelected);
         }
+
+        public void SetNavigationEnabled(bool enable)
+        {
+           _sideNav.SetNavigationEnabled(enable);
+        }
     }
 }

@@ -255,5 +255,19 @@ namespace LASYS.UIControls.Controls
                 }
             }
         }
+        public void SetNavigationEnabled(bool enabled)
+        {
+            foreach (var (_, button, subButtons) in _buttons)
+            {
+                button.Enabled = enabled;
+                button.Cursor = enabled ? Cursors.Hand : Cursors.Default;
+
+                foreach (var (_, subButton) in subButtons)
+                {
+                    subButton.Enabled = enabled;
+                    subButton.Cursor = enabled ? Cursors.Hand : Cursors.Default;
+                }
+            }
+        }
     }
 }

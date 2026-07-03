@@ -19,7 +19,8 @@ namespace LASYS.DesktopApp.Presenters
         private readonly ISessionTracker _sessionTracker;
         private readonly IPrintingState _printingState;
         private readonly IDeviceManager _deviceManager;
-        public MainPresenter(IMainView view, IServiceProvider serviceProvider, ICurrentUser currentUser, ILogService logService, ISessionTracker sessionTracker, IPrintingState printingState, IDeviceManager deviceManager)
+        private readonly INiceLabelTemplateService _niceLabelTemplateService;
+        public MainPresenter(IMainView view, IServiceProvider serviceProvider, ICurrentUser currentUser, ILogService logService, ISessionTracker sessionTracker, IPrintingState printingState, IDeviceManager deviceManager, INiceLabelTemplateService niceLabelTemplateService)
         {
             _view = view;
             View = (MainForm)view;
@@ -29,6 +30,7 @@ namespace LASYS.DesktopApp.Presenters
             _sessionTracker = sessionTracker;
             _printingState = printingState;
             _deviceManager = deviceManager;
+            _niceLabelTemplateService = niceLabelTemplateService;
 
             _view.WorkOrderRequested += OnWorkOrderRequested;
             _view.VisionSettingsRequested += OnOVisionSettingsRequested;
@@ -42,7 +44,14 @@ namespace LASYS.DesktopApp.Presenters
 
             _view.StartCameraPreviewRequested += OnStartCameraPreviewRequested;
         }
-
+        public void DisableNavigation()
+        {
+             _view.SetNavigationEnabled(false);
+        }
+        public void EnableNavigation()
+        {
+            _view.SetNavigationEnabled(true);
+        }
         private void OnStartCameraPreviewRequested(object? sender, EventArgs e)
         {
             _deviceManager.Camera.StartStreamingAsync(() => _deviceManager.Camera.DefaultResolution);
@@ -61,6 +70,7 @@ namespace LASYS.DesktopApp.Presenters
                 return false;
             }
             // Navigation is allowed
+            _niceLabelTemplateService.CloseTemplate();
             return true;
         }
         private void OnLogoutRequested(object? sender, EventArgs e)

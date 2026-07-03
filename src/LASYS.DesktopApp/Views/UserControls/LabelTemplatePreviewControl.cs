@@ -1,4 +1,5 @@
-﻿using LASYS.DesktopApp.Views.Interfaces;
+﻿using System.Windows.Forms;
+using LASYS.DesktopApp.Views.Interfaces;
 
 namespace LASYS.DesktopApp.Views.UserControls
 {
@@ -151,6 +152,12 @@ namespace LASYS.DesktopApp.Views.UserControls
                 Invoke(action);
             else
                 action();
+        }
+
+        public void ResetTemplate()
+        {
+            picPreview.Image?.Dispose();
+            picPreview.Image = null;
         }
     }
 }

@@ -4,6 +4,7 @@
     {
         UserControl View { get; }
         void DisplayTemplate(Bitmap frame);
+        void ResetTemplate();
         void InvokeOnUI(Action action);
     }
 }
