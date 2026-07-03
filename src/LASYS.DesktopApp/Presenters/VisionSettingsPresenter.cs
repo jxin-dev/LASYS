@@ -82,9 +82,15 @@ namespace LASYS.DesktopApp.Presenters
             _view.OcrItemChosen += OnOcrItemChosen;
             _view.PrintLabelRequested += OnPrintLabelRequested;
         }
-
+        private readonly SemaphoreSlim _printSemaphore = new(1, 1);
         private async void OnPrintLabelRequested(object? sender, PrintLabelEventArgs e)
         {
+            if (!await _printSemaphore.WaitAsync(0))
+            {
+                _view.ShowError("A sample label is already being generated.");
+                return;
+            }
+
             try
             {
                 var result = await _mediator.Send(new PrintSampleLabelCommand(e.ItemCode, e.MasterRevision, e.BoxType, e.FilePath));
@@ -100,47 +106,48 @@ namespace LASYS.DesktopApp.Presenters
                 var niceLabelPath = masterLabel?.FilePath;
                 var niceLabelFile = masterLabel?.LabelFile;
 
-
+             
+                
                 var sw = Stopwatch.StartNew();
 
-                string filePath = NiceLabelFilePathBuilder.Build(labelInstruction.ItemCode, labelInstruction.MasterLabelRevNumber, masterLabel!.BoxType);
-                bool isNiceLabelExist = !string.IsNullOrWhiteSpace(niceLabelPath) && File.Exists(niceLabelPath);
+                await Task.Run(async () =>
+                {
+                    string filePath = NiceLabelFilePathBuilder.Build(labelInstruction.ItemCode, labelInstruction.MasterLabelRevNumber, masterLabel!.BoxType);
+                    bool isNiceLabelExist = !string.IsNullOrWhiteSpace(niceLabelPath) && File.Exists(niceLabelPath);
 
-                if (isNiceLabelExist)
-                    await NiceLabelFilePathBuilder.CopyFileAsync(niceLabelPath!, filePath);
-                else
-                    await NiceLabelFilePathBuilder.CreateFileAsync(filePath, niceLabelFile!);
+                    if (isNiceLabelExist)
+                        await NiceLabelFilePathBuilder.CopyFileAsync(niceLabelPath!, filePath);
+                    else
+                        await NiceLabelFilePathBuilder.CreateFileAsync(filePath, niceLabelFile!);
+
+                    var isTemplateLoaded = _niceLabelTemplateService.IsTemplateLoaded;
+                    if (!isTemplateLoaded)
+                    {
+                        _niceLabelTemplateService.LoadTemplate(filePath);
+                    }
+                });
 
                 sw.Stop();
-
                 Debug.WriteLine($"{DateTime.Now}-Template saved in {sw.ElapsedMilliseconds}ms");
-
-                var isTemplateLoaded = _niceLabelTemplateService.IsTemplateLoaded;
-                if (!isTemplateLoaded)
-                {
-                    _niceLabelTemplateService.LoadTemplate(filePath);
-                }
 
                 await PrintSampleLabelAsync(context);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-
-                throw;
+                _view.ShowError(ex.Message);
             }
             finally
             {
                 _niceLabelTemplateService.CloseTemplate();
+                _printSemaphore.Release();
             }
-
-
         }
 
         private async Task PrintSampleLabelAsync(LabelPrintingContext context)
         {
             try
             {
-                var formattedCurrentSequence = SequenceFormatter.Format(1, 5);
+                var formattedCurrentSequence = SequenceFormatter.Format(1, 6);
 
                 NiceLabelVariableCollection labelData = NiceLabelDataMappings.ToLabelData(context);
                 labelData.Add("BOX_NO", formattedCurrentSequence);
@@ -224,6 +231,11 @@ namespace LASYS.DesktopApp.Presenters
 
         private void OnSelectOcrItemRequested(object? sender, EventArgs e)
         {
+            if (_printSemaphore.CurrentCount == 0)
+            {
+                _view.ShowError("A sample label is already being generated.");
+                return;
+            }
             var ocrItemLookupPresenter = _serviceProvider.GetRequiredService<OcrItemLookupPresenter>();
             var selected = ocrItemLookupPresenter.Show();
             if (selected.ItemCode != null)

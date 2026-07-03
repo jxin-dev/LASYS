@@ -710,7 +710,10 @@ namespace LASYS.DesktopApp.Views.UserControls
             labelInfoLayout.Controls.Add(_txtItemCode, 1, 0);
             labelInfoLayout.SetColumnSpan(_txtItemCode, 3);
 
-
+            _txtItemCode.TextChanged += (sender, e) =>
+            {
+                _printSampleLabelButton!.Visible = !string.IsNullOrWhiteSpace(_txtItemCode.Text);
+            };
 
             var searchButton = new Button
             {
@@ -791,14 +794,15 @@ namespace LASYS.DesktopApp.Views.UserControls
 
                 // remove borders
                 FlatAppearance =
-                {              
+                {
                     BorderSize = 1,
                     BorderColor = Color.FromArgb(0, 150, 136),
                     MouseOverBackColor = Color.FromArgb(220, 240, 238),
                     MouseDownBackColor = Color.FromArgb(200, 230, 228)
                 },
 
-                Cursor = Cursors.Hand
+                Cursor = Cursors.Hand,
+                Visible = false
             };
 
             labelInfoLayout.Controls.Add(_printSampleLabelButton, 4, 1);
