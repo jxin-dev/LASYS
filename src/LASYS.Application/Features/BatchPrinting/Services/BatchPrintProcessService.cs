@@ -473,7 +473,7 @@ namespace LASYS.Application.Features.BatchPrinting.Services
             EnsureCanContinue(job);
             NotifyJobStateChanged(job.JobId);
 
-            //return StepResult.Success; //uncomment for real implementation
+            //return StepResult.Success; //comment for real implementation
 
             var isPrinted = await _deviceManager.Printer.IsPrinted(prnFileLocation);
             if (isPrinted)
@@ -522,7 +522,7 @@ namespace LASYS.Application.Features.BatchPrinting.Services
         {
             EnsureCanContinue(job);
 
-            //return StepResult.Success; //IUNCOMMENT MO TO KUNG MAGTETEST KA NG PRINTING FLOW
+            //return StepResult.Success; //comment for real implementation
 
             // Ensure scanner is connected
             if (!_deviceManager.Barcode.IsConnected)
@@ -631,6 +631,8 @@ namespace LASYS.Application.Features.BatchPrinting.Services
         private async Task<StepResult> ValidateOcrAsync(PrintJobState job, int pairNumber, int totalPairs, CancellationToken cancellationToken)
         {
             EnsureCanContinue(job);
+
+            //return StepResult.Success; //comment for real implementation
 
             if (!_deviceManager.Camera.IsCameraReady())
             {
