@@ -400,6 +400,7 @@ namespace LASYS.Application.Features.BatchPrinting.Services
             var pairedType = job.CurrentPairCount == 1 ? "Single"
                 : job.CurrentPairNumber == 1 ? "Paired1" : "Paired2";
 
+            job.MarkFailed();
 
             await _printLabelRepository.SavePrintedLabelAsync(new SequenceData(
                 context.MasterLabelDetails!.BoxType,
@@ -417,7 +418,6 @@ namespace LASYS.Application.Features.BatchPrinting.Services
                 context.LabelInstructionDetails.ApprovedByDateTime
                 ));
 
-            job.MarkFailed();
 
         }
         private async Task<(StepResult Result, string PrnPath)> GenerateLabelFilesAsync(PrintJobState job, long sequence, CancellationToken cancellationToken)
