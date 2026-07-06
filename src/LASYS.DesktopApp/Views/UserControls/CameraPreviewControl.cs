@@ -8,7 +8,7 @@ namespace LASYS.DesktopApp.Views.UserControls
         public CameraPreviewControl()
         {
             InitializeComponent();
-            picPreview.SizeMode = PictureBoxSizeMode.StretchImage;
+            picPreview.SizeMode = PictureBoxSizeMode.Zoom;
             BorderStyle = BorderStyle.FixedSingle;
             Disposed += (_, _) =>
             {

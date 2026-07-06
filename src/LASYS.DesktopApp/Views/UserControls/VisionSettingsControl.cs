@@ -86,6 +86,8 @@ namespace LASYS.DesktopApp.Views.UserControls
                      ControlStyles.AllPaintingInWmPaint, true);
             UpdateStyles();
 
+            picCameraPreview.SizeMode = PictureBoxSizeMode.Zoom;
+
             _gridWithPagination = new GridViewWithPagination();
 
             _resizablePanel = new DraggableResizerPanel
