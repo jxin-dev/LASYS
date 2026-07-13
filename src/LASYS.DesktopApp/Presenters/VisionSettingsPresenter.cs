@@ -370,14 +370,14 @@ namespace LASYS.DesktopApp.Presenters
                 return;
             }
 
-            if (e.Revision <= 0)
-            {
-                _view.FinishCalibration(
-                    "Please search and select a valid revision.",
-                    isError: true
-                );
-                return;
-            }
+            //if (e.Revision <= 0)
+            //{
+            //    _view.FinishCalibration(
+            //        "Please search and select a valid revision.",
+            //        isError: true
+            //    );
+            //    return;
+            //}
 
             try
             {
