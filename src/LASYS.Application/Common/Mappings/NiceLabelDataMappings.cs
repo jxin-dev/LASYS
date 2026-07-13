@@ -42,9 +42,22 @@ namespace LASYS.Application.Common.Mappings
                 _ => string.Empty
             };
 
+            var boxType = masterLabelDetails.BoxType switch
+            {
+                BoxType.CartonBox => "5",
+                BoxType.OuterCartonBox => "7",
+                BoxType.AdditionalCartonBox => "5",
+                BoxType.UnitBox => "3",
+                BoxType.AdditionalUnitBox => "3",
+                BoxType.OuterUnitBox => "4",
+                _ => "1"
+            };
+
+
             var barcodeTypeValue = Enum.Parse<BarcodeType>(productDetails.BarcodeType, ignoreCase: true);
             int barcodeType = (int)barcodeTypeValue;
-            var barcodeNumber = $"{barcodeType}{productDetails.BarcodeNumber}";
+            //var barcodeNumber = $"{barcodeType}{productDetails.BarcodeNumber}";
+            var barcodeNumber = $"{boxType}{productDetails.BarcodeNumber}";
 
             return new NiceLabelVariableCollection()
                 .Add("LOT_NO", labelInstructionDetails.LotNo)

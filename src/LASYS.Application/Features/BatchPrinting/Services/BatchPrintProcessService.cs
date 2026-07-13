@@ -1,4 +1,5 @@
-﻿using LASYS.Application.Common.Mappings;
+﻿//using LASYS.Application.Common.Enums;
+using LASYS.Application.Common.Mappings;
 using LASYS.Application.Common.Messaging;
 using LASYS.Application.Common.Utilities;
 using LASYS.Application.Events;
@@ -165,6 +166,7 @@ namespace LASYS.Application.Features.BatchPrinting.Services
                     var completedPairs = 0;
                     foreach (var pairIndex in Enumerable.Range(1, pairCount))
                     {
+
                         job.SetCurrentPair(pairIndex, pairCount);
 
                         var pairText = FormatPair(pairIndex, pairCount);
@@ -237,7 +239,7 @@ namespace LASYS.Application.Features.BatchPrinting.Services
                             }
                             break;
                         }
-
+                        await Task.Delay(500, cancellationToken);
                         // OCR VALIDATION
                         var ocrAttempt = 0;
                         while (true)
@@ -573,7 +575,21 @@ namespace LASYS.Application.Features.BatchPrinting.Services
 
             var barcodeTypeValue = Enum.Parse<BarcodeType>(job.Context.ProductDetails!.BarcodeType, ignoreCase: true);
             int barcodeType = (int)barcodeTypeValue;
-            var barcodeNumber = $"{barcodeType}{job.Context.ProductDetails!.BarcodeNumber}";
+
+            var boxType = job.Context.MasterLabelDetails!.BoxType switch
+            {
+                Common.Enums.BoxType.CartonBox => "5",
+                Common.Enums.BoxType.OuterCartonBox => "7",
+                Common.Enums.BoxType.AdditionalCartonBox => "5",
+                Common.Enums.BoxType.UnitBox => "3",
+                Common.Enums.BoxType.AdditionalUnitBox => "3",
+                Common.Enums.BoxType.OuterUnitBox => "4",
+                _ => "1"
+            };
+
+            var barcodeNumber = $"{boxType}{job.Context.ProductDetails!.BarcodeNumber}";
+            //var barcodeNumber = $"{barcodeType}{job.Context.ProductDetails!.BarcodeNumber}";
+
 
             if (!Matches(validationResult, "01", barcodeNumber))
             {
