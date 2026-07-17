@@ -17,6 +17,13 @@ namespace LASYS.Application.Features.BatchPrinting.Services
         void Stop(Guid jobId);
 
         event EventHandler<OperatorDecisionRequiredEventArgs> OperatorDecisionRequired;
+
+        event EventHandler ApprovalAuthorizationRequired;
+        Task<ApprovalAuthorizationResult> RequestApprovalAsync(CancellationToken cancellationToken = default);
+        //Task<ApprovalAuthorizationResult> RequestApprovalIfPrintedAsync(CancellationToken cancellationToken = default);
+
+        void SetApprovalAuthorized(string userCode, string sectionId);
+        void CancelApprovalAuthorization();
         void SetUserDecision(StepResult decision);
         event EventHandler<LogEventArgs> LogGenerated;
     }

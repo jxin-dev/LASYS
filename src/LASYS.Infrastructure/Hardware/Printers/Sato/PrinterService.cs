@@ -218,7 +218,7 @@ namespace LASYS.Infrastructure.Hardware.Printers.Sato
                 SetStatus(DeviceStatusCode.NotConfigured);
                 return;
             }
-            
+
             _connection = config.SatoPrinter;
 
             if (_printer == null)
@@ -384,15 +384,16 @@ namespace LASYS.Infrastructure.Hardware.Printers.Sato
 
             try
             {
-                byte[] prnData = await File.ReadAllBytesAsync(prnFilePath);
 
-                SetStatus(DeviceStatusCode.Online, $"Printer is online. Sending PRN file to printer: {_printerName}...");
-                _printer.Send(prnData);
+
                 bool isOnline = _printer.GetPrinterStatus().IsOnline;
 
                 if (isOnline)
                 {
-                    SetStatus(DeviceStatusCode.PrinterError, $"Printer reported an error after sending PRN file: {_printerName}. Please check the printer status and try again.");
+                    byte[] prnData = await File.ReadAllBytesAsync(prnFilePath);
+                    _printer.Send(prnData);
+                    SetStatus(DeviceStatusCode.Online, $"Printer is online. Sending PRN file to printer: {_printerName}...");
+                    //SetStatus(DeviceStatusCode.PrinterError, $"Printer reported an error after sending PRN file: {_printerName}. Please check the printer status and try again.");
                     return await Task.FromResult(true);
                 }
                 else

@@ -51,6 +51,16 @@ namespace LASYS.DesktopApp.Views.Forms
                     break;
             }
         }
+        public void HideError()
+        {
+            Hide();
+        }
+
+        public void ShowError()
+        {
+            Show();
+            Activate();
+        }
         public void CloseError()
         {
             allowClose = true;

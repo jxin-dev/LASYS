@@ -24,13 +24,9 @@
         }
         private BarcodeValidationResult ParseLabelBarcode(string barcode, bool isEumdr)
         {
-            return ParseBarcode(barcode, Gs1ApplicationIdentifierDefinition.Label, isEumdr);
+            return ParseLabelBarcode(barcode, Gs1ApplicationIdentifierDefinition.Label, isEumdr);
         }
-        private BarcodeValidationResult ParseInstructionBarcode(string barcode, bool isEumdr)
-        {
-            return ParseBarcode(barcode, Gs1ApplicationIdentifierDefinition.Instruction, isEumdr);
-        }
-        private BarcodeValidationResult ParseBarcode(string barcode, Dictionary<string, Gs1AiDefinition> aiDefinitions, bool isEumdr = false)
+        private BarcodeValidationResult ParseLabelBarcode(string barcode, Dictionary<string, Gs1AiDefinition> aiDefinitions, bool isEumdr = false)
         {
             var applicationIdentifiers = new Dictionary<string, string>();
 
@@ -118,6 +114,70 @@
             if (!applicationIdentifiers.ContainsKey("10"))
             {
                 return BarcodeValidationResult.Failure("Lot Number (AI 10) is required.");
+            }
+
+            return BarcodeValidationResult.Success(applicationIdentifiers);
+        }
+        private BarcodeValidationResult ParseInstructionBarcode(string barcode, bool isEumdr)
+        {
+            return ParseInstructionBarcode(barcode, Gs1ApplicationIdentifierDefinition.Instruction, isEumdr);
+        }
+        private BarcodeValidationResult ParseInstructionBarcode(string barcode, Dictionary<string, Gs1AiDefinition> aiDefinitions, bool isEumdr = false)
+        {
+            var applicationIdentifiers = new Dictionary<string, string>();
+
+            int position = 0;
+
+            while (position < barcode.Length)
+            {
+                if (position + 2 > barcode.Length)
+                {
+                    return BarcodeValidationResult.Failure("Invalid barcode format.");
+                }
+
+                var ai = barcode.Substring(position, 2);
+                position += 2;
+
+                if (!aiDefinitions.TryGetValue(ai, out var definition))
+                {
+                    return BarcodeValidationResult.Failure(
+                        $"Unsupported Application Identifier: {ai}");
+                }
+
+                if (definition.IsVariableLength)
+                {
+                    // Variable-length field consumes the rest of the barcode.
+                    var value = barcode.Substring(position);
+
+                    applicationIdentifiers.Add(ai, value);
+                    position = barcode.Length;
+                }
+                else
+                {
+                    if (position + definition.Length > barcode.Length)
+                    {
+                        return BarcodeValidationResult.Failure(
+                            $"Invalid length for AI {ai}");
+                    }
+
+                    var value = barcode.Substring(position, definition.Length);
+
+                    applicationIdentifiers.Add(ai, value);
+
+                    position += definition.Length;
+                }
+            }
+
+            if (isEumdr && !applicationIdentifiers.ContainsKey("11"))
+            {
+                return BarcodeValidationResult.Failure(
+                    "Manufacture Date (AI 11) is required for EUMDR labels.");
+            }
+
+            if (!applicationIdentifiers.ContainsKey("10"))
+            {
+                return BarcodeValidationResult.Failure(
+                    "Lot Number (AI 10) is required.");
             }
 
             return BarcodeValidationResult.Success(applicationIdentifiers);

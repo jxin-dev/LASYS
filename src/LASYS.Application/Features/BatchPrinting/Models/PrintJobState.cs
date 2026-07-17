@@ -12,6 +12,7 @@ namespace LASYS.Application.Features.BatchPrinting.Models
     {
         public Guid JobId { get; private set; }
         public ProcessingStage CurrentStage { get; private set; } = ProcessingStage.None;
+        public bool RequiresApproval => CurrentStage >= ProcessingStage.Printed;
         public string CurrentLabelStatus { get; private set; } = default!;
         public string PrinterName { get; private set; } = default!;
         public int CurrentPairNumber { get; private set; }
@@ -38,7 +39,10 @@ namespace LASYS.Application.Features.BatchPrinting.Models
         // CONTROL PRIMITIVES
         public ManualResetEventSlim ResumeSignal { get; } = new(true);
         public CancellationTokenSource CancellationTokenSource { get; private set; } = new();
-
+        public string? ApprovedByUserCode { get; private set; }
+        public string? ApprovedBySectionId { get; private set; }
+        public string? ApprovedByIpAddress { get; private set; }
+        public string? ApprovedByDateTime { get; private set; }
 
         public static PrintJobState Create(string printerName, LabelPrintingContext context)
         {
@@ -65,6 +69,14 @@ namespace LASYS.Application.Features.BatchPrinting.Models
                     context.MasterLabelDetails!.BoxType.ToString()),
                 Status = remaining == 0 ? PrintJobStatus.Printed : PrintJobStatus.Ready
             };
+        }
+
+        public void SetApproval(string userCode, string sectionId, string ipAddress)
+        {
+            ApprovedByUserCode = userCode;
+            ApprovedBySectionId = sectionId;
+            ApprovedByIpAddress = ipAddress;
+            ApprovedByDateTime = DateTime.Now.ToString("yyyyMMddHHmmss");
         }
 
         public void SetCurrentPair(int pairNumber, int pairCount)

@@ -56,9 +56,13 @@ namespace LASYS.DesktopApp.Views.UserControls
         private readonly Panel _loadingAccent;
         private readonly Label _loadingLabel;
         private readonly ProgressBar _loadingProgress;
+
+        private ModalOverlay _modalOverlay;
         public LabelPrintingControl()
         {
             InitializeComponent();
+
+            _modalOverlay = new ModalOverlay(pnlContent);
 
             DoubleBuffered = true;
             SetStyle(ControlStyles.OptimizedDoubleBuffer |
@@ -431,43 +435,65 @@ namespace LASYS.DesktopApp.Views.UserControls
 
         public void ShowError(ErrorForm errorForm)
         {
-            // Force layout updates first
-            pnlContent.Update();
+            errorForm.ControlBox = false;
+            errorForm.Text = "Validation Error";
+            _modalOverlay.Show(errorForm);
 
-            var panelBounds = new Rectangle(
-                pnlContent.PointToScreen(Point.Empty),
-                pnlContent.ClientSize);
+            //_modalOverlay.Show();
 
-            var modalBackground = new Form
-            {
-                StartPosition = FormStartPosition.Manual,
-                FormBorderStyle = FormBorderStyle.None,
-                Bounds = panelBounds,
-                Opacity = 0.5,
-                BackColor = Color.Black,
-                ShowInTaskbar = false,
-                Owner = FindForm()
-            };
+            //try
+            //{
+            //    errorForm.ControlBox = false;
+            //    errorForm.Text = "Validation Error";
+            //    errorForm.ShowDialog(_modalOverlay.Overlay);
+            //}
+            //finally
+            //{
+            //    _modalOverlay.Hide();
+            //}
 
-            try
-            {
-                modalBackground.Show();
-                modalBackground.Update();
+            //errorForm.ControlBox = false;
+            //errorForm.Text = "Validation Error";
 
-                errorForm.Text = "Validation Error";
-                errorForm.ControlBox = false;
+            //_modalOverlay.Show(errorForm);
 
-                // Let WinForms center it relative to the overlay
-                errorForm.StartPosition = FormStartPosition.CenterParent;
+            //// Force layout updates first
+            //pnlContent.Update();
 
-                errorForm.Invalidate(true);
-                errorForm.Update();
-                errorForm.ShowDialog(modalBackground);
-            }
-            finally
-            {
-                modalBackground.Dispose();
-            }
+            //var panelBounds = new Rectangle(
+            //    pnlContent.PointToScreen(Point.Empty),
+            //    pnlContent.ClientSize);
+
+            //var modalBackground = new Form
+            //{
+            //    StartPosition = FormStartPosition.Manual,
+            //    FormBorderStyle = FormBorderStyle.None,
+            //    Bounds = panelBounds,
+            //    Opacity = 0.5,
+            //    BackColor = Color.Black,
+            //    ShowInTaskbar = false,
+            //    Owner = FindForm()
+            //};
+
+            //try
+            //{
+            //    modalBackground.Show();
+            //    modalBackground.Update();
+
+            //    errorForm.Text = "Validation Error";
+            //    errorForm.ControlBox = false;
+
+            //    // Let WinForms center it relative to the overlay
+            //    errorForm.StartPosition = FormStartPosition.CenterParent;
+
+            //    errorForm.Invalidate(true);
+            //    errorForm.Update();
+            //    errorForm.ShowDialog(modalBackground);
+            //}
+            //finally
+            //{
+            //    modalBackground.Dispose();
+            //}
         }
 
         public void InitializePrintingContext(PrintJobState printJob)
@@ -805,6 +831,54 @@ namespace LASYS.DesktopApp.Views.UserControls
             nudQuantity.Maximum = 0;
             nudQuantity.Value = 0;
             ClearLogs();
+        }
+
+        public void ShowApprovalAuthorization(ApprovalAuthenticationForm approvalForm)
+        {
+            approvalForm.ControlBox = false;
+            _modalOverlay.Show(approvalForm);
+
+
+            //pnlContent.Update();
+
+            //var panelBounds = new Rectangle(
+            //    pnlContent.PointToScreen(Point.Empty),
+            //    pnlContent.ClientSize);
+
+            //var modalBackground = new Form
+            //{
+            //    StartPosition = FormStartPosition.Manual,
+            //    FormBorderStyle = FormBorderStyle.None,
+            //    Bounds = panelBounds,
+            //    Opacity = 0.5,
+            //    BackColor = Color.Black,
+            //    ShowInTaskbar = false,
+            //    Owner = FindForm()
+            //};
+
+            //try
+            //{
+            //    modalBackground.Show();
+            //    modalBackground.Update();
+            //    approvalForm.ControlBox = false;
+
+            //    // Let WinForms center it relative to the overlay
+            //    approvalForm.StartPosition = FormStartPosition.CenterParent;
+
+            //    //approvalForm.Invalidate(true);
+            //    //approvalForm.Update();
+            //    approvalForm.ShowDialog(modalBackground);
+
+            //}
+            //finally
+            //{
+            //    modalBackground.Dispose();
+            //}
+        }
+
+        public void HideModal()
+        {
+            _modalOverlay.HideOverlay();
         }
     }
 

@@ -22,8 +22,8 @@ using LASYS.Application.Features.PrintLabels.Helpers;
 using LASYS.Application.Interfaces.Services;
 using LASYS.Application.Interfaces.Services.Camera;
 using LASYS.Application.Interfaces.Services.NiceLabel;
+using LASYS.DesktopApp.Events;
 using LASYS.DesktopApp.Views.Interfaces;
-using LASYS.Infrastructure.Hardware.Printers.Sato;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -103,6 +103,8 @@ namespace LASYS.DesktopApp.Presenters
             //_batchPrintService.LogGenerated -= OnLogGenerated;
             _batchPrintService.LogGenerated += OnLogGenerated;
 
+            _batchPrintService.ApprovalAuthorizationRequired += OnApprovalAuthorizationRequired;
+
 
             // CAMERA PREVIEW
             _cameraPreviewPresenter = services.GetRequiredService<CameraPreviewPresenter>();
@@ -112,6 +114,40 @@ namespace LASYS.DesktopApp.Presenters
             _labelTemplatePreviewPresenter = services.GetRequiredService<LabelTemplatePreviewPresenter>();
             _view.SetPreview(_labelTemplatePreviewPresenter.View);
             _view.LabelTemplatePreviewRequested += OnLabelTemplatePreviewRequested;
+        }
+
+        private void OnApprovalAuthorizationRequired(object? sender, EventArgs e)
+        {
+            var approvalPresenter = _services.GetRequiredService<ApprovalAuthenticationPresenter>();
+
+            EventHandler<ApprovalAuthorizedEventArgs>? successHandler = null;
+            EventHandler? cancelHandler = null;
+
+            void Cleanup()
+            {
+                approvalPresenter.AuthorizationSucceeded -= successHandler;
+                approvalPresenter.AuthorizationCancelled -= cancelHandler;
+            }
+
+            successHandler = (s, args) =>
+            {
+                Cleanup();
+
+                _batchPrintService.SetApprovalAuthorized(
+                    args.UserCode,
+                    args.SectionId);
+            };
+
+            cancelHandler = (s, args) =>
+            {
+                Cleanup();
+
+                _batchPrintService.CancelApprovalAuthorization();
+            };
+
+            approvalPresenter.AuthorizationSucceeded += successHandler;
+            approvalPresenter.AuthorizationCancelled += cancelHandler;
+            _view.InvokeOnUI(() => _view.ShowApprovalAuthorization(approvalPresenter.View));
         }
 
         private void OnLabelTemplatePreviewRequested(object? sender, EventArgs e)
@@ -189,6 +225,8 @@ namespace LASYS.DesktopApp.Presenters
             var quantityToPrint = e.Quantity;
             await _mediator.Send(new StartBatchPrintCommand(jobId, quantityToPrint));
             _activePrintJobId = jobId;
+
+            OnCameraPreviewRequested(this, EventArgs.Empty);
         }
 
         private async void OnPausePrintingRequested(object? sender, EventArgs e)

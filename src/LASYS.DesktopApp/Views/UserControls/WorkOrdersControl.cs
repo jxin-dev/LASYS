@@ -9,6 +9,8 @@ namespace LASYS.DesktopApp.Views.UserControls
     public partial class WorkOrdersControl : UserControl, IWorkOrdersView
     {
         public event EventHandler<LabelPrintingRequestedEventArgs>? LabelPrintingRequested;
+        public event EventHandler<string>? LabelInstructionRequested;
+
         private readonly GridViewWithPagination _gridWithPagination;
         private readonly Panel _loadingCard;
         private readonly Panel _loadingAccent;
@@ -17,6 +19,17 @@ namespace LASYS.DesktopApp.Views.UserControls
         public WorkOrdersControl()
         {
             InitializeComponent();
+
+            txtLabelInstructionBarcode.KeyDown += (sender, e) =>
+            {
+                if (e.KeyCode == Keys.Enter)
+                {
+                    e.SuppressKeyPress = true;
+                    LabelInstructionRequested?.Invoke(this, txtLabelInstructionBarcode.Text.Trim());
+                    txtLabelInstructionBarcode.Clear();
+                }
+            };
+
             _gridWithPagination = new GridViewWithPagination
             {
                 PageSize = 10,

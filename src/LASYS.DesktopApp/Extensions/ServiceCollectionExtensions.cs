@@ -26,6 +26,9 @@ namespace LASYS.DesktopApp.Extensions
             services.AddTransient<IErrorView, ErrorForm>();
             services.AddTransient<ErrorPresenter>();
 
+            services.AddTransient<IApprovalAuthenticationView, ApprovalAuthenticationForm>();
+            services.AddTransient<ApprovalAuthenticationPresenter>();
+
             services.AddSingleton<IWorkOrdersView, WorkOrdersControl>();
             services.AddSingleton<WorkOrdersPresenter>();
 

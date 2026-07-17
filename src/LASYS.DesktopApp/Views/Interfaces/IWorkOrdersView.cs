@@ -6,6 +6,8 @@ namespace LASYS.DesktopApp.Views.Interfaces
     public interface IWorkOrdersView
     {
         event EventHandler<LabelPrintingRequestedEventArgs> LabelPrintingRequested;
+
+        event EventHandler<string> LabelInstructionRequested;
         void ShowNotification(string message, string caption, MessageBoxIcon icon);
         void SetLoading(bool isLoading);
         void SetWorkOrders(List<WorkOrderItem> labelInstructions, int totalCount);

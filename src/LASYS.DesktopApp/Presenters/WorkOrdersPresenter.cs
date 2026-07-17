@@ -1,5 +1,12 @@
 ﻿using System.Diagnostics;
+using System.Threading;
+using System.Windows.Forms;
+using LASYS.Application.Common.Enums;
+using LASYS.Application.Features.BarcodeValidation;
+using LASYS.Application.Features.BarcodeValidation.ValidateInstructionBarcode;
+using LASYS.Application.Features.BarcodeValidation.ValidateLabelBarcode;
 using LASYS.Application.Features.LabelInstructions.GetLabelInstructionsBySectionId;
+using LASYS.Application.Features.LabelInstructions.GetWorkOrderListBySectionId;
 using LASYS.Application.Interfaces.Services;
 using LASYS.DesktopApp.Core.Interfaces;
 using LASYS.DesktopApp.Events;
@@ -18,6 +25,8 @@ namespace LASYS.DesktopApp.Presenters
         private readonly ILogService _logService;
         public UserControl View { get; }
         private bool _isLoading;
+
+        private List<WorkOrderItem> _workOrders = [];
         public WorkOrdersPresenter(IWorkOrdersView view,
                                            IMainView mainView,
                                            IServiceProvider serviceProvider,
@@ -32,8 +41,69 @@ namespace LASYS.DesktopApp.Presenters
             _logService = logService;
 
             _view.LabelPrintingRequested += OnLabelPrintingRequested;
+            _view.LabelInstructionRequested += OnLabelInstructionRequested;
 
             _ = LoadWorkOrdersAsync();
+        }
+        private async void OnLabelInstructionRequested(object? sender, string e)
+        {
+            //e - barcode scanned text
+            var barcodeScannedText = e;
+            var result = await _mediator.Send(new ValidateInstructionBarcodeQuery(barcodeScannedText, false));
+            if (!result.IsValid)
+            {
+                _view.ShowNotification(result.ErrorMessage, "Error", MessageBoxIcon.Error);
+                return;
+            }
+
+            var barcodeWithBoxType = result.ApplicationIdentifiers.GetValueOrDefault("91");
+            if(string.IsNullOrWhiteSpace(barcodeWithBoxType) || barcodeWithBoxType.Length != 14)
+            {
+                _view.ShowNotification("Invalid barcode format: missing box type information.", "Error", MessageBoxIcon.Error);
+                return;
+            }
+            var boxTypeCode = barcodeWithBoxType.Substring(0, 2);
+            BoxType boxType = boxTypeCode switch
+            {
+                "05" => BoxType.CartonBox,
+                "09" => BoxType.AdditionalCartonBox,
+                "07" => BoxType.OuterCartonBox,
+                "03" => BoxType.UnitBox,
+                "08" => BoxType.AdditionalUnitBox,
+                "04" => BoxType.OuterUnitBox,
+                _ => throw new InvalidOperationException($"Unknown box type: {boxTypeCode}")
+            };
+
+            var expiration = result.ApplicationIdentifiers.GetValueOrDefault("92");
+            var lotNo = result.ApplicationIdentifiers.GetValueOrDefault("10");
+
+            var barcodeNo = barcodeWithBoxType.Substring(2);
+
+            var workOrder = _workOrders.FirstOrDefault(x =>
+                string.Equals(x.LotNo, lotNo, StringComparison.OrdinalIgnoreCase) &&
+                x.Details != null &&
+                x.Details.TryGetValue(boxType, out var detail) &&
+                string.Equals(detail.InstructionCode,
+                              barcodeScannedText,
+                              StringComparison.OrdinalIgnoreCase));
+
+            if (workOrder is null)
+            {
+                _view.ShowNotification("No matching work order was found for the scanned barcode.", "Work Order Not Found", MessageBoxIcon.Exclamation);
+                return;
+            }
+
+            var mainPresenter = _serviceProvider.GetRequiredService<MainPresenter>();
+            mainPresenter.DisableNavigation();
+
+            var labelPrintingPresenter = _serviceProvider.GetRequiredService<LabelPrintingPresenter>();
+            _mainView?.LoadView(labelPrintingPresenter.View, false); //false always new
+            await Task.Run(() => labelPrintingPresenter.InitializeDataAsync(workOrder, boxType));
+
+           
+
+
+            // Use workOrder
         }
         private void OnLabelPrintingRequested(object? sender, LabelPrintingRequestedEventArgs e)
         {
@@ -79,8 +149,10 @@ namespace LASYS.DesktopApp.Presenters
                 if (result.IsSuccess)
                 {
                     var paginatedList = result.Value;
+
                     if (paginatedList?.Items != null && paginatedList.Items.Count > 0)
                     {
+                        _workOrders = paginatedList.Items;
                         _view.InvokeOnUI(() => _view.SetWorkOrders(paginatedList.Items, paginatedList.TotalPages));
                     }
                 }

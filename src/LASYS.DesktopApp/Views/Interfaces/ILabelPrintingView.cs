@@ -30,6 +30,8 @@ namespace LASYS.DesktopApp.Views.Interfaces
         void UpdatePrintingResults(uint targetQuantity, long setNumber, long batchNumber, long startSequence, long remaining, long totalPrinted, long totalPassed, long totalFailed, long labelSample);
         void ToggleActivityLogs();
         void ShowError(ErrorForm errorForm);
+        void ShowApprovalAuthorization(ApprovalAuthenticationForm approvalForm);
+        void HideModal();
         void InvokeOnUI(Action action);
         void AddLog(MessageType type, DateTime timeStamp, string message);
         void InitializePrintingContext(PrintJobState printJob);
