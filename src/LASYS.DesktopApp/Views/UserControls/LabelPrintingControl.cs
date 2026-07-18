@@ -520,7 +520,7 @@ namespace LASYS.DesktopApp.Views.UserControls
 
             lblTargetQuantity.Text = printJob.TargetQuantity.ToString();
             lblRemaining.Text = printJob.RemainingQuantity.ToString();
-            lblLabelSample.Text = printDetails.TotalSampled.ToString();
+            lblLabelSample.Text = printDetails.TotalSample.ToString();
             lblTotalPrinted.Text = printDetails.TotalPrinted.ToString();
             lblTotalPassed.Text = printDetails.TotalPassed.ToString();
             lblTotalFailed.Text = printDetails.TotalFailed.ToString();
@@ -539,15 +539,19 @@ namespace LASYS.DesktopApp.Views.UserControls
             var currentBatchCount = printDetails.TotalPassed % batchSize;
             var remaining = printJob.RemainingQuantity;
 
-            var remainingInBatch = currentBatchCount == 0
-                ? batchSize
-                : batchSize - currentBatchCount;
+            //var remainingInBatch = currentBatchCount == 0
+            //    ? batchSize
+            //    : batchSize - currentBatchCount;
 
-            var maxQty = Math.Min((long)remaining, remainingInBatch);
+            //var maxQty = Math.Min((long)remaining, remainingInBatch);
 
-            nudQuantity.Minimum = remaining == 0 ? 0 : 1;
-            nudQuantity.Maximum = (decimal)maxQty;
-            nudQuantity.Value = (decimal)maxQty;
+            //nudQuantity.Minimum = remaining == 0 ? 0 : 1;
+            //nudQuantity.Maximum = (decimal)maxQty;
+            //nudQuantity.Value = (decimal)maxQty;
+
+            nudQuantity.Minimum = 1;
+            nudQuantity.Maximum = remaining;
+            nudQuantity.Value = remaining < 50 ? remaining : 50;
         }
 
         private Color GetColor(MessageType type)

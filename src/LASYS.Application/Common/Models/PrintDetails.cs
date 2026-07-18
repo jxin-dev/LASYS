@@ -6,12 +6,12 @@
         public string LotNo { get; set; } = string.Empty;
         public long TotalPassed { get; set; }
         public long TotalFailed { get; set; }
-        public long TotalSampled { get; set; }
+        public long TotalSample { get; set; }
         public long TotalPrinted { get; set; }
         public long NextSequence { get; set; }
         public long BatchNumber { get; set; }
         public long SetNumber { get; set; }
-        public long GetRemainingPrintQuantity(uint? targetPrintQuantity) => ((targetPrintQuantity ?? 0) - TotalPassed);
+        public long GetRemainingPrintQuantity(uint? targetPrintQuantity) => (targetPrintQuantity ?? 0) - (TotalPassed + TotalSample);
 
         public PrintDetails IncrementPassed() => this with
         {
@@ -23,9 +23,9 @@
             TotalFailed = TotalFailed + 1
         };
 
-        public PrintDetails IncrementSampled() => this with
+        public PrintDetails IncrementSample() => this with
         {
-            TotalSampled = TotalSampled + 1
+            TotalSample = TotalSample + 1
         };
 
         public PrintDetails IncrementPrinted() => this with
