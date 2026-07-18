@@ -223,7 +223,8 @@ namespace LASYS.DesktopApp.Presenters
 
             var jobId = e.JobId;
             var quantityToPrint = e.Quantity;
-            await _mediator.Send(new StartBatchPrintCommand(jobId, quantityToPrint));
+            var endOfBatch = e.EndOfBatch;  
+            await _mediator.Send(new StartBatchPrintCommand(jobId, quantityToPrint, endOfBatch));
             _activePrintJobId = jobId;
 
             OnCameraPreviewRequested(this, EventArgs.Empty);

@@ -14,7 +14,7 @@ namespace LASYS.Application.Features.BatchPrinting.Commands.StartBatchPrint
 
         public Task Handle(StartBatchPrintCommand request, CancellationToken cancellationToken)
         {
-            _service.StartAsync(request.JobId, request.Quantity);
+            _service.StartAsync(request.JobId, request.Quantity, request.EndOfBatch);
             return Task.CompletedTask;
         }
     }

@@ -29,6 +29,7 @@
         private void InitializeComponent()
         {
             pnlContent = new Panel();
+            btnLabelTemplatePreview = new Button();
             btnCameraPreview = new Button();
             lblPrintingProgress = new Label();
             pbPrintingProgress = new ProgressBar();
@@ -46,6 +47,7 @@
             lblTotalPrinted = new Label();
             label24 = new Label();
             groupBox3 = new GroupBox();
+            chkEndOfBatch = new CheckBox();
             lblSetNumber = new Label();
             label15 = new Label();
             lblBatchNumber = new Label();
@@ -71,7 +73,6 @@
             pnlHeader = new Panel();
             btnBack = new Button();
             label1 = new Label();
-            btnLabelTemplatePreview = new Button();
             pnlContent.SuspendLayout();
             groupBox4.SuspendLayout();
             groupBox3.SuspendLayout();
@@ -97,6 +98,16 @@
             pnlContent.Name = "pnlContent";
             pnlContent.Size = new Size(1235, 515);
             pnlContent.TabIndex = 4;
+            // 
+            // btnLabelTemplatePreview
+            // 
+            btnLabelTemplatePreview.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            btnLabelTemplatePreview.Image = Properties.Resources.label_on_24;
+            btnLabelTemplatePreview.Location = new Point(1198, 34);
+            btnLabelTemplatePreview.Name = "btnLabelTemplatePreview";
+            btnLabelTemplatePreview.Size = new Size(34, 29);
+            btnLabelTemplatePreview.TabIndex = 8;
+            btnLabelTemplatePreview.UseVisualStyleBackColor = true;
             // 
             // btnCameraPreview
             // 
@@ -273,6 +284,7 @@
             // groupBox3
             // 
             groupBox3.Anchor = AnchorStyles.None;
+            groupBox3.Controls.Add(chkEndOfBatch);
             groupBox3.Controls.Add(lblSetNumber);
             groupBox3.Controls.Add(label15);
             groupBox3.Controls.Add(lblBatchNumber);
@@ -285,11 +297,24 @@
             groupBox3.TabStop = false;
             groupBox3.Text = "Batch Information";
             // 
+            // chkEndOfBatch
+            // 
+            chkEndOfBatch.AutoSize = true;
+            chkEndOfBatch.CheckAlign = ContentAlignment.MiddleRight;
+            chkEndOfBatch.FlatStyle = FlatStyle.Flat;
+            chkEndOfBatch.Font = new Font("Segoe UI", 9.75F, FontStyle.Bold);
+            chkEndOfBatch.Location = new Point(19, 31);
+            chkEndOfBatch.Name = "chkEndOfBatch";
+            chkEndOfBatch.Size = new Size(134, 21);
+            chkEndOfBatch.TabIndex = 9;
+            chkEndOfBatch.Text = "End of Batch:       ";
+            chkEndOfBatch.UseVisualStyleBackColor = true;
+            // 
             // lblSetNumber
             // 
             lblSetNumber.AutoSize = true;
             lblSetNumber.Font = new Font("Segoe UI", 14.25F, FontStyle.Bold);
-            lblSetNumber.Location = new Point(413, 30);
+            lblSetNumber.Location = new Point(689, 28);
             lblSetNumber.Name = "lblSetNumber";
             lblSetNumber.Size = new Size(23, 25);
             lblSetNumber.TabIndex = 8;
@@ -299,7 +324,7 @@
             // 
             label15.AutoSize = true;
             label15.Font = new Font("Segoe UI", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            label15.Location = new Point(295, 34);
+            label15.Location = new Point(571, 32);
             label15.Name = "label15";
             label15.Size = new Size(86, 17);
             label15.TabIndex = 7;
@@ -309,7 +334,7 @@
             // 
             lblBatchNumber.AutoSize = true;
             lblBatchNumber.Font = new Font("Segoe UI", 14.25F, FontStyle.Bold);
-            lblBatchNumber.Location = new Point(139, 30);
+            lblBatchNumber.Location = new Point(415, 28);
             lblBatchNumber.Name = "lblBatchNumber";
             lblBatchNumber.Size = new Size(23, 25);
             lblBatchNumber.TabIndex = 6;
@@ -319,7 +344,7 @@
             // 
             label13.AutoSize = true;
             label13.Font = new Font("Segoe UI", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            label13.Location = new Point(19, 34);
+            label13.Location = new Point(295, 32);
             label13.Name = "label13";
             label13.Size = new Size(101, 17);
             label13.TabIndex = 5;
@@ -577,16 +602,6 @@
             label1.TabIndex = 0;
             label1.Text = "Label Printing";
             // 
-            // btnLabelTemplatePreview
-            // 
-            btnLabelTemplatePreview.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            btnLabelTemplatePreview.Image = Properties.Resources.label_on_24;
-            btnLabelTemplatePreview.Location = new Point(1198, 34);
-            btnLabelTemplatePreview.Name = "btnLabelTemplatePreview";
-            btnLabelTemplatePreview.Size = new Size(34, 29);
-            btnLabelTemplatePreview.TabIndex = 8;
-            btnLabelTemplatePreview.UseVisualStyleBackColor = true;
-            // 
             // LabelPrintingControl
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
@@ -657,5 +672,6 @@
         private ProgressBar pbPrintingProgress;
         private Button btnCameraPreview;
         private Button btnLabelTemplatePreview;
+        private CheckBox chkEndOfBatch;
     }
 }

@@ -93,7 +93,7 @@ namespace LASYS.DesktopApp.Views.UserControls
 
                 if (_currentJobStatus is PrintJobStatus.Ready or PrintJobStatus.Completed)
                 {
-                    PrintRequested?.Invoke(this, new PrintRequestedEventArgs(_printJobId.Value, (int)nudQuantity.Value));
+                    PrintRequested?.Invoke(this, new PrintRequestedEventArgs(_printJobId.Value, (int)nudQuantity.Value, chkEndOfBatch.Checked));
                 }
 
                 if (_currentJobStatus is PrintJobStatus.InProgress or PrintJobStatus.Paused)

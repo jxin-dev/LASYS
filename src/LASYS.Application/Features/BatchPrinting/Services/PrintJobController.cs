@@ -1,8 +1,5 @@
 ﻿using System.Collections.Concurrent;
-using System.Collections.Generic;
-using LASYS.Application.Common.Mappings;
 using LASYS.Application.Features.BatchPrinting.Enums;
-using LASYS.Application.Features.BatchPrinting.Helpers;
 using LASYS.Application.Features.BatchPrinting.Models;
 using LASYS.Application.Features.LabelInstructions.GetLabelInstructionContext;
 

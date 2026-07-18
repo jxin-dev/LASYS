@@ -1,4 +1,5 @@
-﻿using Dapper;
+﻿using System.Data.Common;
+using Dapper;
 using LASYS.Application.Common.Enums;
 using LASYS.Application.Common.Models;
 using LASYS.Application.Features.BatchPrinting.Models;
@@ -67,6 +68,38 @@ namespace LASYS.Infrastructure.Persistence.Repositories
             }
         }
 
+        public async Task<string?> GetLatestSpecialLabelStatusAsync(string itemCode, string lotNo, BoxType boxType)
+        {
+            try
+            {
+                string tableName = _printTableNameResolver.GetTableName(boxType);
+                string sql = boxType == BoxType.CaseLabel ?
+                    $@""
+                    :
+                    $@"
+                SELECT LABEL_STATUS
+                FROM {tableName}
+                WHERE ITEM_CODE = @ItemCode
+                AND LOT_NO = @LotNo
+                AND LABEL_STATUS IN ('First', 'Last')
+                ORDER BY SEQUENCE_NUMBER DESC,
+                CREATED_DATETIME DESC
+                LIMIT 1;";
+
+                using var connection = await _factory.CreateConnectionAsync();
+                return await connection.QueryFirstOrDefaultAsync<string>(sql, new
+                {
+                    ItemCode = itemCode,
+                    LotNo = lotNo
+                });
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error retrieving latest special label status: {ex.Message}", ex);
+            }
+
+        }
+
         public async Task<bool> SavePrintedLabelAsync(SequenceData sequenceData)
         {
             var ipAddress = _ipAddressProvider.GetLocalIpAddress();
@@ -127,7 +160,7 @@ namespace LASYS.Infrastructure.Persistence.Repositories
                     @COMMENT,
                     @APPROVED_BY_USER_CODE,
                     @APPROVED_BY_SECTION_ID,
-                    @APPROVED_BY_IP_ADDRESS,
+                    INET_ATON(@APPROVED_BY_IP_ADDRESS),
                     @APPROVED_BY_DATETIME,
                     DATE_FORMAT(CURRENT_TIMESTAMP,'%Y%m%d'),
                     @CREATED_USER_CODE,
@@ -139,7 +172,7 @@ namespace LASYS.Infrastructure.Persistence.Repositories
                     INET_ATON(@LASTUPDATE_IP_ADDRESS),
                     CURRENT_TIMESTAMP + 0);";
 
-            
+
             //"INSERT INTO prdprnt_case_labels_tcl (
             //ITEM_CODE,
             //LOT_NO,
@@ -196,7 +229,7 @@ namespace LASYS.Infrastructure.Persistence.Repositories
 
                 return rowsAffected > 0;
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 return false;
             }

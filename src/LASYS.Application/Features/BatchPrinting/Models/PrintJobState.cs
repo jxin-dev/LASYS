@@ -12,6 +12,7 @@ namespace LASYS.Application.Features.BatchPrinting.Models
     {
         public Guid JobId { get; private set; }
         public ProcessingStage CurrentStage { get; private set; } = ProcessingStage.None;
+        public bool EndOfBatch { get; private set; } = false;
         public bool RequiresApproval => CurrentStage >= ProcessingStage.Printed;
         public string CurrentLabelStatus { get; private set; } = default!;
         public string PrinterName { get; private set; } = default!;
@@ -71,6 +72,20 @@ namespace LASYS.Application.Features.BatchPrinting.Models
             };
         }
 
+        public void MarkFirst()
+        {
+            CurrentLabelStatus = "First";
+        }
+
+        public void MarkLast()
+        {
+            CurrentLabelStatus = "Last";
+        }
+
+        public void ResetPrintType()
+        {
+            CurrentLabelStatus = Context.LabelInstructionDetails!.PrintType;
+        }
         public void SetApproval(string userCode, string sectionId, string ipAddress)
         {
             ApprovedByUserCode = userCode;
@@ -102,6 +117,10 @@ namespace LASYS.Application.Features.BatchPrinting.Models
             CancellationTokenSource = new();
         }
 
+        public void SetEndOfBatch(bool endOfBatch)
+        {
+            EndOfBatch = endOfBatch;
+        }
         public void MarkGenerated()
         {
             CurrentStage = ProcessingStage.Generated;

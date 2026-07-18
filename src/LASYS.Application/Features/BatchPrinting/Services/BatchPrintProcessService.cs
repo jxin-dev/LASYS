@@ -1,4 +1,5 @@
 ﻿//using LASYS.Application.Common.Enums;
+using System.Diagnostics;
 using LASYS.Application.Common.Mappings;
 using LASYS.Application.Common.Messaging;
 using LASYS.Application.Common.Utilities;
@@ -84,10 +85,11 @@ namespace LASYS.Application.Features.BatchPrinting.Services
 
             return Task.FromResult(job);
         }
-        public Task StartAsync(Guid jobId, int quantity)
+        public Task StartAsync(Guid jobId, int quantity, bool endOfBatch)
         {
             var job = _jobController.GetJob(jobId);
             job.SetQuantity(quantity);
+            job.SetEndOfBatch(endOfBatch);
 
             NotifyJobStateChanged(jobId);
 
@@ -127,25 +129,8 @@ namespace LASYS.Application.Features.BatchPrinting.Services
                 LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Info, $"Started print job. Total quantity: {job.TotalQuantity}"));
                 var startSequence = job.Context.PrintDetails!.NextSequence;
 
-                var approvalCompleted = false;
-                //Start Testing
-                if (!approvalCompleted)
-                {
-                    var approval = await RequestApprovalAuthorizationAsync(cancellationToken);
-
-                    if (!approval.IsApproved)
-                    {
-                        _jobController.Stop(jobId);
-                        EnsureCanContinue(job);
-                    }
-
-                    var ipAddress = _ipAddressProvider.GetLocalIpAddress();
-                    job.SetApproval(approval.UserCode!, approval.SectionId!, ipAddress);
-
-                    approvalCompleted = true;
-                }
-                //End Testing
-
+                var latestSpecialStatus = await _printLabelRepository.GetLatestSpecialLabelStatusAsync(job.ItemCode,job.LotNo, job.BoxType);
+                bool hasOpenBatch = latestSpecialStatus == "First";
 
                 while (job.Context.PrintDetails!.NextSequence <= (job.TotalQuantity + startSequence) - 1) // 1 - 50
                 {
@@ -260,7 +245,7 @@ namespace LASYS.Application.Features.BatchPrinting.Services
                                 LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Error, $"Barcode validation failed. Job stopped by {_currentUser.FullName} on label {job.CurrentSequenceFormat}{pairText}."));
                                 stopRequested = true;
                                 _jobController.Stop(jobId);
-                                EnsureCanContinue(job); 
+                                EnsureCanContinue(job);
                             }
                             break;
                         }
@@ -306,21 +291,18 @@ namespace LASYS.Application.Features.BatchPrinting.Services
                             break; //
                         }
 
-                        if (!approvalCompleted)
-                        {
-                            var approval = await RequestApprovalAuthorizationAsync(cancellationToken);
+                        bool isFirstLabel =job.Context.PrintDetails!.NextSequence == startSequence;
 
-                            if (!approval.IsApproved)
-                            {
-                                _jobController.Stop(jobId);
-                                EnsureCanContinue(job);
-                            }
+                        bool isLastLabel = job.Context.PrintDetails!.NextSequence == (startSequence + job.TotalQuantity - 1);
 
-                            var ipAddress = _ipAddressProvider.GetLocalIpAddress();
-                            job.SetApproval(approval.UserCode!, approval.SectionId!, ipAddress);
-
-                            approvalCompleted = true;
-                        }
+                        await PrepareLabelStatusAsync(
+                            job,
+                            jobId,
+                            hasOpenBatch,
+                            isFirstLabel,
+                            isLastLabel,
+                            job.EndOfBatch,
+                            cancellationToken);
 
                         //Save Data 
                         var saveAttempt = 0;
@@ -391,31 +373,51 @@ namespace LASYS.Application.Features.BatchPrinting.Services
             _approvalTcs =
                 new TaskCompletionSource<ApprovalAuthorizationResult>(
                     TaskCreationOptions.RunContinuationsAsynchronously);
+            Debug.WriteLine("1. Raise event");
 
             ApprovalAuthorizationRequired?.Invoke(this, EventArgs.Empty);
+            Debug.WriteLine("2. Waiting for approval...");
 
-            using (cancellationToken.Register(() =>
-                _approvalTcs.TrySetResult(new ApprovalAuthorizationResult(false))))
+            try
             {
-                return await _approvalTcs.Task;
+                var result = await _approvalTcs.Task.ConfigureAwait(false);
+
+                Debug.WriteLine($"Returned: {result.IsApproved}");
+
+                return result;
             }
+            catch (Exception ex)
+            {
+                Debug.WriteLine(ex.ToString());
+                throw;
+            }
+            //using (cancellationToken.Register(() =>
+            //    _approvalTcs.TrySetResult(new ApprovalAuthorizationResult(false))))
+            //{
+            //    return await _approvalTcs.Task;
+            //}
         }
 
 
-        public Task<ApprovalAuthorizationResult>RequestApprovalAsync(CancellationToken cancellationToken = default)
+        public Task<ApprovalAuthorizationResult> RequestApprovalAsync(CancellationToken cancellationToken = default)
         {
             return RequestApprovalAuthorizationAsync(cancellationToken);
         }
 
 
-        public void SetApprovalAuthorized(string userCode,string sectionId)
+        public void SetApprovalAuthorized(string userCode, string sectionId)
         {
-            _approvalTcs?.TrySetResult(new ApprovalAuthorizationResult(true,userCode, sectionId));
+            Debug.WriteLine("SetApprovalAuthorized");
+            var success = _approvalTcs?.TrySetResult(new ApprovalAuthorizationResult(true, userCode, sectionId));
+
+           Debug.WriteLine($"TrySetResult = {success}");
         }
 
         public void CancelApprovalAuthorization()
         {
-            _approvalTcs?.TrySetResult(new ApprovalAuthorizationResult(false));
+            Debug.WriteLine("CancelApprovalAuthorization");
+            var success = _approvalTcs?.TrySetResult(new ApprovalAuthorizationResult(false));
+            Debug.WriteLine($"TrySetResult = {success}");
         }
 
         private static string FormatPair(int pairIndex, int pairCount)
@@ -437,6 +439,51 @@ namespace LASYS.Application.Features.BatchPrinting.Services
                 return await _decisionTcs.Task;
             }
         }
+
+        private async Task PrepareLabelStatusAsync(PrintJobState job, Guid jobId, bool hasOpenBatch, bool isFirstLabel, bool isLastLabel, bool isEndOfBatch, CancellationToken cancellationToken)
+        {
+            job.ResetPrintType();
+
+            if (isFirstLabel && !hasOpenBatch)
+            {
+                var approval = await RequestApprovalAuthorizationAsync(cancellationToken);
+
+                if (!approval.IsApproved)
+                {
+                    _jobController.Stop(jobId);
+                    EnsureCanContinue(job);
+                }
+
+                var ipAddress = _ipAddressProvider.GetLocalIpAddress();
+
+                job.SetApproval(
+                    approval.UserCode!,
+                    approval.SectionId!,
+                    ipAddress);
+
+                job.MarkFirst();
+            }
+            else if (isLastLabel && isEndOfBatch)
+            {
+                var approval = await RequestApprovalAuthorizationAsync(cancellationToken);
+
+                if (!approval.IsApproved)
+                {
+                    _jobController.Stop(jobId);
+                    EnsureCanContinue(job);
+                }
+
+                var ipAddress = _ipAddressProvider.GetLocalIpAddress();
+
+                job.SetApproval(
+                    approval.UserCode!,
+                    approval.SectionId!,
+                    ipAddress);
+
+                job.MarkLast();
+            }
+        }
+
         private async Task<StepResult> SavePrintedLabelAsync(PrintJobState job, CancellationToken cancellationToken)
         {
             EnsureCanContinue(job);
@@ -598,7 +645,7 @@ namespace LASYS.Application.Features.BatchPrinting.Services
         {
             EnsureCanContinue(job);
 
-            //return StepResult.Success; //comment for real implementation
+            return StepResult.Success; //comment for real implementation
 
             // Ensure scanner is connected
             if (!_deviceManager.Barcode.IsConnected)
@@ -722,7 +769,7 @@ namespace LASYS.Application.Features.BatchPrinting.Services
         {
             EnsureCanContinue(job);
 
-            //return StepResult.Success; //comment for real implementation
+            return StepResult.Success; //comment for real implementation
 
             if (!_deviceManager.Camera.IsCameraReady())
             {
@@ -804,6 +851,6 @@ namespace LASYS.Application.Features.BatchPrinting.Services
             _decisionTcs?.TrySetResult(decision);
         }
 
-    
+
     }
 }

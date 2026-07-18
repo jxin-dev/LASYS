@@ -11,7 +11,7 @@ namespace LASYS.Application.Features.BatchPrinting.Services
         PrintJobState? GetJob(Guid jobId);
         event EventHandler<PrintJobState> JobStateChanged;
         Task<PrintJobState> InitializeAsync(LabelPrintingContext context);
-        Task StartAsync(Guid jobId, int quantity);
+        Task StartAsync(Guid jobId, int quantity, bool endOfBatch);
         void Pause(Guid jobId);
         void Resume(Guid jobId);
         void Stop(Guid jobId);
