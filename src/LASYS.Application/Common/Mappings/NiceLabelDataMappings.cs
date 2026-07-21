@@ -46,9 +46,9 @@ namespace LASYS.Application.Common.Mappings
             {
                 BoxType.CartonBox => "5",
                 BoxType.OuterCartonBox => "7",
-                BoxType.AdditionalCartonBox => "5",
+                BoxType.AdditionalCartonBox => "9",
                 BoxType.UnitBox => "3",
-                BoxType.AdditionalUnitBox => "3",
+                BoxType.AdditionalUnitBox => "8",
                 BoxType.OuterUnitBox => "4",
                 _ => "1"
             };

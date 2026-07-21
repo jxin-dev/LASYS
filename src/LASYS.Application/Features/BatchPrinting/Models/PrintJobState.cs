@@ -14,7 +14,7 @@ namespace LASYS.Application.Features.BatchPrinting.Models
         public ProcessingStage CurrentStage { get; private set; } = ProcessingStage.None;
         public bool EndOfBatch { get; private set; } = false;
         public bool RequiresApproval => CurrentStage >= ProcessingStage.Printed;
-        public string CurrentLabelStatus { get; private set; } = default!;
+        public string CurrentLabelStatus { get; set; } = default!;
         public string PrinterName { get; private set; } = default!;
         public int CurrentPairNumber { get; private set; }
         public int CurrentPairCount { get; private set; }
@@ -129,6 +129,13 @@ namespace LASYS.Application.Features.BatchPrinting.Models
             CurrentStage = ProcessingStage.Generated;
         }
 
+        public void UpdateSetNumber()
+        {
+            var remaining = Context.PrintDetails != null ? Context.PrintDetails.GetRemainingPrintQuantity(Context.ProductDetails?.Quantity) : throw new InvalidOperationException("RemainingQuantity is not available.");
+            var setNumber = Context.PrintDetails?.SetNumber != null ? (int)Context.PrintDetails.SetNumber : throw new InvalidOperationException("SetNumber is not available.");
+            Context.PrintDetails.SetNumber = remaining == 0 ? setNumber : ++setNumber;
+        }
+
         public void MarkPrinted()
         {
             CurrentStage = ProcessingStage.Printed;
@@ -152,16 +159,25 @@ namespace LASYS.Application.Features.BatchPrinting.Models
                 Context.PrintDetails!.TotalPassed++;
             }
             Context.PrintDetails!.TotalPrinted++;
+
+            //Update Batch No.
+            if (CurrentLabelStatus == "Last")
+            {
+                var remaining = Context.PrintDetails != null ? Context.PrintDetails.GetRemainingPrintQuantity(Context.ProductDetails?.Quantity) : throw new InvalidOperationException("RemainingQuantity is not available.");
+                var batchNumber = Context.PrintDetails?.BatchNumber != null ? (int)Context.PrintDetails.BatchNumber : throw new InvalidOperationException("BatchNumber is not available.");
+                Context.PrintDetails.BatchNumber = remaining == 0 ? batchNumber : ++batchNumber;
+            }
+
         }
 
         public void MarkFailed()
         {
             bool printed = CurrentStage >= ProcessingStage.Printed;
 
-            CurrentLabelStatus =
-                CurrentStage >= ProcessingStage.Printed
-                    ? "Failed After Printing"
-                    : "Failed During Printing";
+            //CurrentLabelStatus =
+            //    CurrentStage >= ProcessingStage.Printed
+            //        ? "Failed After Printing"
+            //        : "Failed During Printing";
 
             Context.PrintDetails!.TotalFailed++;
             if (printed)
@@ -203,34 +219,26 @@ namespace LASYS.Application.Features.BatchPrinting.Models
             Status = PrintJobStatus.Stopped;
             CancellationTokenSource.Cancel();
 
-            var remaining = Context.PrintDetails != null ? Context.PrintDetails.GetRemainingPrintQuantity(Context.ProductDetails?.Quantity) : throw new InvalidOperationException("RemainingQuantity is not available.");
-            var setNumber = Context.PrintDetails?.SetNumber != null ? (int)Context.PrintDetails.SetNumber : throw new InvalidOperationException("SetNumber is not available.");
-            //var batchNumber = Context.PrintDetails.TotalPassed == 0 ? 1 : (int)((Context.PrintDetails.TotalPassed - 1) / Context.ProductDetails!.BatchSize) + 1;
+            //var remaining = Context.PrintDetails != null ? Context.PrintDetails.GetRemainingPrintQuantity(Context.ProductDetails?.Quantity) : throw new InvalidOperationException("RemainingQuantity is not available.");
+            //var setNumber = Context.PrintDetails?.SetNumber != null ? (int)Context.PrintDetails.SetNumber : throw new InvalidOperationException("SetNumber is not available.");
 
-            var batchNumber = Context.PrintDetails?.BatchNumber != null ? (int)Context.PrintDetails.BatchNumber : throw new InvalidOperationException("BatchNumber is not available.");
-
-            bool printed = CurrentStage >= ProcessingStage.Printed;
-            if (!hasApproval)
-            {
-                Context.PrintDetails.SetNumber = printed ? (remaining == 0 ? setNumber : ++setNumber) : setNumber;
-                Context.PrintDetails.BatchNumber = printed ? (remaining == 0 ? batchNumber : ++batchNumber) : batchNumber;
-            }
-
-            //Context.PrintDetails.BatchNumber = batchNumber;
+            //bool printed = CurrentStage >= ProcessingStage.Printed;
+            //if (!hasApproval)
+            //{
+            //    Context.PrintDetails.SetNumber = printed ? (remaining == 0 ? setNumber : ++setNumber) : setNumber;
+            //}
 
             // wake any paused thread
             ResumeSignal.Set();
         }
         public void Completed()
         {
-            var remaining = Context.PrintDetails != null ? Context.PrintDetails.GetRemainingPrintQuantity(Context.ProductDetails?.Quantity) : throw new InvalidOperationException("RemainingQuantity is not available.");
-            var setNumber = Context.PrintDetails?.SetNumber != null ? (int)Context.PrintDetails.SetNumber : throw new InvalidOperationException("SetNumber is not available.");
-            //var batchNumber = Context.PrintDetails.TotalPassed == 0 ? 1 : (int)((Context.PrintDetails.TotalPassed - 1) / Context.ProductDetails!.BatchSize) + 1;
-            //var nextSequence = Context.PrintDetails.NextSequence;
-            var batchNumber = Context.PrintDetails?.BatchNumber != null ? (int)Context.PrintDetails.BatchNumber : throw new InvalidOperationException("BatchNumber is not available.");
+            //var remaining = Context.PrintDetails != null ? Context.PrintDetails.GetRemainingPrintQuantity(Context.ProductDetails?.Quantity) : throw new InvalidOperationException("RemainingQuantity is not available.");
+            //var setNumber = Context.PrintDetails?.SetNumber != null ? (int)Context.PrintDetails.SetNumber : throw new InvalidOperationException("SetNumber is not available.");
+            //var batchNumber = Context.PrintDetails?.BatchNumber != null ? (int)Context.PrintDetails.BatchNumber : throw new InvalidOperationException("BatchNumber is not available.");
 
-            Context.PrintDetails.SetNumber = remaining == 0 ? setNumber : ++setNumber;
-            Context.PrintDetails.BatchNumber = batchNumber;
+            //Context.PrintDetails.SetNumber = remaining == 0 ? setNumber : ++setNumber;
+            //Context.PrintDetails.BatchNumber = batchNumber;
 
             Status = PrintJobStatus.Completed;
             CancellationTokenSource.Dispose();

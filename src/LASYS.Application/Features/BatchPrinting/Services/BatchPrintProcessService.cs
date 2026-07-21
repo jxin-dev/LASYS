@@ -133,7 +133,7 @@ namespace LASYS.Application.Features.BatchPrinting.Services
                 LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Info, $"Started print job. Total quantity: {job.TotalQuantity}"));
                 var startSequence = job.Context.PrintDetails!.NextSequence;
 
-                var latestSpecialStatus = await _printLabelRepository.GetLatestSpecialLabelStatusAsync(job.ItemCode,job.LotNo, job.BoxType);
+                var latestSpecialStatus = await _printLabelRepository.GetLatestSpecialLabelStatusAsync(job.ItemCode, job.LotNo, job.BoxType);
                 bool hasOpenBatch = latestSpecialStatus == "First";
 
                 while (job.Context.PrintDetails!.NextSequence <= (job.TotalQuantity + startSequence) - 1) // 1 - 50
@@ -180,6 +180,9 @@ namespace LASYS.Application.Features.BatchPrinting.Services
                     var completedPairs = 0;
                     foreach (var pairIndex in Enumerable.Range(1, pairCount))
                     {
+                        bool isFirstLabel = job.Context.PrintDetails!.NextSequence == startSequence;
+                        bool isLastLabel = job.Context.PrintDetails!.NextSequence == (startSequence + job.TotalQuantity - 1);
+                        var isSampleLabel = (!hasOpenBatch && isFirstLabel) || (isLastLabel && job.EndOfBatch);
 
                         job.SetCurrentPair(pairIndex, pairCount);
 
@@ -245,10 +248,12 @@ namespace LASYS.Application.Features.BatchPrinting.Services
                             }
                             if (validationBarcodeResult == StepResult.Stop)
                             {
-                                await SaveFailedLabelAsync(job);
+                                if (!isSampleLabel)
+                                    await SaveFailedLabelAsync(job);
+
                                 LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Error, $"Barcode validation failed. Job stopped by {_currentUser.FullName} on label {job.CurrentSequenceFormat}{pairText}."));
                                 stopRequested = true;
-                                _jobController.Stop(jobId);
+                                _jobController.Stop(jobId, isSampleLabel);
                                 EnsureCanContinue(job);
                             }
                             break;
@@ -286,18 +291,18 @@ namespace LASYS.Application.Features.BatchPrinting.Services
                             }
                             if (validationOcrResult == StepResult.Stop)
                             {
-                                await SaveFailedLabelAsync(job);
+                                if (!isSampleLabel)
+                                    await SaveFailedLabelAsync(job);
                                 LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Error, $"OCR validation failed. Job stopped by {_currentUser.FullName} on label {job.CurrentSequenceFormat}{pairText}."));
                                 stopRequested = true;
-                                _jobController.Stop(jobId);
+                                _jobController.Stop(jobId, isSampleLabel);
                                 EnsureCanContinue(job);
                             }
                             break; //
                         }
 
-                        bool isFirstLabel =job.Context.PrintDetails!.NextSequence == startSequence;
-
-                        bool isLastLabel = job.Context.PrintDetails!.NextSequence == (startSequence + job.TotalQuantity - 1);
+                        //bool isFirstLabel =job.Context.PrintDetails!.NextSequence == startSequence;
+                        //bool isLastLabel = job.Context.PrintDetails!.NextSequence == (startSequence + job.TotalQuantity - 1);
 
                         await PrepareLabelStatusAsync(
                             job,
@@ -354,11 +359,11 @@ namespace LASYS.Application.Features.BatchPrinting.Services
 
                     if (stopRequested) break;
                 }
-
+                
                 _jobController.Complete(jobId);
                 NotifyJobStateChanged(jobId);
                 LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Info, "Batch printing completed."));
-
+                job.UpdateSetNumber();
             }
             catch (OperationCanceledException)
             {
@@ -415,7 +420,7 @@ namespace LASYS.Application.Features.BatchPrinting.Services
             Debug.WriteLine("SetApprovalAuthorized");
             var success = _approvalTcs?.TrySetResult(new ApprovalAuthorizationResult(true, userCode, sectionId));
 
-           Debug.WriteLine($"TrySetResult = {success}");
+            Debug.WriteLine($"TrySetResult = {success}");
         }
 
         public void CancelApprovalAuthorization()
@@ -526,6 +531,9 @@ namespace LASYS.Application.Features.BatchPrinting.Services
         }
         private async Task SaveFailedLabelAsync(PrintJobState job)
         {
+            bool printed = job.CurrentStage >= ProcessingStage.Printed;
+
+            job.CurrentLabelStatus = printed ? "Failed After Printing" : "Failed During Printing";
 
             var context = job.Context;
             var pairedType = job.CurrentPairCount == 1 ? "Single"
@@ -654,7 +662,7 @@ namespace LASYS.Application.Features.BatchPrinting.Services
         {
             EnsureCanContinue(job);
 
-            return StepResult.Success; //comment for real implementation
+            //return StepResult.Success; //comment for real implementation
 
             // Ensure scanner is connected
             if (!_deviceManager.Barcode.IsConnected)
@@ -710,9 +718,9 @@ namespace LASYS.Application.Features.BatchPrinting.Services
             {
                 Common.Enums.BoxType.CartonBox => "5",
                 Common.Enums.BoxType.OuterCartonBox => "7",
-                Common.Enums.BoxType.AdditionalCartonBox => "5",
+                Common.Enums.BoxType.AdditionalCartonBox => "9",
                 Common.Enums.BoxType.UnitBox => "3",
-                Common.Enums.BoxType.AdditionalUnitBox => "3",
+                Common.Enums.BoxType.AdditionalUnitBox => "8",
                 Common.Enums.BoxType.OuterUnitBox => "4",
                 _ => "1"
             };

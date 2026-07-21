@@ -215,8 +215,18 @@ namespace LASYS.Infrastructure.Hardware.Printers.Sato
                 {
                     var variable = Label.Variables.Item(i);
 
-                    if (variable != null)
-                        variables.Add(variable.Name);
+                    //if (variable != null)
+                    //    variables.Add(variable.Name);
+                    try
+                    {
+                        if (variable != null)
+                            variables.Add(variable.Name);
+                    }
+                    finally
+                    {
+                        if (variable != null)
+                            Marshal.ReleaseComObject(variable);
+                    }
                 }
             }
 
@@ -235,7 +245,16 @@ namespace LASYS.Infrastructure.Hardware.Printers.Sato
                 if (variable == null)
                     return;
 
-                variable.SetValue(value);
+                //variable.SetValue(value);
+                try
+                {
+                    variable.SetValue(value);
+                }
+                finally
+                {
+                    if (variable != null)
+                        Marshal.ReleaseComObject(variable);
+                }
             }
         }
 
@@ -246,8 +265,17 @@ namespace LASYS.Infrastructure.Hardware.Printers.Sato
                 foreach (var variable in variables)
                 {
                     var v = Label.Variables.FindByName(variable.Key);
-                    if (v != null)
-                        v.SetValue(variable.Value);
+                    //if (v != null)
+                    //    v.SetValue(variable.Value);
+                    try
+                    {
+                        v?.SetValue(variable.Value);
+                    }
+                    finally
+                    {
+                        if (v != null)
+                            Marshal.ReleaseComObject(v);
+                    }
                 }
             }
         }

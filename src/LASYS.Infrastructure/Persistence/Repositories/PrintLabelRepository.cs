@@ -51,7 +51,8 @@ namespace LASYS.Infrastructure.Persistence.Repositories
                     COUNT(CASE WHEN LABEL_STATUS IN 
                         ('First','Last','Original','Replacement','Additional','Failed During Printing','Failed After Printing','Returned') THEN 1 END) AS TotalPrinted,
                     IFNULL(MAX(SEQUENCE_NUMBER) + 1, 1) AS NextSequence,
-                    IFNULL(MAX(LABEL_STATUS IN ('Last')) + 1, 1) AS BatchNumber,
+                    COALESCE(SUM(LABEL_STATUS = 'Last'), 0) + 1 AS BatchNumber,
+                    -- IFNULL(MAX(LABEL_STATUS IN ('Last')) + 1, 1) AS BatchNumber,
                     -- IFNULL(MAX(CASE WHEN LABEL_STATUS IN (@PrintType, 'Failed During Printing','Failed After Printing','First','Last') THEN BATCH_NUMBER END), 1) AS BatchNumber,
                     IFNULL(MAX(SET_NUMBER) + 1, 1) AS SetNumber
                 FROM {tableName} 
