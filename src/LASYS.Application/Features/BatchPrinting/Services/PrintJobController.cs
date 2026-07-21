@@ -58,7 +58,7 @@ namespace LASYS.Application.Features.BatchPrinting.Services
             job.InProgress();
         }
 
-        public void Stop(Guid jobId)
+        public void Stop(Guid jobId, bool hasApproval = false)
         {
             var job = GetJob(jobId);
             if (job is null) return;
@@ -66,7 +66,7 @@ namespace LASYS.Application.Features.BatchPrinting.Services
             if (job.Status == PrintJobStatus.Stopped)
                 return;
 
-            job.Stopped();
+            job.Stopped(hasApproval);
         }
 
         public void Printed(Guid jobId)

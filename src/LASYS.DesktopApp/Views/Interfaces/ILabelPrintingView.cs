@@ -18,6 +18,9 @@ namespace LASYS.DesktopApp.Views.Interfaces
 
         event EventHandler CameraPreviewRequested;
         event EventHandler LabelTemplatePreviewRequested;
+
+        event EventHandler QuantityChanged;
+        event EventHandler EndOfBatchChanged;
         //void SetCameraPreview(UserControl control);
         void ToggleCameraPreview(bool visible);
 
@@ -30,6 +33,9 @@ namespace LASYS.DesktopApp.Views.Interfaces
         void UpdatePrintingResults(uint targetQuantity, long setNumber, long batchNumber, long startSequence, long remaining, long totalPrinted, long totalPassed, long totalFailed, long labelSample);
         void ToggleActivityLogs();
         void ShowError(ErrorForm errorForm);
+
+        void ShowNotification(string message, MessageBoxIcon icon);
+
         void ShowApprovalAuthorization(ApprovalAuthenticationForm approvalForm);
         void HideModal();
         void InvokeOnUI(Action action);
@@ -43,6 +49,9 @@ namespace LASYS.DesktopApp.Views.Interfaces
         void SetLoading(bool isLoading);
         void SetBackButtonEnabled(bool enabled);
         void ResetView();
+        void SetEndOfBatch(bool isChecked);
+        int Quantity { get; }
+        bool IsEndOfBatchChecked { get; }
     }
 
 }

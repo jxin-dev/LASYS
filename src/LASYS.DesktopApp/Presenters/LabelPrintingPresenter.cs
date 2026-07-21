@@ -19,6 +19,7 @@ using LASYS.Application.Features.Devices.Models;
 using LASYS.Application.Features.LabelInstructions.GetLabelInstructionContext;
 using LASYS.Application.Features.LabelInstructions.GetWorkOrderListBySectionId;
 using LASYS.Application.Features.PrintLabels.Helpers;
+using LASYS.Application.Interfaces.Persistence.Repositories;
 using LASYS.Application.Interfaces.Services;
 using LASYS.Application.Interfaces.Services.Camera;
 using LASYS.Application.Interfaces.Services.NiceLabel;
@@ -84,6 +85,8 @@ namespace LASYS.DesktopApp.Presenters
             _view.ResumePrintingRequested += OnResumePrintingRequested;
             _view.StopPrintingRequested += OnStopPrintingRequested;
 
+            _view.QuantityChanged += OnQuantityChanged;
+            _view.EndOfBatchChanged += OnEndOfBatchChanged;
 
 
 
@@ -114,6 +117,32 @@ namespace LASYS.DesktopApp.Presenters
             _labelTemplatePreviewPresenter = services.GetRequiredService<LabelTemplatePreviewPresenter>();
             _view.SetPreview(_labelTemplatePreviewPresenter.View);
             _view.LabelTemplatePreviewRequested += OnLabelTemplatePreviewRequested;
+        }
+
+        private async void OnEndOfBatchChanged(object? sender, EventArgs e)
+        {
+            if (_view.Quantity == 1 && _view.IsEndOfBatchChecked)
+            {
+                var hasOpenBatch = await _batchPrintService.HasOpenBatchAsync();
+                if (!hasOpenBatch)
+                {
+                    _view.ShowNotification("There is no open batch to end.", MessageBoxIcon.Warning);
+                    _view.SetEndOfBatch(false);   // uncheck it
+                }
+            }
+        }
+
+        private async void OnQuantityChanged(object? sender, EventArgs e)
+        {
+            if (_view.Quantity == 1 && _view.IsEndOfBatchChecked)
+            {
+                var hasOpenBatch = await _batchPrintService.HasOpenBatchAsync();
+                if (!hasOpenBatch)
+                {
+                    _view.ShowNotification("There is no open batch to end.", MessageBoxIcon.Warning);
+                    _view.SetEndOfBatch(false);   // uncheck it
+                }
+            }
         }
 
         private void OnApprovalAuthorizationRequired(object? sender, EventArgs e)
@@ -223,7 +252,7 @@ namespace LASYS.DesktopApp.Presenters
 
             var jobId = e.JobId;
             var quantityToPrint = e.Quantity;
-            var endOfBatch = e.EndOfBatch;  
+            var endOfBatch = e.EndOfBatch;
             await _mediator.Send(new StartBatchPrintCommand(jobId, quantityToPrint, endOfBatch));
             _activePrintJobId = jobId;
 

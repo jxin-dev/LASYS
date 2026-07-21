@@ -65,10 +65,13 @@ namespace LASYS.Application.Features.BatchPrinting.Services
             if (job is not null)
                 JobStateChanged?.Invoke(this, job);
         }
+        private Guid _activeJobId;
         public Task<PrintJobState> InitializeAsync(LabelPrintingContext context)
         {
             var printerName = _deviceManager.Printer.PrinterName ?? "Unknown";
             var jobId = _jobController.CreateJob(printerName, context);
+            _activeJobId = jobId;
+
             var job = _jobController.GetJob(jobId)!;
             if (job.RemainingQuantity == 0)
             {
@@ -85,6 +88,7 @@ namespace LASYS.Application.Features.BatchPrinting.Services
 
             return Task.FromResult(job);
         }
+
         public Task StartAsync(Guid jobId, int quantity, bool endOfBatch)
         {
             var job = _jobController.GetJob(jobId);
@@ -320,7 +324,8 @@ namespace LASYS.Application.Features.BatchPrinting.Services
                             var saveResult = await SavePrintedLabelAsync(job, cancellationToken);
                             if (saveResult == StepResult.Success)
                             {
-                                job.MarkSaved();
+                                var hasSampleLabel = (!hasOpenBatch && isFirstLabel) || (isLastLabel && job.EndOfBatch);
+                                job.MarkSaved(hasSampleLabel);
                                 LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Info, $"Save operation completed for label {job.CurrentSequenceFormat}{pairText}."));
 
                                 completedPairs++;
@@ -450,7 +455,7 @@ namespace LASYS.Application.Features.BatchPrinting.Services
 
                 if (!approval.IsApproved)
                 {
-                    _jobController.Stop(jobId);
+                    _jobController.Stop(jobId, true);
                     EnsureCanContinue(job);
                 }
 
@@ -462,6 +467,7 @@ namespace LASYS.Application.Features.BatchPrinting.Services
                     ipAddress);
 
                 job.MarkFirst();
+                NotifyJobStateChanged(jobId);
             }
             else if (isLastLabel && isEndOfBatch)
             {
@@ -469,7 +475,7 @@ namespace LASYS.Application.Features.BatchPrinting.Services
 
                 if (!approval.IsApproved)
                 {
-                    _jobController.Stop(jobId);
+                    _jobController.Stop(jobId, true);
                     EnsureCanContinue(job);
                 }
 
@@ -481,6 +487,8 @@ namespace LASYS.Application.Features.BatchPrinting.Services
                     ipAddress);
 
                 job.MarkLast();
+                NotifyJobStateChanged(jobId);
+
             }
         }
 
@@ -839,9 +847,9 @@ namespace LASYS.Application.Features.BatchPrinting.Services
             _jobController.Resume(jobId);
             NotifyJobStateChanged(jobId);
         }
-        public void Stop(Guid jobId)
+        public void Stop(Guid jobId, bool hasApproval = false)
         {
-            _jobController.Stop(jobId);
+            _jobController.Stop(jobId, hasApproval);
             NotifyJobStateChanged(jobId);
 
             _decisionTcs?.TrySetResult(StepResult.Stop);
@@ -851,6 +859,12 @@ namespace LASYS.Application.Features.BatchPrinting.Services
             _decisionTcs?.TrySetResult(decision);
         }
 
-
+        public async Task<bool> HasOpenBatchAsync()
+        {
+            var job = _jobController.GetJob(_activeJobId);
+            var latestSpecialStatus = await _printLabelRepository.GetLatestSpecialLabelStatusAsync(job.ItemCode, job.LotNo, job.BoxType);
+            bool hasOpenBatch = latestSpecialStatus == "First";
+            return hasOpenBatch;
+        }
     }
 }

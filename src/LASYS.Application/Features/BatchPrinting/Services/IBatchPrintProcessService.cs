@@ -1,4 +1,5 @@
-﻿using LASYS.Application.Events;
+﻿using LASYS.Application.Common.Enums;
+using LASYS.Application.Events;
 using LASYS.Application.Features.BatchPrinting.Enums;
 using LASYS.Application.Features.BatchPrinting.Events;
 using LASYS.Application.Features.BatchPrinting.Models;
@@ -14,7 +15,7 @@ namespace LASYS.Application.Features.BatchPrinting.Services
         Task StartAsync(Guid jobId, int quantity, bool endOfBatch);
         void Pause(Guid jobId);
         void Resume(Guid jobId);
-        void Stop(Guid jobId);
+        void Stop(Guid jobId, bool hasApproval = false);
 
         event EventHandler<OperatorDecisionRequiredEventArgs> OperatorDecisionRequired;
 
@@ -26,5 +27,7 @@ namespace LASYS.Application.Features.BatchPrinting.Services
         void CancelApprovalAuthorization();
         void SetUserDecision(StepResult decision);
         event EventHandler<LogEventArgs> LogGenerated;
+
+        Task<bool> HasOpenBatchAsync();
     }
 }

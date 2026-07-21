@@ -32,6 +32,8 @@ namespace LASYS.DesktopApp.Views.UserControls
         public event EventHandler? StopPrintingRequested;
         public event EventHandler? CameraPreviewRequested;
         public event EventHandler? LabelTemplatePreviewRequested;
+        public event EventHandler? QuantityChanged;
+        public event EventHandler? EndOfBatchChanged;
 
         private PrintJobStatus _currentJobStatus = PrintJobStatus.Initializing;
 
@@ -49,6 +51,9 @@ namespace LASYS.DesktopApp.Views.UserControls
         private Label? _barcodeDetails;
 
         public UserControl UserControl => this;
+
+        public bool IsEndOfBatchChecked => chkEndOfBatch.Checked;
+        public int Quantity => (int)nudQuantity.Value;
 
         private Guid? _printJobId;
 
@@ -123,6 +128,8 @@ namespace LASYS.DesktopApp.Views.UserControls
             btnLabelTemplatePreview.Image = _labelPreviewOn;
             btnLabelTemplatePreview.Click += (_, _) => LabelTemplatePreviewRequested?.Invoke(this, EventArgs.Empty);
 
+            nudQuantity.ValueChanged += (_, _) => QuantityChanged?.Invoke(this, EventArgs.Empty);
+            chkEndOfBatch.CheckedChanged += (_, _) => EndOfBatchChanged?.Invoke(this, EventArgs.Empty);
 
             //Loading card setup
             _loadingCard = new Panel
@@ -834,6 +841,7 @@ namespace LASYS.DesktopApp.Views.UserControls
             nudQuantity.Minimum = 0;
             nudQuantity.Maximum = 0;
             nudQuantity.Value = 0;
+            chkEndOfBatch.Checked = false;
             ClearLogs();
         }
 
@@ -883,6 +891,16 @@ namespace LASYS.DesktopApp.Views.UserControls
         public void HideModal()
         {
             _modalOverlay.HideOverlay();
+        }
+
+        public void ShowNotification(string message, MessageBoxIcon icon)
+        {
+           MessageBox.Show(message, "Notification", MessageBoxButtons.OK, icon);
+        }
+
+        public void SetEndOfBatch(bool isChecked)
+        {
+            chkEndOfBatch.Checked = isChecked;
         }
     }
 
