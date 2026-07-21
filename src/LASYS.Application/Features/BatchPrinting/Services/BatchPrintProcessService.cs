@@ -531,7 +531,6 @@ namespace LASYS.Application.Features.BatchPrinting.Services
             var pairedType = job.CurrentPairCount == 1 ? "Single"
                 : job.CurrentPairNumber == 1 ? "Paired1" : "Paired2";
 
-            job.MarkFailed();
 
             await _printLabelRepository.SavePrintedLabelAsync(new SequenceData(
                 context.MasterLabelDetails!.BoxType,
@@ -548,6 +547,8 @@ namespace LASYS.Application.Features.BatchPrinting.Services
                 job.ApprovedByIpAddress!,
                 job.ApprovedByDateTime!
                 ));
+
+            job.MarkFailed();
 
 
         }
@@ -777,7 +778,7 @@ namespace LASYS.Application.Features.BatchPrinting.Services
         {
             EnsureCanContinue(job);
 
-            return StepResult.Success; //comment for real implementation
+            //return StepResult.Success; //comment for real implementation
 
             if (!_deviceManager.Camera.IsCameraReady())
             {
