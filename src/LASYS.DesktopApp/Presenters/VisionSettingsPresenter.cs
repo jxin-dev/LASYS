@@ -436,7 +436,7 @@ namespace LASYS.DesktopApp.Presenters
                 var summary = new ConcurrentDictionary<string, int>();
                 int counter = 0;
 
-                for (int i = 0; i < 50; i++)
+                for (int i = 0; i < 10; i++)
                 {
                     token.ThrowIfCancellationRequested();
 
@@ -462,7 +462,7 @@ namespace LASYS.DesktopApp.Presenters
                         _view.DisplayOCRResult($"[{count}] {key}")
                     );
 
-                    await Task.Delay(1000, token); // cancellable delay
+                    await Task.Delay(300, token); // cancellable delay
                 }
 
                 // SUMMARY OUTPUT

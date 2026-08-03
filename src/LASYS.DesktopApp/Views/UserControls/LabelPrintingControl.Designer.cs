@@ -53,9 +53,9 @@
             lblBatchNumber = new Label();
             label13 = new Label();
             groupBox2 = new GroupBox();
+            txtQuantity = new TextBox();
             btnPrint = new Button();
             btnPauseResume = new Button();
-            nudQuantity = new NumericUpDown();
             lblCurrentSequence = new Label();
             label19 = new Label();
             label21 = new Label();
@@ -77,7 +77,6 @@
             groupBox4.SuspendLayout();
             groupBox3.SuspendLayout();
             groupBox2.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)nudQuantity).BeginInit();
             groupBox1.SuspendLayout();
             pnlHeader.SuspendLayout();
             SuspendLayout();
@@ -353,9 +352,9 @@
             // groupBox2
             // 
             groupBox2.Anchor = AnchorStyles.None;
+            groupBox2.Controls.Add(txtQuantity);
             groupBox2.Controls.Add(btnPrint);
             groupBox2.Controls.Add(btnPauseResume);
-            groupBox2.Controls.Add(nudQuantity);
             groupBox2.Controls.Add(lblCurrentSequence);
             groupBox2.Controls.Add(label19);
             groupBox2.Controls.Add(label21);
@@ -366,6 +365,16 @@
             groupBox2.TabIndex = 1;
             groupBox2.TabStop = false;
             groupBox2.Text = "Barcode Label";
+            // 
+            // txtQuantity
+            // 
+            txtQuantity.Font = new Font("Segoe UI", 14.25F, FontStyle.Bold);
+            txtQuantity.Location = new Point(139, 23);
+            txtQuantity.Name = "txtQuantity";
+            txtQuantity.PlaceholderText = "0";
+            txtQuantity.Size = new Size(72, 33);
+            txtQuantity.TabIndex = 8;
+            txtQuantity.KeyPress += txtQuantity_KeyPress;
             // 
             // btnPrint
             // 
@@ -401,15 +410,6 @@
             btnPauseResume.TextImageRelation = TextImageRelation.ImageBeforeText;
             btnPauseResume.UseVisualStyleBackColor = false;
             btnPauseResume.Visible = false;
-            // 
-            // nudQuantity
-            // 
-            nudQuantity.Location = new Point(139, 25);
-            nudQuantity.Name = "nudQuantity";
-            nudQuantity.ReadOnly = true;
-            nudQuantity.Size = new Size(75, 27);
-            nudQuantity.TabIndex = 4;
-            nudQuantity.TextAlign = HorizontalAlignment.Right;
             // 
             // lblCurrentSequence
             // 
@@ -618,7 +618,6 @@
             groupBox3.PerformLayout();
             groupBox2.ResumeLayout(false);
             groupBox2.PerformLayout();
-            ((System.ComponentModel.ISupportInitialize)nudQuantity).EndInit();
             groupBox1.ResumeLayout(false);
             groupBox1.PerformLayout();
             pnlHeader.ResumeLayout(false);
@@ -673,5 +672,6 @@
         private Button btnCameraPreview;
         private Button btnLabelTemplatePreview;
         private CheckBox chkEndOfBatch;
+        private TextBox txtQuantity;
     }
 }

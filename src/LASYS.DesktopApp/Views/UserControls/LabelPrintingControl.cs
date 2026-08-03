@@ -53,7 +53,8 @@ namespace LASYS.DesktopApp.Views.UserControls
         public UserControl UserControl => this;
 
         public bool IsEndOfBatchChecked => chkEndOfBatch.Checked;
-        public int Quantity => (int)nudQuantity.Value;
+        //public int Quantity => (int)nudQuantity.Value;
+        public int Quantity => int.TryParse(txtQuantity.Text, out var value) ? value : _minimumQuantity;
 
         private Guid? _printJobId;
 
@@ -98,7 +99,15 @@ namespace LASYS.DesktopApp.Views.UserControls
 
                 if (_currentJobStatus is PrintJobStatus.Ready or PrintJobStatus.Completed)
                 {
-                    PrintRequested?.Invoke(this, new PrintRequestedEventArgs(_printJobId.Value, (int)nudQuantity.Value, chkEndOfBatch.Checked));
+                    int quantity = 0;
+
+                    if (!int.TryParse(txtQuantity.Text, out quantity))
+                    {
+                        quantity = _minimumQuantity;
+                        txtQuantity.Text = quantity.ToString();
+                    }
+
+                    PrintRequested?.Invoke(this, new PrintRequestedEventArgs(_printJobId.Value, quantity, chkEndOfBatch.Checked));
                 }
 
                 if (_currentJobStatus is PrintJobStatus.InProgress or PrintJobStatus.Paused)
@@ -128,7 +137,9 @@ namespace LASYS.DesktopApp.Views.UserControls
             btnLabelTemplatePreview.Image = _labelPreviewOn;
             btnLabelTemplatePreview.Click += (_, _) => LabelTemplatePreviewRequested?.Invoke(this, EventArgs.Empty);
 
-            nudQuantity.ValueChanged += (_, _) => QuantityChanged?.Invoke(this, EventArgs.Empty);
+            //nudQuantity.ValueChanged += (_, _) => QuantityChanged?.Invoke(this, EventArgs.Empty);
+            txtQuantity.TextChanged += (_, _) => QuantityChanged?.Invoke(this, EventArgs.Empty);
+
             chkEndOfBatch.CheckedChanged += (_, _) => EndOfBatchChanged?.Invoke(this, EventArgs.Empty);
 
             //Loading card setup
@@ -556,9 +567,11 @@ namespace LASYS.DesktopApp.Views.UserControls
             //nudQuantity.Maximum = (decimal)maxQty;
             //nudQuantity.Value = (decimal)maxQty;
 
-            nudQuantity.Minimum = 1;
-            nudQuantity.Maximum = remaining;
-            nudQuantity.Value = remaining < 50 ? remaining : 50;
+            _minimumQuantity = 1;
+            _maximumQuantity = (int)remaining;
+            //nudQuantity.Minimum = 1;
+            //nudQuantity.Maximum = remaining;
+            //nudQuantity.Value = remaining < 50 ? remaining : 50;
         }
 
         private Color GetColor(MessageType type)
@@ -838,9 +851,11 @@ namespace LASYS.DesktopApp.Views.UserControls
             lblTotalPassed.Text = "...";
             lblTotalFailed.Text = "...";
 
-            nudQuantity.Minimum = 0;
-            nudQuantity.Maximum = 0;
-            nudQuantity.Value = 0;
+            _minimumQuantity = 0;
+            _maximumQuantity = 0;
+            //nudQuantity.Minimum = 0;
+            //nudQuantity.Maximum = 0;
+            //nudQuantity.Value = 0;
             chkEndOfBatch.Checked = false;
             ClearLogs();
         }
@@ -895,12 +910,79 @@ namespace LASYS.DesktopApp.Views.UserControls
 
         public void ShowNotification(string message, MessageBoxIcon icon)
         {
-           MessageBox.Show(message, "Notification", MessageBoxButtons.OK, icon);
+            MessageBox.Show(message, "Notification", MessageBoxButtons.OK, icon);
         }
 
         public void SetEndOfBatch(bool isChecked)
         {
             chkEndOfBatch.Checked = isChecked;
+            txtQuantity.Text = _minimumQuantity.ToString();
+        }
+
+        private int _minimumQuantity = 1;
+        private int _maximumQuantity = 100;
+        private void txtQuantity_KeyPress(object sender, KeyPressEventArgs e)
+        {
+            TextBox tb = (TextBox)sender;
+
+            // Allow control keys (Backspace, Delete, Ctrl+C, etc.)
+            if (char.IsControl(e.KeyChar))
+                return;
+
+            // Only digits
+            if (!char.IsDigit(e.KeyChar))
+            {
+                e.Handled = true;
+                return;
+            }
+
+            // Prevent typing 0 as the first digit
+            if (tb.SelectionStart == 0 &&
+                tb.SelectionLength == tb.Text.Length &&
+                e.KeyChar == '0')
+            {
+                e.Handled = true;
+                return;
+            }
+
+            // Or more generally, check what the text would become
+            string newText = tb.Text
+                .Remove(tb.SelectionStart, tb.SelectionLength)
+                .Insert(tb.SelectionStart, e.KeyChar.ToString());
+
+            if (newText.StartsWith("0"))
+            {
+                e.Handled = true;
+                return;
+            }
+
+            if (int.TryParse(newText, out int value) && value > _maximumQuantity)
+            {
+                e.Handled = true;
+            }
+        }
+
+        private void txtQuantity_Leave(object sender, EventArgs e)
+        {
+            TextBox tb = (TextBox)sender;
+            if (string.IsNullOrWhiteSpace(tb.Text))
+            {
+                tb.Text = _minimumQuantity.ToString(); // or "1"
+                return;
+            }
+
+            if (!int.TryParse(tb.Text, out int value))
+            {
+                value = _minimumQuantity;
+            }
+
+            if (value < _minimumQuantity)
+                value = _minimumQuantity;
+
+            if (value > _maximumQuantity)
+                value = _maximumQuantity;
+
+            tb.Text = value.ToString(); // Removes leading zeros
         }
     }
 
