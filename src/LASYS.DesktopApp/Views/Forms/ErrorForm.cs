@@ -46,7 +46,7 @@ namespace LASYS.DesktopApp.Views.Forms
 
                 case ValidationFailure.OcrMismatch:
                     btnRetry.Visible = true;
-                    btnSkip.Visible = true;
+                    btnSkip.Visible = false; //true;
                     btnStopBatch.Visible = true;
                     break;
             }
