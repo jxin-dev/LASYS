@@ -97,7 +97,8 @@ namespace LASYS.Infrastructure.Hardware.Camera
                             SetStatus(DeviceStatusCode.NotDetected);
                             
                         CameraDisconnected?.Invoke(this, EventArgs.Empty);
-                        return;
+                        cameraIndex = 0;
+                        //return;
                     }
 
                     var capture = new VideoCapture(cameraIndex, VideoCaptureAPIs.DSHOW);
