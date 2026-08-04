@@ -1,4 +1,5 @@
-﻿using System.Drawing;
+﻿using System.Diagnostics;
+using System.Drawing;
 using LASYS.Application.Contracts;
 using LASYS.Application.Events;
 using LASYS.Application.Interfaces.Services;
@@ -38,6 +39,7 @@ namespace LASYS.Infrastructure.OCR
         {
             _engine = new TesseractEngine(_tessDataDirectory, _language, EngineMode.Default);
             _engine.SetVariable("tessedit_char_whitelist", "0123456789");
+            _engine.DefaultPageSegMode = PageSegMode.SingleLine;
         }
 
         private Rectangle ComputeViewerRegion(CvRect rect, DrawingSize viewerSize, DrawingSize imageSize)
@@ -94,6 +96,9 @@ namespace LASYS.Infrastructure.OCR
             bool success = false;
             string result = string.Empty;
 
+            const float MinConfidence = 0.80f;
+            const int MaxRetries = 3;
+
             try
             {
                 result = await Task.Run(() =>
@@ -104,12 +109,19 @@ namespace LASYS.Infrastructure.OCR
 
                         using Mat resized = new();
                         Cv2.Resize(
-                            roiMat,
-                            resized,
-                            new OpenCvSharp.Size(),
-                            2.0,
-                            2.0,
-                            InterpolationFlags.Cubic);
+                           roiMat,
+                           resized,
+                           new OpenCvSharp.Size(),
+                           4.0,
+                           4.0,
+                           InterpolationFlags.Lanczos4);
+                        //Cv2.Resize(
+                        //    roiMat,
+                        //    resized,
+                        //    new OpenCvSharp.Size(),
+                        //    2.0,
+                        //    2.0,
+                        //    InterpolationFlags.Cubic);
 
                         using Mat gray = new();
                         Cv2.CvtColor(resized, gray, ColorConversionCodes.BGR2GRAY);
@@ -120,19 +132,78 @@ namespace LASYS.Infrastructure.OCR
                             clahe.Apply(gray, claheResult);
                         }
 
+                        using Mat blurred = new();
+                        Cv2.MedianBlur(claheResult, blurred, 3);
+
                         using Mat thresholded = new();
-                        Cv2.Threshold(
-                            claheResult,
-                            thresholded,
-                            0,
-                            255,
-                            ThresholdTypes.Binary | ThresholdTypes.Otsu);
 
-                        using Bitmap bitmap = thresholded.ToBitmap();
-                        using var pix = PixConverter.ToPix(bitmap);
-                        using var page = _engine!.Process(pix);
+                        string bestText = string.Empty;
+                        float bestConfidence = 0f;
+                        for (int attempt = 1; attempt <= MaxRetries; attempt++)
+                        {
+                            // Different preprocessing each retry
+                            if (attempt == 1)
+                            {
+                                Cv2.Threshold(
+                                    blurred,
+                                    thresholded,
+                                    0,
+                                    255,
+                                    ThresholdTypes.Binary | ThresholdTypes.Otsu);
+                            }
+                            else
+                            {
+                                Cv2.AdaptiveThreshold(
+                                    blurred,
+                                    thresholded,
+                                    255,
+                                    AdaptiveThresholdTypes.GaussianC,
+                                    ThresholdTypes.Binary,
+                                    31,
+                                    10);
+                            }
+                            using Bitmap bitmap = thresholded.ToBitmap();
+                            using var pix = PixConverter.ToPix(bitmap);
+                            using var page = _engine!.Process(pix);
 
-                        return page.GetText()?.Trim() ?? string.Empty;
+                            var text = page.GetText()?.Trim() ?? string.Empty;
+                            text = new string(text.Where(char.IsDigit).ToArray());
+
+                            float confidence = page.GetMeanConfidence();
+
+                            Debug.WriteLine(
+                                $"Attempt {attempt}: {text} - {confidence:P2}");
+
+                            if (confidence > bestConfidence)
+                            {
+                                bestConfidence = confidence;
+                                bestText = text;
+                            }
+
+                            // Accept immediately
+                            if (confidence >= MinConfidence &&
+                                text.Length == 6)
+                            {
+                                bestText = text;
+                                break;
+                            }
+                        }
+                        if (!string.IsNullOrWhiteSpace(bestText))
+                        {
+                            string safeResult = string.Concat(
+                                bestText.Where(c => !Path.GetInvalidFileNameChars().Contains(c)));
+
+                            string savePath = Path.Combine(
+                                _ocrLogsDirectory,
+                                $"{safeResult}_{bestConfidence:P0}_{DateTime.Now:yyyyMMdd_HHmmss_fff}.jpg");
+
+                            Cv2.ImWrite(
+                                savePath,
+                                roiMat,
+                                new ImageEncodingParam(ImwriteFlags.JpegQuality, 90));
+                        }
+
+                        return bestText;
                     }
                 });
 
@@ -197,9 +268,9 @@ namespace LASYS.Infrastructure.OCR
                            roiMat,
                            resized,
                            new OpenCvSharp.Size(),   // auto size
-                           2.0,                      // scale X
-                           2.0,                      // scale Y
-                           InterpolationFlags.Cubic  // best for text
+                           4.0, //2.0,                      // scale X
+                           4.0, //2.0,                      // scale Y
+                           InterpolationFlags.Lanczos4 //InterpolationFlags.Cubic  // best for text
                        );
 
                        // Preprocessing improves small text detection
@@ -224,12 +295,18 @@ namespace LASYS.Infrastructure.OCR
                        using var page = _engine!.Process(pix);
 
                        var text = page.GetText()?.Trim() ?? string.Empty;
+                       float confidence = page.GetMeanConfidence();
+                       if (confidence < 0.80)
+                       {
+                           //Retry();
+                       }
+                       Debug.WriteLine($"Result: {text} - {confidence * 100:F2}%");
 
                        // Save ROI image only
                        if (!string.IsNullOrWhiteSpace(text))
                        {
                            string safeResult = string.Concat(text.Where(c => !Path.GetInvalidFileNameChars().Contains(c)));
-                           string savePath = Path.Combine(_ocrLogsDirectory, $"{safeResult}_{DateTime.Now:yyyyMMdd_HHmmss}.jpg");
+                           string savePath = Path.Combine(_ocrLogsDirectory, $"{safeResult}_{DateTime.Now:yyyyMMdd_HHmmss_fff}.jpg");
                            Cv2.ImWrite(savePath, roiMat, new ImageEncodingParam(ImwriteFlags.JpegQuality, 90));
                        }
 
