@@ -30,7 +30,7 @@ namespace LASYS.Application.Interfaces.Services.Camera
         Task<bool> ReconnectAsync();
         void SetFocus(int focusValue);
         bool IsStreaming { get; }
-
+        bool IsCameraConnected { get; }
         //
         IReadOnlyList<string> GetCameras();
         int GetCameraIndex(string cameraName);

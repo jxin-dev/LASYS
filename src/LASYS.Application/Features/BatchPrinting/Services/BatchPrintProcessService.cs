@@ -787,8 +787,7 @@ namespace LASYS.Application.Features.BatchPrinting.Services
             EnsureCanContinue(job);
 
             //return StepResult.Success; //comment for real implementation
-
-            if (!_deviceManager.Camera.IsCameraReady())
+            if (!_deviceManager.Camera.IsCameraConnected) 
             {
                 var connected = await _deviceManager.Camera.ReconnectAsync();
 
@@ -802,8 +801,8 @@ namespace LASYS.Application.Features.BatchPrinting.Services
                             totalPairs),
                         cancellationToken);
                 }
-                return StepResult.Retry;
             }
+            
 
             var coordinates = await _calibrationService.GetCoordinatesAsync(job.ItemCode, job.Revision, job.BoxType);
             if (coordinates == null)

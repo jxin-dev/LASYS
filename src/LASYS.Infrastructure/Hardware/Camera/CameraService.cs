@@ -39,6 +39,7 @@ namespace LASYS.Infrastructure.Hardware.Camera
 
 
         private bool _isCameraConnected;
+        public bool IsCameraConnected => _isCameraConnected;
         private Task? _streamingTask;
         public Mat? LastCapturedFrame { get; set; }
 
@@ -97,6 +98,7 @@ namespace LASYS.Infrastructure.Hardware.Camera
                             SetStatus(DeviceStatusCode.NotDetected);
                             
                         CameraDisconnected?.Invoke(this, EventArgs.Empty);
+                        _isCameraConnected = false;
                         cameraIndex = 0;
                         //return;
                     }
@@ -202,7 +204,7 @@ namespace LASYS.Infrastructure.Hardware.Camera
                     if (!TryReadFrame(frame) || frame.Empty())
                     {
                         _isCameraConnected = false;
-                        ReleaseCamera();
+                        //ReleaseCamera();
                         CreateEmptyFrame(getTargetResolution);
                         SetStatus(DeviceStatusCode.Disconnected);
                         CameraDisconnected?.Invoke(this, EventArgs.Empty);
@@ -388,6 +390,7 @@ namespace LASYS.Infrastructure.Hardware.Camera
                 catch (AccessViolationException)
                 {
                     // The camera was unplugged
+                    _isCameraConnected = false;
                     ReleaseCamera();
 
                     //_capture?.Dispose();
@@ -397,6 +400,7 @@ namespace LASYS.Infrastructure.Hardware.Camera
                 catch (Exception)
                 {
                     // Other errors
+                    _isCameraConnected = false;
                     return false;
                 }
             }
@@ -805,6 +809,7 @@ namespace LASYS.Infrastructure.Hardware.Camera
 
             if (!TryReadFrame(frame) || frame.Empty())
             {
+                _isCameraConnected = false;
                 ReleaseCamera();
                 return false;
             }
