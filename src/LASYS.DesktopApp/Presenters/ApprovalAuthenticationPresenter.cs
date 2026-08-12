@@ -1,6 +1,7 @@
 ﻿using System.Windows.Forms;
 using LASYS.Application.Features.Authentication.Login;
 using LASYS.Application.Features.BatchPrinting.Events;
+using LASYS.Application.Interfaces.Context;
 using LASYS.DesktopApp.Events;
 using LASYS.DesktopApp.Views.Forms;
 using LASYS.DesktopApp.Views.Interfaces;
@@ -13,10 +14,11 @@ namespace LASYS.DesktopApp.Presenters
         public ApprovalAuthenticationForm View { get; }
         private readonly IApprovalAuthenticationView _view;
         private readonly IMediator _mediator;
+        private readonly ICurrentUser _currentUser;
         public event EventHandler<ApprovalAuthorizedEventArgs>? AuthorizationSucceeded;
         public event EventHandler? AuthorizationCancelled;
 
-        public ApprovalAuthenticationPresenter(IApprovalAuthenticationView view, IMediator mediator)
+        public ApprovalAuthenticationPresenter(IApprovalAuthenticationView view, IMediator mediator, ICurrentUser currentUser)
         {
             _view = view;
             _mediator = mediator;
@@ -25,7 +27,7 @@ namespace LASYS.DesktopApp.Presenters
 
             _view.ApprovalRequested += OnApprovalRequested;
             _view.ApprovalCancelled += OnApprovalCancelled;
-
+            _currentUser = currentUser;
         }
 
         private void OnApprovalCancelled(object? sender, EventArgs e)
@@ -36,6 +38,12 @@ namespace LASYS.DesktopApp.Presenters
 
         private async void OnApprovalRequested(object? sender, ApprovalCredentialsEventArgs e)
         {
+            if (_currentUser.Username.ToLower().Trim() == e.Username.ToLower().Trim())
+            {
+                _view.ApprovalFailed("You cannot approve your own request.");
+                return;
+            }
+
             var result = await _mediator.Send(new LoginCommand(e.Username, e.Password));
 
             if (result.IsSuccess)
