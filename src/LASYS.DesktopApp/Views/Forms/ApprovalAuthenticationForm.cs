@@ -58,5 +58,14 @@ namespace LASYS.DesktopApp.Views.Forms
             allowClose = true;
             Close();
         }
+
+        public void EnableApproveButton(bool isEnable)
+        {
+            txtUsername.Enabled = isEnable;
+            txtPassword.Enabled = isEnable;
+            btnLogin.Enabled = isEnable;
+            btnCancel.Enabled = isEnable;
+            lblWaitingStatus.Visible = !isEnable;
+        }
     }
 }

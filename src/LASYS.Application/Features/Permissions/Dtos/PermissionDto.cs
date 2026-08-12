@@ -4,6 +4,7 @@ namespace LASYS.Application.Features.Permissions.Dtos
 {
     public class PermissionDto
     {
+        public string? ProcessName { get; init; } = default!;
         public string? FunctionCode { get; init; } = default!;
         public string? FunctionName { get; init; } = default!;
         public AccessLevel AccessLevel { get; init; }

@@ -42,6 +42,7 @@ namespace LASYS.Application.Features.Permissions.GetUserPermissions
                     var result = await connection.QueryAsync<Permission>(sql, new { ROLE_CODE = request.RoleCode });
                     return result.Select(x => new PermissionDto
                     {
+                        ProcessName = x.SYSTEM_PROCESS_NAME,
                         FunctionCode = x.SYSTEM_FUNCTION_CODE,
                         FunctionName = x.SYSTEM_FUNCTION_NAME,
                         AccessLevel = PermissionMapper.MapAccessLevel(x.ACCESS_FLAG)

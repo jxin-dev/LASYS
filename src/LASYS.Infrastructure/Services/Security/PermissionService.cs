@@ -8,9 +8,9 @@ namespace LASYS.Infrastructure.Services.Security
     {
         private Dictionary<string, AccessLevel> _permissions = new();
 
-        public bool HasAccess(string code, AccessLevel requiredLevel)
+        public bool HasAccess(string functionName, AccessLevel requiredLevel)
         {
-            if (!_permissions.TryGetValue(code, out var level))
+            if (!_permissions.TryGetValue(functionName, out var level))
                 return false;
 
             return level >= requiredLevel;
@@ -19,7 +19,7 @@ namespace LASYS.Infrastructure.Services.Security
         public void SetPermissions(IEnumerable<PermissionDto> permissions)
         {
             _permissions = permissions.ToDictionary(
-                x => x.FunctionCode,
+                x => x.FunctionName,
                 x => x.AccessLevel);
         }
 

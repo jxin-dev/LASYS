@@ -6,6 +6,6 @@ namespace LASYS.Application.Interfaces.Services
     public interface IPermissionService
     {
         void SetPermissions(IEnumerable<PermissionDto> permissions);
-        bool HasAccess(string code, AccessLevel requiredLevel);
+        bool HasAccess(string functionName, AccessLevel requiredLevel);
     }
 }

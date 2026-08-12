@@ -37,6 +37,7 @@
             label4 = new Label();
             panel1 = new Panel();
             btnCancel = new Button();
+            lblWaitingStatus = new Label();
             SuspendLayout();
             // 
             // label1
@@ -143,11 +144,25 @@
             btnCancel.Text = "Cancel";
             btnCancel.UseVisualStyleBackColor = false;
             // 
+            // lblWaitingStatus
+            // 
+            lblWaitingStatus.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
+            lblWaitingStatus.AutoSize = true;
+            lblWaitingStatus.Font = new Font("Segoe UI Semibold", 9.75F, FontStyle.Bold);
+            lblWaitingStatus.ForeColor = Color.FromArgb(0, 110, 100);
+            lblWaitingStatus.Location = new Point(4, 254);
+            lblWaitingStatus.Name = "lblWaitingStatus";
+            lblWaitingStatus.Size = new Size(84, 17);
+            lblWaitingStatus.TabIndex = 19;
+            lblWaitingStatus.Text = "Please wait...";
+            lblWaitingStatus.Visible = false;
+            // 
             // ApprovalAuthenticationForm
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(373, 280);
+            Controls.Add(lblWaitingStatus);
             Controls.Add(btnCancel);
             Controls.Add(panel1);
             Controls.Add(label4);
@@ -175,5 +190,6 @@
         private Label label4;
         private Panel panel1;
         private Button btnCancel;
+        private Label lblWaitingStatus;
     }
 }

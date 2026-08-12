@@ -12,5 +12,6 @@ namespace LASYS.DesktopApp.Views.Interfaces
         void ApprovalSucceeded();
         void ApprovalFailed(string errorMessage);
         void CloseApproval();
+        void EnableApproveButton(bool isEnable);
     }
 }
