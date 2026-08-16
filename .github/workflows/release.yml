@@ -56,7 +56,38 @@ jobs:
           # Copy additional resource folders if they exist
           if (Test-Path "src/LASYS.DesktopApp/Resources") { Copy-Item "src/LASYS.DesktopApp/Resources" -Recurse -Destination "publish/Resources" -Force }
           if (Test-Path "src/LASYS.DesktopApp/Data")      { Copy-Item "src/LASYS.DesktopApp/Data"      -Recurse -Destination "publish/Data" -Force }
-
+      # ───────────────────────────────────────────────
+      # Publish Cleanup Console
+      - name: Publish Cleanup Console
+        shell: pwsh
+        run: |
+          $version = "${{ github.ref_name }}".TrimStart('v')
+          dotnet publish src/LASYS.Cleanup/LASYS.Cleanup.csproj `
+            -c Release `
+            -r win-x86 `
+            --self-contained true `
+            -p:PublishSingleFile=true `
+            -p:Version=$version `
+            -p:AssemblyVersion=$version `
+            -p:FileVersion=$version `
+            -p:InformationalVersion=$version `
+            -o publish/Cleanup
+      # ───────────────────────────────────────────────
+      # Publish Cleanup Console
+      - name: Publish Cleanup UI
+        shell: pwsh
+        run: |
+          $version = "${{ github.ref_name }}".TrimStart('v')
+          dotnet publish src/LASYS.Cleanup.UI/LASYS.Cleanup.UI.csproj `
+            -c Release `
+            -r win-x86 `
+            --self-contained true `
+            -p:PublishSingleFile=true `
+            -p:Version=$version `
+            -p:AssemblyVersion=$version `
+            -p:FileVersion=$version `
+            -p:InformationalVersion=$version `
+            -o publish/Cleanup
       # ───────────────────────────────────────────────
       - name: List publish folder (debug)
         run: dir publish -Recurse
