@@ -1,4 +1,4 @@
-﻿namespace LASYS.Cleanup.UI.Views.Forms
+﻿namespace LASYS.Cleanup.UI.Views.Configuration
 {
     partial class ConfigurationForm
     {

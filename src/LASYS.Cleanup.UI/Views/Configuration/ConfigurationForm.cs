@@ -1,12 +1,31 @@
 ﻿using LASYS.Cleanup.UI.Enums;
 
-namespace LASYS.Cleanup.UI.Views.Forms
+namespace LASYS.Cleanup.UI.Views.Configuration
 {
-    public partial class ConfigurationForm : Form
+    public partial class ConfigurationForm : Form, IConfigurationView
     {
         private readonly DayOfWeek _weeklyExecutionDay = DayOfWeek.Monday;
         private readonly int _monthlyExecutionDay = 1;
 
+        public Form Form => this;
+        public string CleanupFolder => txtPrintJobFolder.Text.Trim();
+        public int RetentionValue => (int)nudRetention.Value;
+        public RetentionUnit RetentionUnit => (RetentionUnit)cmbRetentionUnit.SelectedItem!;
+        public ScheduleFrequency Frequency => (ScheduleFrequency)cmbFrequency.SelectedItem!;
+        public TimeSpan RunTime
+        {
+            get
+            {
+                if (cmbRunTime.SelectedItem is not string value)
+                    return TimeSpan.Zero;
+
+                return DateTime.Parse(value).TimeOfDay;
+            }
+        }
+
+        public event EventHandler? SaveRequested;
+
+        private bool _isLoadingSettings;
         public ConfigurationForm()
         {
             InitializeComponent();
@@ -84,23 +103,8 @@ namespace LASYS.Cleanup.UI.Views.Forms
             if (cmbRetentionUnit.SelectedItem is not RetentionUnit unit)
                 return;
             nudRetention.Value = 1;
-            switch (unit)
-            {
-                case RetentionUnit.Hours:
-                    nudRetention.Minimum = 1;
-                    nudRetention.Maximum = 24;
-                    break;
 
-                case RetentionUnit.Days:
-                    nudRetention.Minimum = 1;
-                    nudRetention.Maximum = 30;
-                    break;
-
-                case RetentionUnit.Months:
-                    nudRetention.Minimum = 1;
-                    nudRetention.Maximum = 12;
-                    break;
-            }
+            UpdateRetentionRange();
             UpdateRetentionStatus();
         }
 
@@ -144,7 +148,29 @@ namespace LASYS.Cleanup.UI.Views.Forms
                 txtPrintJobFolder.Text = dialog.SelectedPath;
             }
         }
+        private void UpdateRetentionRange()
+        {
+            if (cmbRetentionUnit.SelectedItem is not RetentionUnit unit)
+                return;
 
+            switch (unit)
+            {
+                case RetentionUnit.Hours:
+                    nudRetention.Minimum = 1;
+                    nudRetention.Maximum = 24;
+                    break;
+
+                case RetentionUnit.Days:
+                    nudRetention.Minimum = 1;
+                    nudRetention.Maximum = 30;
+                    break;
+
+                case RetentionUnit.Months:
+                    nudRetention.Minimum = 1;
+                    nudRetention.Maximum = 12;
+                    break;
+            }
+        }
         private void cmbRunTime_SelectedIndexChanged(object sender, EventArgs e)
         {
             UpdateScheduleStatus();
@@ -192,8 +218,7 @@ namespace LASYS.Cleanup.UI.Views.Forms
         {
             if (!ValidateCleanupFolder())
                 return;
-
-            // Save settings...
+            SaveRequested?.Invoke(this, EventArgs.Empty);
         }
         private bool CanAccessFolder(string folder)
         {
@@ -218,6 +243,60 @@ namespace LASYS.Cleanup.UI.Views.Forms
         private void nudRetention_ValueChanged(object sender, EventArgs e)
         {
             UpdateRetentionStatus();
+        }
+
+        public void ShowSuccess(string message)
+        {
+            MessageBox.Show(
+                message,
+                "LASYS Cleanup",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Information);
+        }
+
+        public void ShowError(string message)
+        {
+            MessageBox.Show(
+                message,
+                "LASYS Cleanup",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Error);
+        }
+
+        public void LoadSettings(string cleanupFolder, int retentionValue, RetentionUnit retentionUnit, ScheduleFrequency frequency, TimeSpan runTime)
+        {
+            _isLoadingSettings = true;
+
+            try
+            {
+                txtPrintJobFolder.Text = cleanupFolder;
+
+                cmbRetentionUnit.SelectedItem = retentionUnit;
+
+                UpdateRetentionRange();
+
+                if (retentionValue >= nudRetention.Minimum &&
+                    retentionValue <= nudRetention.Maximum)
+                {
+                    nudRetention.Value = retentionValue;
+                }
+
+                cmbFrequency.SelectedItem = frequency;
+
+                string time =
+                    DateTime.Today
+                        .Add(runTime)
+                        .ToString("hh:mm tt");
+
+                cmbRunTime.SelectedItem = time;
+            }
+            finally
+            {
+                _isLoadingSettings = false;
+            }
+
+            UpdateRetentionStatus();
+            UpdateScheduleStatus();
         }
     }
 }

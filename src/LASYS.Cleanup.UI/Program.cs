@@ -1,19 +1,33 @@
-using LASYS.Cleanup.UI.Views.Forms;
+using LASYS.Cleanup.UI.Extensions;
+using LASYS.Cleanup.UI.Presenters;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
 namespace LASYS.Cleanup.UI
 {
     internal static class Program
     {
-        /// <summary>
-        ///  The main entry point for the application.
-        /// </summary>
         [STAThread]
         static void Main()
         {
-            // To customize application configuration such as set high DPI settings or default font,
-            // see https://aka.ms/applicationconfiguration.
             ApplicationConfiguration.Initialize();
-            Application.Run(new ConfigurationForm());
+            var host = Host.CreateDefaultBuilder()
+               .ConfigureAppConfiguration((context, config) =>
+               {
+                   config.SetBasePath(AppContext.BaseDirectory);
+                   config.AddJsonFile("settings.json", optional: false, reloadOnChange: true);
+               })
+               .ConfigureServices((context, services) =>
+               {
+                   var config = context.Configuration;
+                   services.AddMvp(); // from our extension
+               })
+               .Build();
+
+            var configurationPresenter = host.Services.GetRequiredService<ConfigurationPresenter>();
+            Application.Run(configurationPresenter.View.Form);
+            
         }
     }
 }

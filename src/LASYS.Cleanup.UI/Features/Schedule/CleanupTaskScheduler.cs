@@ -6,9 +6,7 @@ namespace LASYS.Cleanup.UI.Features.Schedule
     public sealed class CleanupTaskScheduler : IScheduleCleanupTask
     {
         private const string TaskName = "LASYS Print Job Cleanup";
-        public void CreateOrUpdateTask(
-     string cleanupExePath,
-     CleanupSchedule schedule)
+        public void CreateOrUpdateTask(string cleanupExePath, CleanupSchedule schedule)
         {
             if (string.IsNullOrWhiteSpace(cleanupExePath))
                 throw new ArgumentException(
@@ -22,18 +20,24 @@ namespace LASYS.Cleanup.UI.Features.Schedule
 
             using TaskService taskService = new();
 
-            TaskDefinition taskDefinition =
-                taskService.NewTask();
+            TaskDefinition taskDefinition = taskService.NewTask();
 
             taskDefinition.RegistrationInfo.Description =
                 "Automatically cleans old LASYS Print Job files.";
 
+            // Task settings
             taskDefinition.Settings.Enabled = true;
             taskDefinition.Settings.Hidden = true;
             taskDefinition.Settings.AllowDemandStart = true;
+            taskDefinition.Settings.StartWhenAvailable = true;
 
-            taskDefinition.Principal.LogonType =
-                TaskLogonType.InteractiveToken;
+            // No execution time limit
+            taskDefinition.Settings.ExecutionTimeLimit = TimeSpan.Zero;
+
+            // Run under currently logged-in user
+            taskDefinition.Principal.LogonType = TaskLogonType.InteractiveToken;
+            // Run with elevated privileges
+            //taskDefinition.Principal.RunLevel = TaskRunLevel.Highest;
 
             // Add Daily / Weekly / Monthly trigger
             AddTrigger(
@@ -57,9 +61,7 @@ namespace LASYS.Cleanup.UI.Features.Schedule
                 null,
                 TaskLogonType.InteractiveToken);
         }
-        private static void AddTrigger(
-    TaskDefinition taskDefinition,
-    CleanupSchedule schedule)
+        private static void AddTrigger(TaskDefinition taskDefinition, CleanupSchedule schedule)
         {
             DateTime startTime =
                 DateTime.Today.Add(schedule.Time);

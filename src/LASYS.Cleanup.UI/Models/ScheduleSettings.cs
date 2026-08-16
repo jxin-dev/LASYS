@@ -5,7 +5,7 @@ namespace LASYS.Cleanup.UI.Models
     public sealed class ScheduleSettings
     {
         public string CleanupFolder { get; set; } = string.Empty;
-        public bool Enabled { get; set; }
+        public bool Enabled { get; set; } = true;
         public int RetentionValue { get; set; } = 1;
         public RetentionUnit RetentionUnit { get; set; } = RetentionUnit.Months;
 
