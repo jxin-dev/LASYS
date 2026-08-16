@@ -11,8 +11,8 @@ namespace LASYS.Cleanup
         {
             try
             {
-                string settingsDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"InnovaThinkCorporation","LASYS-Cleanup");
-
+                //string settingsDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"InnovaThinkCorporation","LASYS-Cleanup");
+                string settingsDirectory = AppContext.BaseDirectory;
                 string settingsPath =Path.Combine(settingsDirectory,"settings.json");
 
                 if (!File.Exists(settingsPath))
