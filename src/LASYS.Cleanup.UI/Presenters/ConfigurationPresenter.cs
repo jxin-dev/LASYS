@@ -64,7 +64,7 @@ namespace LASYS.Cleanup.UI.Presenters
                     Time = settings.RunTime
                 };
 
-                string cleanupExePath = Path.Combine(AppContext.BaseDirectory,"LASYS.Cleanup.exe");
+                string cleanupExePath = Path.Combine(AppContext.BaseDirectory, "LASYS.Cleanup.exe");
 
                 _scheduleCleanupTask.CreateOrUpdateTask(cleanupExePath, schedule);
 

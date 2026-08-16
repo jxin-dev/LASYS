@@ -1,4 +1,6 @@
-﻿using System.Windows.Forms;
+﻿using System.Diagnostics;
+using System.Runtime.InteropServices;
+using System.Windows.Forms;
 using LASYS.DesktopApp.Views.Interfaces;
 using LASYS.UIControls.Controls;
 using LASYS.UIControls.Models;
@@ -165,6 +167,110 @@ namespace LASYS.DesktopApp.Views.Forms
         public void SetNavigationEnabled(bool enable)
         {
            _sideNav.SetNavigationEnabled(enable);
+        }
+
+        //Hot key handling to open cleanup ui
+        private const int WM_HOTKEY = 0x0312;
+        private const int HOTKEY_ID = 9001;
+
+        private const uint MOD_ALT = 0x0001;
+        private const uint MOD_SHIFT = 0x0004;
+        private const int SW_RESTORE = 9;
+
+        [DllImport("user32.dll")]
+        private static extern bool SetForegroundWindow(IntPtr hWnd);
+
+        [DllImport("user32.dll")]
+        private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+
+
+        [DllImport("user32.dll")]
+        private static extern bool RegisterHotKey(
+            IntPtr hWnd,
+            int id,
+            uint fsModifiers,
+            uint vk);
+
+        [DllImport("user32.dll")]
+        private static extern bool UnregisterHotKey(
+            IntPtr hWnd,
+            int id);
+
+        protected override void OnHandleCreated(EventArgs e)
+        {
+            base.OnHandleCreated(e);
+
+            // Shift + Alt + T
+            RegisterHotKey(
+                Handle,
+                HOTKEY_ID,
+                MOD_ALT | MOD_SHIFT,
+                (uint)Keys.T);
+        }
+
+        protected override void WndProc(ref Message m)
+        {
+            if (m.Msg == WM_HOTKEY && m.WParam.ToInt32() == HOTKEY_ID)
+            {
+                OpenCleanupUI();
+            }
+
+            base.WndProc(ref m);
+        }
+
+        protected override void OnHandleDestroyed(EventArgs e)
+        {
+            UnregisterHotKey(Handle, HOTKEY_ID);
+
+            base.OnHandleDestroyed(e);
+        }
+        private void OpenCleanupUI()
+        {
+            const string processName = "LASYS.Cleanup.UI";
+
+            var existingProcess = Process.GetProcessesByName(processName)
+                .FirstOrDefault();
+
+            if (existingProcess != null)
+            {
+                try
+                {
+                    if (existingProcess.MainWindowHandle != IntPtr.Zero)
+                    {
+                        ShowWindow(existingProcess.MainWindowHandle, SW_RESTORE);
+                        SetForegroundWindow(existingProcess.MainWindowHandle);
+                    }
+
+                    return;
+                }
+                catch
+                {
+                    // If the existing process cannot be activated,
+                    // continue and try starting the application.
+                }
+            }
+
+            string cleanupPath = Path.Combine(
+                AppContext.BaseDirectory,
+                "Cleanup",
+                "LASYS.Cleanup.UI.exe");
+
+            if (!File.Exists(cleanupPath))
+            {
+                MessageBox.Show(
+                    $"Cleanup UI was not found:\n\n{cleanupPath}",
+                    "Cleanup UI",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
+
+                return;
+            }
+
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = cleanupPath,
+                UseShellExecute = true
+            });
         }
     }
 }
