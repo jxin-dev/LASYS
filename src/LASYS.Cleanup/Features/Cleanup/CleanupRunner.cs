@@ -158,12 +158,14 @@ namespace LASYS.Cleanup.Features.Cleanup
         }
         private static string GetCleanupLogDirectory()
         {
-            string root = Path.Combine(
-                Environment.GetFolderPath(
-                    Environment.SpecialFolder.LocalApplicationData),
-                "InnovaThinkCorporation",
-                "LASYS-Cleanup",
-                "Logs");
+            //string root = Path.Combine(
+            //    Environment.GetFolderPath(
+            //        Environment.SpecialFolder.LocalApplicationData),
+            //    "InnovaThinkCorporation",
+            //    "LASYS-Cleanup",
+            //    "logs");
+
+            string root = Path.Combine(AppContext.BaseDirectory, "logs");
 
             Directory.CreateDirectory(root);
 

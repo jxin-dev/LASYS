@@ -1,1 +1,8 @@
-{}
+{
+    "CleanupFolder": "",
+    "Enabled": true,
+    "RetentionValue": 30,
+    "RetentionUnit": 1,
+    "Frequency": 0,
+    "RunTime": "12:00:00"
+}

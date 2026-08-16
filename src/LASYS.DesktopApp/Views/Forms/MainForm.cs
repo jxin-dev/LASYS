@@ -252,7 +252,7 @@ namespace LASYS.DesktopApp.Views.Forms
 
             string cleanupPath = Path.Combine(
                 AppContext.BaseDirectory,
-                "Cleanup",
+                "cleanup",
                 "LASYS.Cleanup.UI.exe");
 
             if (!File.Exists(cleanupPath))

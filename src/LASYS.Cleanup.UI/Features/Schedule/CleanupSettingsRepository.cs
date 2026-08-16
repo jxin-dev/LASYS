@@ -9,8 +9,8 @@ namespace LASYS.Cleanup.UI.Features.Schedule
         private readonly string _settingsFile;
         public CleanupSettingsRepository()
         {
-            _settingsDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "InnovaThinkCorporation", "LASYS-Cleanup");
-
+            //_settingsDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "InnovaThinkCorporation", "LASYS-Cleanup");
+            _settingsDirectory = AppContext.BaseDirectory;
             _settingsFile = Path.Combine(_settingsDirectory, "settings.json");
         }
         public ScheduleSettings Load()
@@ -22,12 +22,18 @@ namespace LASYS.Cleanup.UI.Features.Schedule
 
             try
             {
-                string json =
-                    File.ReadAllText(_settingsFile);
+                ScheduleSettings settings;
 
-                return JsonSerializer.Deserialize<ScheduleSettings>(
-                           json)
-                       ?? new ScheduleSettings();
+                string json = File.ReadAllText(_settingsFile);
+
+                settings = JsonSerializer.Deserialize<ScheduleSettings>(json) ?? new ScheduleSettings();
+
+                if (string.IsNullOrWhiteSpace(settings.CleanupFolder))
+                {
+                    settings.CleanupFolder = settings.GetDefaultCleanupFolder();
+                }
+
+                return settings;
             }
             catch (JsonException)
             {
