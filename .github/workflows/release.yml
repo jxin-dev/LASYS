@@ -65,7 +65,7 @@ jobs:
           dotnet publish src/LASYS.Cleanup/LASYS.Cleanup.csproj `
             -c Release `
             -r win-x86 `
-            --self-contained true `
+            -p:PublishSelfContained=true `
             -p:PublishSingleFile=true `
             -p:Version=$version `
             -p:AssemblyVersion=$version `
@@ -81,7 +81,7 @@ jobs:
           dotnet publish src/LASYS.Cleanup.UI/LASYS.Cleanup.UI.csproj `
             -c Release `
             -r win-x86 `
-            --self-contained true `
+            -p:PublishSelfContained=true `
             -p:PublishSingleFile=true `
             -p:Version=$version `
             -p:AssemblyVersion=$version `
