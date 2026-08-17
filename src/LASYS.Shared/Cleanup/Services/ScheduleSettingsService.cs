@@ -18,8 +18,9 @@ namespace LASYS.Shared.Cleanup.Services
 
         public ScheduleSettings Load()
         {
+            var defaultCleanupFolder = Path.Combine(Directory.GetParent(Directory.GetParent(AppContext.BaseDirectory)!.FullName)!.FullName, "labelfiles");
             var defaultScheduleSettings = new ScheduleSettings();
-            defaultScheduleSettings.CleanupFolder = defaultScheduleSettings.GetDefaultCleanupFolder();
+            defaultScheduleSettings.CleanupFolder = defaultCleanupFolder;
 
             if (!File.Exists(_settingsFile))
             {
@@ -40,7 +41,7 @@ namespace LASYS.Shared.Cleanup.Services
 
                 if (string.IsNullOrWhiteSpace(settings.CleanupFolder))
                 {
-                    settings.CleanupFolder = settings.GetDefaultCleanupFolder();
+                    settings.CleanupFolder = defaultCleanupFolder;
                     if (!Directory.Exists(settings.CleanupFolder))
                         Directory.CreateDirectory(settings.CleanupFolder);
                 }
@@ -69,7 +70,9 @@ namespace LASYS.Shared.Cleanup.Services
         public ScheduleSettings Load(string jsonPath)
         {
             var defaultScheduleSettings = new ScheduleSettings();
-            defaultScheduleSettings.CleanupFolder = defaultScheduleSettings.GetDefaultCleanupFolder();
+            var defaultCleanupFolder = defaultScheduleSettings.GetDefaultCleanupFolder();
+
+            defaultScheduleSettings.CleanupFolder = defaultCleanupFolder;
 
             if (!File.Exists(jsonPath))
             {
@@ -90,7 +93,7 @@ namespace LASYS.Shared.Cleanup.Services
 
                 if (string.IsNullOrWhiteSpace(settings.CleanupFolder))
                 {
-                    settings.CleanupFolder = settings.GetDefaultCleanupFolder();
+                    settings.CleanupFolder = defaultCleanupFolder;
                     if (!Directory.Exists(settings.CleanupFolder))
                         Directory.CreateDirectory(settings.CleanupFolder);
                 }
