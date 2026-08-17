@@ -65,13 +65,13 @@ jobs:
           dotnet publish src/LASYS.Cleanup/LASYS.Cleanup.csproj `
             -c Release `
             -r win-x86 `
-            --self-contained true `
+            -p:PublishSelfContained=true `
             -p:PublishSingleFile=true `
             -p:Version=$version `
             -p:AssemblyVersion=$version `
             -p:FileVersion=$version `
             -p:InformationalVersion=$version `
-            -o publish/Cleanup
+            -o publish
       # ───────────────────────────────────────────────
       # Publish Cleanup Console
       - name: Publish Cleanup UI
@@ -81,13 +81,13 @@ jobs:
           dotnet publish src/LASYS.Cleanup.UI/LASYS.Cleanup.UI.csproj `
             -c Release `
             -r win-x86 `
-            --self-contained true `
+            -p:PublishSelfContained=true `
             -p:PublishSingleFile=true `
             -p:Version=$version `
             -p:AssemblyVersion=$version `
             -p:FileVersion=$version `
             -p:InformationalVersion=$version `
-            -o publish/Cleanup
+            -o publish
       # ───────────────────────────────────────────────
       - name: List publish folder (debug)
         run: dir publish -Recurse
