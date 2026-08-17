@@ -14,7 +14,7 @@ namespace LASYS.Shared.Cleanup.Models
 
         public string GetDefaultCleanupFolder()
         {
-            var baseDirectory = Directory.GetParent(Directory.GetParent(AppContext.BaseDirectory)!.FullName)!.FullName;
+            var baseDirectory = Directory.GetParent(AppContext.BaseDirectory)!.FullName!;
             return Path.Combine(baseDirectory, "labelfiles");
         }
     }
