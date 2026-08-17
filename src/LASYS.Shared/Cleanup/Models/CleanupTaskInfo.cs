@@ -1,8 +1,8 @@
-﻿using LASYS.Cleanup.UI.Enums;
+﻿using LASYS.Shared.Cleanup.Enums;
 
-namespace LASYS.Cleanup.UI.Models
+namespace LASYS.Shared.Cleanup.Models
 {
-    public sealed class CleanupTaskInfo
+    public class CleanupTaskInfo
     {
         public bool Exists { get; init; }
         public bool Enabled { get; init; }

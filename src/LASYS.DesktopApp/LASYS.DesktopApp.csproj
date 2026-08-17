@@ -25,7 +25,12 @@
 		<None Remove="Resources\resume24.png" />
 		<None Remove="Resources\Sample Label Templates\CB sample W MANUFACTURE Vbscript.lbl" />
 	</ItemGroup>
-
+	<ItemGroup>
+		<None Update="cleanupsettings.json">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<CopyToPublishDirectory>Always</CopyToPublishDirectory>
+		</None>
+	</ItemGroup>
 	<ItemGroup>
 	  <Content Include="appsettings.json">
 	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

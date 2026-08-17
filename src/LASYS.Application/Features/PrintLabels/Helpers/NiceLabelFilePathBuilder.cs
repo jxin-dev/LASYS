@@ -1,5 +1,6 @@
 ﻿using System.IO.Compression;
 using LASYS.Application.Common.Enums;
+using LASYS.Shared.Cleanup.Services;
 
 namespace LASYS.Application.Features.PrintLabels.Helpers
 {
@@ -8,6 +9,16 @@ namespace LASYS.Application.Features.PrintLabels.Helpers
         private const string PrintJobsFolderName = "labelfiles";
         private const string TemplatesFolderName = "templates";
         private const string SampleFolderName = "sample";
+
+        //private static string? _cleanupFolder;
+        private static IScheduleSettingsService? _settingsService;
+        public static void Initialize(IScheduleSettingsService settingsService)
+        {
+            _settingsService = settingsService;
+            _settingsService.Load();
+
+            Directory.CreateDirectory(_settingsService.Current.CleanupFolder);
+        }
 
         public static async Task CreateFileAsync(string filePath, byte[] compressedBytes, CancellationToken cancellationToken = default)
         {
@@ -89,16 +100,24 @@ namespace LASYS.Application.Features.PrintLabels.Helpers
 
         private static string GetPrintLabelsDirectory(string itemCode)
         {
-            var root = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, PrintJobsFolderName, Clean(itemCode));
+            var root = Path.Combine(GetPrintJobsDirectory(), Clean(itemCode));
             Directory.CreateDirectory(root);
             return root;
         }
 
         public static string GetPrintJobsDirectory()
         {
-            var root = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, PrintJobsFolderName);
-            Directory.CreateDirectory(root);
-            return root;
+            if (_settingsService == null)
+            {
+                throw new InvalidOperationException(
+                    "NiceLabelFilePathBuilder has not been initialized.");
+            }
+
+            _settingsService.Load(); //Reload
+
+            string folder = _settingsService.Current.CleanupFolder;
+            Directory.CreateDirectory(folder);
+            return folder;
         }
 
 

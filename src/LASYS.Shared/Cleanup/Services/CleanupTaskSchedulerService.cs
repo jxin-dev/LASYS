@@ -1,9 +1,10 @@
-﻿using LASYS.Cleanup.UI.Enums;
-using LASYS.Cleanup.UI.Models;
+﻿using LASYS.Shared.Cleanup.Enums;
+using LASYS.Shared.Cleanup.Models;
 using Microsoft.Win32.TaskScheduler;
-namespace LASYS.Cleanup.UI.Features.Schedule
+
+namespace LASYS.Shared.Cleanup.Services
 {
-    public sealed class CleanupTaskScheduler : IScheduleCleanupTask
+    public sealed class CleanupTaskSchedulerService : ICleanupTaskSchedulerService
     {
         private const string TaskName = "LASYS Print Job Cleanup";
         public void CreateOrUpdateTask(string cleanupExePath, CleanupSchedule schedule)

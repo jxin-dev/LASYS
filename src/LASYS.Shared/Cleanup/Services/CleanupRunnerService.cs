@@ -1,12 +1,20 @@
-﻿using LASYS.Cleanup.Enums;
-using LASYS.Cleanup.Models;
+﻿using LASYS.Shared.Cleanup.Enums;
 
-namespace LASYS.Cleanup.Features.Cleanup
+namespace LASYS.Shared.Cleanup.Services
 {
-    public sealed class CleanupRunner : ICleanupRunner
+    public sealed class CleanupRunnerService : ICleanupRunnerService
     {
-        public async Task<int> RunAsync(ScheduleSettings settings, CancellationToken cancellationToken = default)
+        private readonly IScheduleSettingsService _scheduleSettingsService;
+
+        public CleanupRunnerService(IScheduleSettingsService scheduleSettingsService)
         {
+            _scheduleSettingsService = scheduleSettingsService;
+        }
+
+        public async Task<int> RunAsync(CancellationToken cancellationToken = default)
+        {
+            var settings = _scheduleSettingsService.Load();
+
             if (!settings.Enabled)
                 return 0;
             if (!Directory.Exists(settings.CleanupFolder))

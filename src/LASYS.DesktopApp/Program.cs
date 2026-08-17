@@ -1,11 +1,13 @@
 ﻿using System.Diagnostics;
 using LASYS.Application;
 using LASYS.Application.Features.Authentication.AutoLogin;
+using LASYS.Application.Features.PrintLabels.Helpers;
 using LASYS.Application.Interfaces.Context;
 using LASYS.Application.Interfaces.Services;
 using LASYS.DesktopApp.Extensions;
 using LASYS.DesktopApp.Presenters;
 using LASYS.Infrastructure;
+using LASYS.Shared.Cleanup.Services;
 using MediatR;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -45,6 +47,10 @@ namespace LASYS.DesktopApp
                     services.AddInfrastructure(config); // from our infrastructure layer
                 })
                 .Build();
+
+            var settingsService = host.Services.GetRequiredService<IScheduleSettingsService>();
+
+            NiceLabelFilePathBuilder.Initialize(settingsService);
 
             var splashPresenter = host.Services.GetRequiredService<SplashPresenter>();
             splashPresenter.View.ShowDialog();

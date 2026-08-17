@@ -166,7 +166,7 @@ namespace LASYS.DesktopApp.Views.Forms
 
         public void SetNavigationEnabled(bool enable)
         {
-           _sideNav.SetNavigationEnabled(enable);
+            _sideNav.SetNavigationEnabled(enable);
         }
 
         //Hot key handling to open cleanup ui
@@ -250,10 +250,7 @@ namespace LASYS.DesktopApp.Views.Forms
                 }
             }
 
-            string cleanupPath = Path.Combine(
-                AppContext.BaseDirectory,
-                "cleanup",
-                "LASYS.Cleanup.UI.exe");
+            string cleanupPath = Path.Combine(AppContext.BaseDirectory, "LASYS.Cleanup.UI.exe");
 
             if (!File.Exists(cleanupPath))
             {

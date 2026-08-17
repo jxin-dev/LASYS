@@ -1,6 +1,6 @@
-﻿using LASYS.Cleanup.UI.Enums;
+﻿using LASYS.Shared.Cleanup.Enums;
 
-namespace LASYS.Cleanup.UI.Models
+namespace LASYS.Shared.Cleanup.Models
 {
     public class CleanupSchedule
     {

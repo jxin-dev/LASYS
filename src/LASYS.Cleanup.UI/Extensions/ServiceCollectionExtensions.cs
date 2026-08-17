@@ -1,6 +1,6 @@
-﻿using LASYS.Cleanup.UI.Features.Schedule;
-using LASYS.Cleanup.UI.Presenters;
+﻿using LASYS.Cleanup.UI.Presenters;
 using LASYS.Cleanup.UI.Views.Configuration;
+using LASYS.Shared.Cleanup.Services;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace LASYS.Cleanup.UI.Extensions
@@ -11,10 +11,13 @@ namespace LASYS.Cleanup.UI.Extensions
         {
             services.AddTransient<IConfigurationView, ConfigurationForm>();
             services.AddTransient<ConfigurationPresenter>();
-
-            services.AddTransient<ICleanupSettingsRepository, CleanupSettingsRepository>();
-            services.AddTransient<IScheduleCleanupTask, CleanupTaskScheduler>();
-
+            return services;
+        }
+        public static IServiceCollection AddCleanup(this IServiceCollection services)
+        {
+            services.AddSingleton<IScheduleSettingsService, ScheduleSettingsService>();
+            services.AddSingleton<ICleanupRunnerService, CleanupRunnerService>();
+            services.AddSingleton<ICleanupTaskSchedulerService, CleanupTaskSchedulerService>();
             return services;
         }
     }

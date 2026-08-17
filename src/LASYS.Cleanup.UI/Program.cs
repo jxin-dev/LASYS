@@ -1,3 +1,4 @@
+using System.Reflection;
 using LASYS.Cleanup.UI.Extensions;
 using LASYS.Cleanup.UI.Presenters;
 using Microsoft.Extensions.Configuration;
@@ -12,6 +13,7 @@ namespace LASYS.Cleanup.UI
         static void Main()
         {
             ApplicationConfiguration.Initialize();
+
             var host = Host.CreateDefaultBuilder()
                .ConfigureAppConfiguration((context, config) =>
                {
@@ -22,11 +24,12 @@ namespace LASYS.Cleanup.UI
                {
                    var config = context.Configuration;
                    services.AddMvp(); // from our extension
+                   services.AddCleanup();
                })
                .Build();
 
             var configurationPresenter = host.Services.GetRequiredService<ConfigurationPresenter>();
-            Application.Run(configurationPresenter.View.Form);
+            System.Windows.Forms.Application.Run(configurationPresenter.View.Form);
             
         }
     }

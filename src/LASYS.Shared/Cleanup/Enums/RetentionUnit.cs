@@ -1,4 +1,4 @@
-﻿namespace LASYS.Cleanup.UI.Enums
+﻿namespace LASYS.Shared.Cleanup.Enums
 {
     public enum RetentionUnit
     {

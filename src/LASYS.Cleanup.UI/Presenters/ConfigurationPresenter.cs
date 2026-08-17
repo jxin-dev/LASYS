@@ -1,22 +1,22 @@
-﻿using LASYS.Cleanup.UI.Features.Schedule;
-using LASYS.Cleanup.UI.Models;
-using LASYS.Cleanup.UI.Views.Configuration;
+﻿using LASYS.Cleanup.UI.Views.Configuration;
+using LASYS.Shared.Cleanup.Models;
+using LASYS.Shared.Cleanup.Services;
 
 namespace LASYS.Cleanup.UI.Presenters
 {
     public class ConfigurationPresenter
     {
         private readonly IConfigurationView _view;
-        private readonly ICleanupSettingsRepository _cleanupSettingsRepository;
-        private readonly IScheduleCleanupTask _scheduleCleanupTask;
+        private readonly IScheduleSettingsService _scheduleSettingsService;
+        private readonly ICleanupTaskSchedulerService _cleanupTaskSchedulerService;
         public IConfigurationView View => _view;
-        public ConfigurationPresenter(IConfigurationView view, ICleanupSettingsRepository cleanupSettingsRepository, IScheduleCleanupTask scheduleCleanupTask)
+        public ConfigurationPresenter(IConfigurationView view, IScheduleSettingsService scheduleSettingsService, ICleanupTaskSchedulerService cleanupTaskSchedulerService)
         {
             _view = view;
             _view.SaveRequested += OnSaveRequested;
 
-            _cleanupSettingsRepository = cleanupSettingsRepository;
-            _scheduleCleanupTask = scheduleCleanupTask;
+            _scheduleSettingsService = scheduleSettingsService;
+            _cleanupTaskSchedulerService = cleanupTaskSchedulerService;
 
             LoadSettings();
         }
@@ -25,8 +25,7 @@ namespace LASYS.Cleanup.UI.Presenters
         {
             try
             {
-                ScheduleSettings settings =
-                    _cleanupSettingsRepository.Load();
+                ScheduleSettings settings = _scheduleSettingsService.Load();
 
                 _view.LoadSettings(
                     settings.CleanupFolder,
@@ -54,7 +53,7 @@ namespace LASYS.Cleanup.UI.Presenters
                     RunTime = _view.RunTime
                 };
 
-                _cleanupSettingsRepository.Save(settings);
+                _scheduleSettingsService.Save(settings);
 
                 CleanupSchedule schedule = new()
                 {
@@ -66,7 +65,7 @@ namespace LASYS.Cleanup.UI.Presenters
 
                 string cleanupExePath = Path.Combine(AppContext.BaseDirectory, "LASYS.Cleanup.exe");
 
-                _scheduleCleanupTask.CreateOrUpdateTask(cleanupExePath, schedule);
+                _cleanupTaskSchedulerService.CreateOrUpdateTask(cleanupExePath, schedule);
 
                 _view.ShowSuccess(
                     "Cleanup settings saved successfully.");

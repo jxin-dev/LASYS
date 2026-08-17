@@ -1,6 +1,4 @@
-﻿using System;
-using LASYS.Cleanup.Features.Cleanup;
-using LASYS.Cleanup.Models;
+﻿using LASYS.Shared.Cleanup.Services;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace LASYS.Cleanup
@@ -11,34 +9,17 @@ namespace LASYS.Cleanup
         {
             try
             {
-                //string settingsDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"InnovaThinkCorporation","LASYS-Cleanup");
-                string settingsDirectory = AppContext.BaseDirectory;
-                string settingsPath =Path.Combine(settingsDirectory,"settings.json");
-
-                if (!File.Exists(settingsPath))
-                {
-                    return 1;
-                }
-
                 ServiceCollection services = new();
 
-                services.AddSingleton<
-                    ICleanupSettingsReader,
-                    CleanupSettingsReader>();
+                services.AddSingleton<ICleanupRunnerService, CleanupRunnerService>();
+                services.AddSingleton<IScheduleSettingsService, ScheduleSettingsService>();
 
-                services.AddSingleton<
-                    ICleanupRunner,
-                    CleanupRunner>();
 
                 using ServiceProvider provider = services.BuildServiceProvider();
 
-                ICleanupSettingsReader settingsReader = provider.GetRequiredService<ICleanupSettingsReader>();
+                ICleanupRunnerService cleanupRunner = provider.GetRequiredService<ICleanupRunnerService>();
 
-                ICleanupRunner cleanupRunner = provider.GetRequiredService<ICleanupRunner>();
-
-                ScheduleSettings settings = settingsReader.Load(settingsPath);
-
-                return await cleanupRunner.RunAsync(settings);
+                return await cleanupRunner.RunAsync();
             }
             catch (Exception ex)
             {

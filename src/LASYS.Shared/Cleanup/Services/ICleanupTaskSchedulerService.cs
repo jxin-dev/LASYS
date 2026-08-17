@@ -1,8 +1,8 @@
-﻿using LASYS.Cleanup.UI.Models;
+﻿using LASYS.Shared.Cleanup.Models;
 
-namespace LASYS.Cleanup.UI.Features.Schedule
+namespace LASYS.Shared.Cleanup.Services
 {
-    public interface IScheduleCleanupTask
+    public interface ICleanupTaskSchedulerService
     {
         void CreateOrUpdateTask(string cleanupExePath, CleanupSchedule schedule);
         void DeleteTask();
