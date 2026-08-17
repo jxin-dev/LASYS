@@ -71,7 +71,7 @@ jobs:
             -p:AssemblyVersion=$version `
             -p:FileVersion=$version `
             -p:InformationalVersion=$version `
-            -o publish/Cleanup
+            -o publish
       # ───────────────────────────────────────────────
       # Publish Cleanup Console
       - name: Publish Cleanup UI
@@ -87,7 +87,7 @@ jobs:
             -p:AssemblyVersion=$version `
             -p:FileVersion=$version `
             -p:InformationalVersion=$version `
-            -o publish/Cleanup
+            -o publish
       # ───────────────────────────────────────────────
       - name: List publish folder (debug)
         run: dir publish -Recurse
