@@ -6,16 +6,16 @@ namespace LASYS.Application.Features.PrintLabels.Helpers
 {
     public static class NiceLabelFilePathBuilder
     {
-        private const string PrintJobsFolderName = "labelfiles";
         private const string TemplatesFolderName = "templates";
         private const string SampleFolderName = "sample";
 
         //private static string? _cleanupFolder;
+        private static string CleanupSettingsFilePath = Path.Combine(AppContext.BaseDirectory, "cleanup", "cleanupsettings.json");
         private static IScheduleSettingsService? _settingsService;
         public static void Initialize(IScheduleSettingsService settingsService)
         {
             _settingsService = settingsService;
-            _settingsService.Load();
+            _settingsService.Load(CleanupSettingsFilePath);
 
             Directory.CreateDirectory(_settingsService.Current.CleanupFolder);
         }
@@ -113,7 +113,7 @@ namespace LASYS.Application.Features.PrintLabels.Helpers
                     "NiceLabelFilePathBuilder has not been initialized.");
             }
 
-            _settingsService.Load(); //Reload
+            _settingsService.Load(CleanupSettingsFilePath); //Reload
 
             string folder = _settingsService.Current.CleanupFolder;
             Directory.CreateDirectory(folder);

@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Reflection;
 using LASYS.Cleanup.UI.Extensions;
 using LASYS.Cleanup.UI.Presenters;
@@ -12,13 +13,19 @@ namespace LASYS.Cleanup.UI
         [STAThread]
         static void Main()
         {
+#if DEBUG
+            if (!Debugger.IsAttached)
+            {
+                Debugger.Launch();
+            }
+#endif
             ApplicationConfiguration.Initialize();
 
             var host = Host.CreateDefaultBuilder()
                .ConfigureAppConfiguration((context, config) =>
                {
-                   config.SetBasePath(AppContext.BaseDirectory);
-                   config.AddJsonFile("settings.json", optional: false, reloadOnChange: true);
+                   //config.SetBasePath(AppContext.BaseDirectory);
+                   //config.AddJsonFile("settings.json", optional: false, reloadOnChange: true);
                })
                .ConfigureServices((context, services) =>
                {

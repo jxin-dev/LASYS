@@ -66,6 +66,56 @@ namespace LASYS.Shared.Cleanup.Services
             }
         }
 
+        public ScheduleSettings Load(string jsonPath)
+        {
+            var defaultScheduleSettings = new ScheduleSettings();
+            defaultScheduleSettings.CleanupFolder = defaultScheduleSettings.GetDefaultCleanupFolder();
+
+            if (!File.Exists(jsonPath))
+            {
+                if (!Directory.Exists(defaultScheduleSettings.CleanupFolder))
+                    Directory.CreateDirectory(defaultScheduleSettings.CleanupFolder);
+
+                Current = defaultScheduleSettings;
+                return defaultScheduleSettings;
+            }
+
+            try
+            {
+                ScheduleSettings settings;
+
+                string json = File.ReadAllText(jsonPath);
+
+                settings = JsonSerializer.Deserialize<ScheduleSettings>(json) ?? defaultScheduleSettings;
+
+                if (string.IsNullOrWhiteSpace(settings.CleanupFolder))
+                {
+                    settings.CleanupFolder = settings.GetDefaultCleanupFolder();
+                    if (!Directory.Exists(settings.CleanupFolder))
+                        Directory.CreateDirectory(settings.CleanupFolder);
+                }
+
+                Current = settings;
+                return settings;
+            }
+            catch (JsonException)
+            {
+                if (!Directory.Exists(defaultScheduleSettings.CleanupFolder))
+                    Directory.CreateDirectory(defaultScheduleSettings.CleanupFolder);
+
+                Current = defaultScheduleSettings;
+                return defaultScheduleSettings;
+            }
+            catch (IOException)
+            {
+                if (!Directory.Exists(defaultScheduleSettings.CleanupFolder))
+                    Directory.CreateDirectory(defaultScheduleSettings.CleanupFolder);
+
+                Current = defaultScheduleSettings;
+                return defaultScheduleSettings;
+            }
+        }
+
         public void Save(ScheduleSettings settings)
         {
             if (settings is null)
