@@ -2,6 +2,7 @@
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
 using LASYS.DesktopApp.Views.Interfaces;
+using LASYS.DesktopApp.Views.UserControls;
 using LASYS.UIControls.Controls;
 using LASYS.UIControls.Models;
 
@@ -101,7 +102,7 @@ namespace LASYS.DesktopApp.Views.Forms
             WorkOrderRequested?.Invoke(this, EventArgs.Empty);
         }
         public void CloseView() => Close();
-
+        private UserControl? _activeView;
         private Dictionary<Type, UserControl> _views = new Dictionary<Type, UserControl>();
         public void LoadView(UserControl control, bool cache = true)
         {
@@ -111,6 +112,7 @@ namespace LASYS.DesktopApp.Views.Forms
 
             if (_contentPanel.Controls.Count > 0 && _contentPanel.Controls[0].GetType() == type)
             {
+                _activeView = _contentPanel.Controls[0] as UserControl;
                 _contentPanel.ResumeLayout();
                 return;
             }
@@ -127,6 +129,8 @@ namespace LASYS.DesktopApp.Views.Forms
 
             control.Dock = DockStyle.Fill;
             _contentPanel.Controls.Add(control);
+
+            _activeView = control;
 
             _contentPanel.ResumeLayout();
             _contentPanel.Refresh();
@@ -212,7 +216,10 @@ namespace LASYS.DesktopApp.Views.Forms
         {
             if (m.Msg == WM_HOTKEY && m.WParam.ToInt32() == HOTKEY_ID)
             {
-                OpenCleanupUI();
+                if (_activeView is WorkOrdersControl)
+                {
+                    OpenCleanupUI();
+                }
             }
 
             base.WndProc(ref m);
