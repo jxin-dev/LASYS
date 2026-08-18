@@ -19,6 +19,23 @@ namespace LASYS.Cleanup.UI.Presenters
             _cleanupTaskSchedulerService = cleanupTaskSchedulerService;
 
             LoadSettings();
+            LoadTaskStatus();
+        }
+
+        private void LoadTaskStatus()
+        {
+            try
+            {
+                CleanupTaskInfo? taskInfo =
+                    _cleanupTaskSchedulerService.GetTaskInfo();
+
+                _view.LoadTaskInfo(taskInfo);
+            }
+            catch (Exception ex)
+            {
+                _view.ShowError(
+                    $"Failed to load cleanup task status.\n\n{ex.Message}");
+            }
         }
 
         private void LoadSettings()
@@ -40,6 +57,9 @@ namespace LASYS.Cleanup.UI.Presenters
                     $"Failed to load cleanup settings.\n\n{ex.Message}");
             }
         }
+
+
+      
         private void OnSaveRequested(object? sender, EventArgs e)
         {
             try
@@ -66,7 +86,7 @@ namespace LASYS.Cleanup.UI.Presenters
                 string cleanupExePath = Path.Combine(AppContext.BaseDirectory, "LASYS.Cleanup.exe");
 
                 _cleanupTaskSchedulerService.CreateOrUpdateTask(cleanupExePath, schedule);
-
+                LoadTaskStatus();
                 _view.ShowSuccess(
                     "Cleanup settings saved successfully.");
             }

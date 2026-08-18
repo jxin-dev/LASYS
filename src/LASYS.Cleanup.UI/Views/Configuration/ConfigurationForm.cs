@@ -1,9 +1,17 @@
 ﻿using LASYS.Shared.Cleanup.Enums;
+using LASYS.Shared.Cleanup.Models;
 
 namespace LASYS.Cleanup.UI.Views.Configuration
 {
     public partial class ConfigurationForm : Form, IConfigurationView
     {
+        private Label _taskStatusLabel;
+        private Label _frequencyLabel;
+        private Label _scheduledTimeLabel;
+        private Label _nextRunLabel;
+        private Label _lastRunLabel;
+        private Label _lastResultLabel;
+
         private readonly DayOfWeek _weeklyExecutionDay = DayOfWeek.Monday;
         private readonly int _monthlyExecutionDay = 1;
 
@@ -297,6 +305,85 @@ namespace LASYS.Cleanup.UI.Views.Configuration
 
             UpdateRetentionStatus();
             UpdateScheduleStatus();
+        }
+
+        private void btnClose_Click(object sender, EventArgs e)
+        {
+            this.Close();
+        }
+
+        public void LoadTaskInfo(CleanupTaskInfo? taskInfo)
+        {
+            if (taskInfo == null || !taskInfo.Exists)
+            {
+                lblTaskStatusValue.Text = "Not Scheduled";
+                lblTaskStatusValue.ForeColor = Color.Gray;
+
+                lblFrequencyValue.Text = "-";
+                lblScheduledTimeValue.Text = "-";
+                lblNextRunValue.Text = "-";
+                lblLastRunValue.Text = "-";
+                lblLastResultValue.Text = "-";
+
+                return;
+            }
+
+            lblTaskStatusValue.Text = taskInfo.Enabled
+                ? "Enabled"
+                : "Disabled";
+            lblTaskStatusValue.ForeColor = taskInfo.Enabled
+                ? Color.SeaGreen
+                : Color.Firebrick;
+
+            lblFrequencyValue.Text =
+                taskInfo.Frequency?.ToString() ?? "-";
+
+            lblScheduledTimeValue.Text =
+                taskInfo.ScheduledTime.HasValue
+                    ? DateTime.Today
+                        .Add(taskInfo.ScheduledTime.Value)
+                        .ToString("hh:mm tt")
+                    : "-";
+
+            lblNextRunValue.Text =
+                taskInfo.NextRun?.ToString("dd MMM yyyy h:mm tt") ?? "-";
+
+            lblLastRunValue.Text =
+                taskInfo.LastResult == 267011 || !taskInfo.LastRun.HasValue
+                    ? "-"
+                    : taskInfo.LastRun.Value.ToString("dd MMM yyyy h:mm tt");
+
+
+            switch (taskInfo.LastResult)
+            {
+                case 0:
+                    lblLastResultValue.Text = "Success";
+                    lblLastResultValue.ForeColor = Color.SeaGreen;
+                    break;
+                case 267009:
+                    lblLastResultValue.Text = "Task is currently running.";
+                    lblLastResultValue.ForeColor = Color.DodgerBlue;
+                    break;
+                case 267010: 
+                    lblLastResultValue.Text = "Task is disabled.";
+                    lblLastResultValue.ForeColor = Color.Firebrick;
+                    break;
+                case 267011:
+                    lblLastResultValue.Text = "Not yet run";
+                    lblLastResultValue.ForeColor = Color.Gray;
+                    break;
+
+                case -2147024894: 
+                    lblLastResultValue.Text = "Cleanup executable could not be found.";
+                    lblLastResultValue.ForeColor = Color.Gray;
+                    break;
+
+                default:
+                    lblLastResultValue.Text =
+                        $"Failed ({taskInfo.LastResult})";
+                    lblLastResultValue.ForeColor = Color.Firebrick;
+                    break;
+            }
         }
     }
 }

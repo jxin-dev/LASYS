@@ -37,7 +37,7 @@
             label4 = new Label();
             label5 = new Label();
             groupBox1 = new GroupBox();
-            btnCancel = new Button();
+            btnClose = new Button();
             btnSaveSettings = new Button();
             panel2 = new Panel();
             lblScheduleStatus = new Label();
@@ -56,6 +56,20 @@
             tableLayoutPanel1 = new TableLayoutPanel();
             panel3 = new Panel();
             pictureBox1 = new PictureBox();
+            taskStatusGroupBox = new GroupBox();
+            lblLastResultValue = new Label();
+            label24 = new Label();
+            lblLastRunValue = new Label();
+            label22 = new Label();
+            lblNextRunValue = new Label();
+            label20 = new Label();
+            lblScheduledTimeValue = new Label();
+            label18 = new Label();
+            lblFrequencyValue = new Label();
+            label16 = new Label();
+            lblTaskStatusValue = new Label();
+            label13 = new Label();
+            label8 = new Label();
             groupBox1.SuspendLayout();
             panel2.SuspendLayout();
             panel1.SuspendLayout();
@@ -63,6 +77,7 @@
             tableLayoutPanel1.SuspendLayout();
             panel3.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)pictureBox1).BeginInit();
+            taskStatusGroupBox.SuspendLayout();
             SuspendLayout();
             // 
             // label1
@@ -140,7 +155,7 @@
             // 
             // groupBox1
             // 
-            groupBox1.Controls.Add(btnCancel);
+            groupBox1.Controls.Add(btnClose);
             groupBox1.Controls.Add(btnSaveSettings);
             groupBox1.Controls.Add(panel2);
             groupBox1.Controls.Add(label12);
@@ -159,27 +174,29 @@
             groupBox1.Controls.Add(label3);
             groupBox1.Controls.Add(txtPrintJobFolder);
             groupBox1.Controls.Add(btnBrowse);
-            groupBox1.Location = new Point(300, 3);
+            groupBox1.Dock = DockStyle.Fill;
+            groupBox1.Location = new Point(290, 3);
             groupBox1.Name = "groupBox1";
-            groupBox1.Size = new Size(467, 401);
+            groupBox1.Size = new Size(472, 405);
             groupBox1.TabIndex = 7;
             groupBox1.TabStop = false;
             // 
-            // btnCancel
+            // btnClose
             // 
-            btnCancel.BackColor = Color.Silver;
-            btnCancel.FlatAppearance.BorderSize = 0;
-            btnCancel.FlatStyle = FlatStyle.Flat;
-            btnCancel.ForeColor = Color.Black;
-            btnCancel.Image = Properties.Resources.close_16dp_000000_FILL1_wght400_GRAD0_opsz20;
-            btnCancel.Location = new Point(125, 351);
-            btnCancel.Name = "btnCancel";
-            btnCancel.Size = new Size(90, 39);
-            btnCancel.TabIndex = 20;
-            btnCancel.Text = "Cancel";
-            btnCancel.TextAlign = ContentAlignment.MiddleRight;
-            btnCancel.TextImageRelation = TextImageRelation.ImageBeforeText;
-            btnCancel.UseVisualStyleBackColor = false;
+            btnClose.BackColor = Color.Silver;
+            btnClose.FlatAppearance.BorderSize = 0;
+            btnClose.FlatStyle = FlatStyle.Flat;
+            btnClose.ForeColor = Color.Black;
+            btnClose.Image = Properties.Resources.close_16dp_000000_FILL1_wght400_GRAD0_opsz20;
+            btnClose.Location = new Point(125, 351);
+            btnClose.Name = "btnClose";
+            btnClose.Size = new Size(90, 39);
+            btnClose.TabIndex = 20;
+            btnClose.Text = "Close";
+            btnClose.TextAlign = ContentAlignment.MiddleRight;
+            btnClose.TextImageRelation = TextImageRelation.ImageBeforeText;
+            btnClose.UseVisualStyleBackColor = false;
+            btnClose.Click += btnClose_Click;
             // 
             // btnSaveSettings
             // 
@@ -352,17 +369,19 @@
             // 
             // tableLayoutPanel1
             // 
-            tableLayoutPanel1.ColumnCount = 2;
-            tableLayoutPanel1.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 38.5733147F));
-            tableLayoutPanel1.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 61.4266853F));
+            tableLayoutPanel1.ColumnCount = 3;
+            tableLayoutPanel1.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 30F));
+            tableLayoutPanel1.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
+            tableLayoutPanel1.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20F));
             tableLayoutPanel1.Controls.Add(groupBox1, 1, 0);
             tableLayoutPanel1.Controls.Add(panel3, 0, 0);
+            tableLayoutPanel1.Controls.Add(taskStatusGroupBox, 2, 0);
             tableLayoutPanel1.Dock = DockStyle.Fill;
             tableLayoutPanel1.Location = new Point(0, 0);
             tableLayoutPanel1.Name = "tableLayoutPanel1";
             tableLayoutPanel1.RowCount = 1;
             tableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-            tableLayoutPanel1.Size = new Size(770, 411);
+            tableLayoutPanel1.Size = new Size(957, 411);
             tableLayoutPanel1.TabIndex = 8;
             // 
             // panel3
@@ -374,7 +393,7 @@
             panel3.Dock = DockStyle.Fill;
             panel3.Location = new Point(3, 3);
             panel3.Name = "panel3";
-            panel3.Size = new Size(291, 405);
+            panel3.Size = new Size(281, 405);
             panel3.TabIndex = 8;
             // 
             // pictureBox1
@@ -383,17 +402,174 @@
             pictureBox1.Image = Properties.Resources.Cleanup;
             pictureBox1.Location = new Point(0, 0);
             pictureBox1.Name = "pictureBox1";
-            pictureBox1.Size = new Size(291, 257);
+            pictureBox1.Size = new Size(281, 257);
             pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
             pictureBox1.TabIndex = 6;
             pictureBox1.TabStop = false;
+            // 
+            // taskStatusGroupBox
+            // 
+            taskStatusGroupBox.Controls.Add(lblLastResultValue);
+            taskStatusGroupBox.Controls.Add(label24);
+            taskStatusGroupBox.Controls.Add(lblLastRunValue);
+            taskStatusGroupBox.Controls.Add(label22);
+            taskStatusGroupBox.Controls.Add(lblNextRunValue);
+            taskStatusGroupBox.Controls.Add(label20);
+            taskStatusGroupBox.Controls.Add(lblScheduledTimeValue);
+            taskStatusGroupBox.Controls.Add(label18);
+            taskStatusGroupBox.Controls.Add(lblFrequencyValue);
+            taskStatusGroupBox.Controls.Add(label16);
+            taskStatusGroupBox.Controls.Add(lblTaskStatusValue);
+            taskStatusGroupBox.Controls.Add(label13);
+            taskStatusGroupBox.Controls.Add(label8);
+            taskStatusGroupBox.Dock = DockStyle.Fill;
+            taskStatusGroupBox.Location = new Point(768, 3);
+            taskStatusGroupBox.Name = "taskStatusGroupBox";
+            taskStatusGroupBox.Size = new Size(186, 405);
+            taskStatusGroupBox.TabIndex = 9;
+            taskStatusGroupBox.TabStop = false;
+            // 
+            // lblLastResultValue
+            // 
+            lblLastResultValue.Font = new Font("Segoe UI", 9.75F, FontStyle.Italic);
+            lblLastResultValue.ForeColor = Color.Black;
+            lblLastResultValue.Location = new Point(6, 318);
+            lblLastResultValue.Name = "lblLastResultValue";
+            lblLastResultValue.Size = new Size(171, 79);
+            lblLastResultValue.TabIndex = 28;
+            lblLastResultValue.Text = "-";
+            // 
+            // label24
+            // 
+            label24.AutoSize = true;
+            label24.Font = new Font("Segoe UI Semibold", 9.75F, FontStyle.Bold);
+            label24.Location = new Point(6, 295);
+            label24.Name = "label24";
+            label24.Size = new Size(76, 17);
+            label24.TabIndex = 27;
+            label24.Text = "Last Result:";
+            // 
+            // lblLastRunValue
+            // 
+            lblLastRunValue.AutoSize = true;
+            lblLastRunValue.Font = new Font("Segoe UI", 9.75F, FontStyle.Italic);
+            lblLastRunValue.ForeColor = Color.Black;
+            lblLastRunValue.Location = new Point(6, 266);
+            lblLastRunValue.Name = "lblLastRunValue";
+            lblLastRunValue.Size = new Size(13, 17);
+            lblLastRunValue.TabIndex = 26;
+            lblLastRunValue.Text = "-";
+            // 
+            // label22
+            // 
+            label22.AutoSize = true;
+            label22.Font = new Font("Segoe UI Semibold", 9.75F, FontStyle.Bold);
+            label22.Location = new Point(6, 243);
+            label22.Name = "label22";
+            label22.Size = new Size(63, 17);
+            label22.TabIndex = 25;
+            label22.Text = "Last Run:";
+            // 
+            // lblNextRunValue
+            // 
+            lblNextRunValue.AutoSize = true;
+            lblNextRunValue.Font = new Font("Segoe UI", 9.75F, FontStyle.Italic);
+            lblNextRunValue.ForeColor = Color.Black;
+            lblNextRunValue.Location = new Point(6, 214);
+            lblNextRunValue.Name = "lblNextRunValue";
+            lblNextRunValue.Size = new Size(13, 17);
+            lblNextRunValue.TabIndex = 24;
+            lblNextRunValue.Text = "-";
+            // 
+            // label20
+            // 
+            label20.AutoSize = true;
+            label20.Font = new Font("Segoe UI Semibold", 9.75F, FontStyle.Bold);
+            label20.Location = new Point(6, 191);
+            label20.Name = "label20";
+            label20.Size = new Size(68, 17);
+            label20.TabIndex = 23;
+            label20.Text = "Next Run:";
+            // 
+            // lblScheduledTimeValue
+            // 
+            lblScheduledTimeValue.AutoSize = true;
+            lblScheduledTimeValue.Font = new Font("Segoe UI", 9.75F, FontStyle.Italic);
+            lblScheduledTimeValue.ForeColor = Color.Black;
+            lblScheduledTimeValue.Location = new Point(6, 162);
+            lblScheduledTimeValue.Name = "lblScheduledTimeValue";
+            lblScheduledTimeValue.Size = new Size(13, 17);
+            lblScheduledTimeValue.TabIndex = 22;
+            lblScheduledTimeValue.Text = "-";
+            // 
+            // label18
+            // 
+            label18.AutoSize = true;
+            label18.Font = new Font("Segoe UI Semibold", 9.75F, FontStyle.Bold);
+            label18.Location = new Point(6, 139);
+            label18.Name = "label18";
+            label18.Size = new Size(106, 17);
+            label18.TabIndex = 21;
+            label18.Text = "Scheduled Time:";
+            // 
+            // lblFrequencyValue
+            // 
+            lblFrequencyValue.AutoSize = true;
+            lblFrequencyValue.Font = new Font("Segoe UI", 9.75F, FontStyle.Italic);
+            lblFrequencyValue.ForeColor = Color.Black;
+            lblFrequencyValue.Location = new Point(6, 110);
+            lblFrequencyValue.Name = "lblFrequencyValue";
+            lblFrequencyValue.Size = new Size(13, 17);
+            lblFrequencyValue.TabIndex = 20;
+            lblFrequencyValue.Text = "-";
+            // 
+            // label16
+            // 
+            label16.AutoSize = true;
+            label16.Font = new Font("Segoe UI Semibold", 9.75F, FontStyle.Bold);
+            label16.Location = new Point(6, 87);
+            label16.Name = "label16";
+            label16.Size = new Size(74, 17);
+            label16.TabIndex = 19;
+            label16.Text = "Frequency:";
+            // 
+            // lblTaskStatusValue
+            // 
+            lblTaskStatusValue.AutoSize = true;
+            lblTaskStatusValue.Font = new Font("Segoe UI Semibold", 9.75F, FontStyle.Bold);
+            lblTaskStatusValue.ForeColor = Color.Black;
+            lblTaskStatusValue.Location = new Point(61, 58);
+            lblTaskStatusValue.Name = "lblTaskStatusValue";
+            lblTaskStatusValue.Size = new Size(13, 17);
+            lblTaskStatusValue.TabIndex = 18;
+            lblTaskStatusValue.Text = "-";
+            // 
+            // label13
+            // 
+            label13.AutoSize = true;
+            label13.Font = new Font("Segoe UI Semibold", 9.75F, FontStyle.Bold);
+            label13.Location = new Point(6, 58);
+            label13.Name = "label13";
+            label13.Size = new Size(49, 17);
+            label13.TabIndex = 3;
+            label13.Text = "Status:";
+            // 
+            // label8
+            // 
+            label8.AutoSize = true;
+            label8.Font = new Font("Segoe UI Semibold", 12F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            label8.Location = new Point(6, 19);
+            label8.Name = "label8";
+            label8.Size = new Size(117, 21);
+            label8.TabIndex = 2;
+            label8.Text = "Task Scheduler";
             // 
             // ConfigurationForm
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             BackColor = Color.White;
-            ClientSize = new Size(770, 411);
+            ClientSize = new Size(957, 411);
             Controls.Add(tableLayoutPanel1);
             FormBorderStyle = FormBorderStyle.FixedSingle;
             Icon = (Icon)resources.GetObject("$this.Icon");
@@ -411,6 +587,8 @@
             panel3.ResumeLayout(false);
             panel3.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)pictureBox1).EndInit();
+            taskStatusGroupBox.ResumeLayout(false);
+            taskStatusGroupBox.PerformLayout();
             ResumeLayout(false);
         }
 
@@ -429,7 +607,6 @@
         private ComboBox cmbRetentionUnit;
         private NumericUpDown nudRetention;
         private Panel panel1;
-        private Label label8;
         private Label label9;
         private Label label10;
         private Panel panel2;
@@ -438,11 +615,25 @@
         private ComboBox cmbRunTime;
         private Label label11;
         private ComboBox cmbFrequency;
-        private Button btnCancel;
+        private Button btnClose;
         private Button btnSaveSettings;
         private Label lblRetentionStatus;
         private TableLayoutPanel tableLayoutPanel1;
         private Panel panel3;
         private PictureBox pictureBox1;
+        private GroupBox taskStatusGroupBox;
+        private Label label8;
+        private Label lblLastResultValue;
+        private Label label24;
+        private Label lblLastRunValue;
+        private Label label22;
+        private Label lblNextRunValue;
+        private Label label20;
+        private Label lblScheduledTimeValue;
+        private Label label18;
+        private Label lblFrequencyValue;
+        private Label label16;
+        private Label lblTaskStatusValue;
+        private Label label13;
     }
 }

@@ -1,4 +1,5 @@
 ﻿using LASYS.Shared.Cleanup.Enums;
+using LASYS.Shared.Cleanup.Models;
 
 namespace LASYS.Cleanup.UI.Views.Configuration
 {
@@ -17,6 +18,8 @@ namespace LASYS.Cleanup.UI.Views.Configuration
         event EventHandler? SaveRequested;
         void Show();
         void Close();
+
+        void LoadTaskInfo(CleanupTaskInfo? taskInfo);
 
     }
 }
