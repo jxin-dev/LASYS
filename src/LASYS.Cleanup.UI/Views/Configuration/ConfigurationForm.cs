@@ -5,12 +5,6 @@ namespace LASYS.Cleanup.UI.Views.Configuration
 {
     public partial class ConfigurationForm : Form, IConfigurationView
     {
-        private Label _taskStatusLabel;
-        private Label _frequencyLabel;
-        private Label _scheduledTimeLabel;
-        private Label _nextRunLabel;
-        private Label _lastRunLabel;
-        private Label _lastResultLabel;
 
         private readonly DayOfWeek _weeklyExecutionDay = DayOfWeek.Monday;
         private readonly int _monthlyExecutionDay = 1;
@@ -359,6 +353,10 @@ namespace LASYS.Cleanup.UI.Views.Configuration
                 case 0:
                     lblLastResultValue.Text = "Success";
                     lblLastResultValue.ForeColor = Color.SeaGreen;
+                    break;
+                case 2:
+                    lblLastResultValue.Text = "Cleanup is disabled.";
+                    lblLastResultValue.ForeColor = Color.Firebrick;
                     break;
                 case 267009:
                     lblLastResultValue.Text = "Task is currently running.";

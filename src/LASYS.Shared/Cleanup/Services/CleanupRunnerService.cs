@@ -16,7 +16,8 @@ namespace LASYS.Shared.Cleanup.Services
             var settings = _scheduleSettingsService.Load();
 
             if (!settings.Enabled)
-                return 0;
+                return 2; //Cleanup is disabled.
+
             if (!Directory.Exists(settings.CleanupFolder))
             {
                 throw new DirectoryNotFoundException(
@@ -40,10 +41,9 @@ namespace LASYS.Shared.Cleanup.Services
                 _ => throw new ArgumentOutOfRangeException(
                     nameof(settings.RetentionUnit))
             };
-            return await DeleteOldFilesAsync(
-            settings.CleanupFolder,
-            cutoffDate,
-            cancellationToken);
+            await DeleteOldFilesAsync(settings.CleanupFolder, cutoffDate, cancellationToken);
+
+            return 0;
         }
         private static async Task<int> DeleteOldFilesAsync(string folder, DateTime cutoffDate, CancellationToken cancellationToken)
         {
