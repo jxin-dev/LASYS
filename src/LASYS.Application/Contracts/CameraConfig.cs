@@ -6,5 +6,6 @@
         public string Name { get; set; } = string.Empty;
         public string Resolution { get; set; } = string.Empty;
         public int Focus { get; set; } = 0;
+        public double Zoom { get; set; } = 1.0;
     }
 }

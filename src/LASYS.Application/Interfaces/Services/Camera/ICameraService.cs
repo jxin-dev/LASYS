@@ -29,6 +29,8 @@ namespace LASYS.Application.Interfaces.Services.Camera
         bool IsCameraReady();
         Task<bool> ReconnectAsync();
         void SetFocus(int focusValue);
+        void SetZoom(double zoomFactor);
+        double GetZoom();
         bool IsStreaming { get; }
         bool IsCameraConnected { get; }
         //

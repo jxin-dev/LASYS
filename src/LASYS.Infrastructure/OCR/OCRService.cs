@@ -62,7 +62,7 @@ namespace LASYS.Infrastructure.OCR
 
             return Rectangle.Round(viewerRect);
         }
-
+        
         public async Task<string> ReadTextAsync(Mat snapshot, Coordinates coordinates)
         {
             if (snapshot == null || snapshot.Empty())
@@ -283,6 +283,8 @@ namespace LASYS.Infrastructure.OCR
                        {
                            clahe.Apply(gray, claheResult);
                        }
+
+
                        // Threshold
                        using Mat thresholded = new Mat();
                        Cv2.Threshold(claheResult, thresholded, 0, 255, ThresholdTypes.Binary | ThresholdTypes.Otsu);

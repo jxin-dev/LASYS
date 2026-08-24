@@ -37,6 +37,9 @@ namespace LASYS.DesktopApp.Views.UserControls
         private TrackBar? _focusSlider;
         private Label? _focusValueLabel;
 
+        private Panel? _zoomOverlay;
+        private TrackBar? _zoomSlider;
+        private Label? _zoomValueLabel;
 
         private ComboBox? _cameraSelectionComboBox;
         private ComboBox? _cameraResolutionComboBox;
@@ -66,6 +69,7 @@ namespace LASYS.DesktopApp.Views.UserControls
         public event EventHandler? SelectOcrItemRequested;
         public event Action<Product>? OcrItemChosen;
         public event EventHandler<PrintLabelEventArgs>? PrintLabelRequested;
+        public event EventHandler<double>? ZoomValueChanged;
 
         private Rectangle _roi;
         private Point _startPoint;
@@ -157,6 +161,7 @@ namespace LASYS.DesktopApp.Views.UserControls
 
                 if (_roi.Width > 5 && _roi.Height > 5)
                 {
+                    _zoomSlider!.Enabled = false;
                     _canDraw = false; //Block future draws until buttons clicked
 
                     btnSaveCalibration = new Button
@@ -176,6 +181,7 @@ namespace LASYS.DesktopApp.Views.UserControls
                     btnSaveCalibration.Click += delegate
                     {
                         ComputeImageRegionRequested?.Invoke(this, new ImageRegionEventArgs(_roi, picCameraPreview.Size, picCameraPreview.Image?.Size ?? Size.Empty));
+                        _zoomSlider!.Enabled = true;
                     };
 
                     btnCancelCalibration = new Button
@@ -202,6 +208,7 @@ namespace LASYS.DesktopApp.Views.UserControls
                         btnCancelCalibration.Dispose();
                         _canDraw = true; //Allow drawing again
                         _normalizedRegion = null;
+                        _zoomSlider!.Enabled = true;
                     };
 
                     // ---- POSITION BUTTONS ----
@@ -508,7 +515,8 @@ namespace LASYS.DesktopApp.Views.UserControls
                 }
                 if (_cameraSelectionComboBox.SelectedItem is string cameraName)
                 {
-                    CameraConfigurationSaved?.Invoke(this, new CameraSavedEventArgs(_cameraResolutionComboBox.SelectedIndex, cameraName, _cameraResolutionComboBox.Text, _focusCheckBox.Checked ? _focusSlider!.Value : 0));
+                    double currentZoom = (_zoomSlider?.Value ?? 10) / 10.0;
+                    CameraConfigurationSaved?.Invoke(this, new CameraSavedEventArgs(_cameraResolutionComboBox.SelectedIndex, cameraName, _cameraResolutionComboBox.Text, _focusCheckBox.Checked ? _focusSlider!.Value : 0, currentZoom));
                 }
             };
 
@@ -537,6 +545,94 @@ namespace LASYS.DesktopApp.Views.UserControls
                 }
             };
 
+            InitializeZoomOverlay();
+
+        }
+        public void UpdateZoomUI(double zoomValue)
+        {
+            zoomValue = Math.Clamp(zoomValue, 1.0, 10.0);
+
+            if (_zoomSlider == null || _zoomValueLabel == null)
+                return; 
+
+            _zoomSlider.Value = (int)(zoomValue * 10);
+            _zoomValueLabel.Text = $"{zoomValue:0.0}x";
+        }
+
+        private void InitializeZoomOverlay()
+        {
+            _zoomOverlay = new Panel
+            {
+                Width = 54,
+                Height = 220,
+                BackColor = Color.FromArgb(160, 25, 25, 25),
+                Visible = true
+            };
+            _zoomOverlay.DoubleBuffered(true);
+
+            _zoomValueLabel = new Label
+            {
+                Text = "1.0x",
+                Width = 44,
+                Height = 24,
+                TextAlign = ContentAlignment.MiddleCenter,
+                BackColor = Color.FromArgb(45, 45, 45),
+                ForeColor = Color.White,
+                Font = new Font("Segoe UI", 9, FontStyle.Bold)
+            };
+            // I-center horizontally batay sa overlay width
+            _zoomValueLabel.Left = (_zoomOverlay.Width - _zoomValueLabel.Width) / 2;
+            _zoomValueLabel.Top = 8;
+
+            Panel sliderContainer = new Panel
+            {
+                Width = 44,
+                Height = 170,
+                BackColor = Color.FromArgb(45, 45, 45),
+            };
+            // I-center horizontally batay sa overlay width
+            sliderContainer.Left = (_zoomOverlay.Width - sliderContainer.Width) / 2;
+            sliderContainer.Top = _zoomValueLabel.Bottom + 6;
+
+            _zoomSlider = new TrackBar
+            {
+                Orientation = Orientation.Vertical,
+                Minimum = 10,
+                Maximum = 100,
+                TickStyle = TickStyle.None,
+                Dock = DockStyle.Fill,
+                Value = 10
+            };
+
+            _zoomSlider.Scroll += (s, e) =>
+            {
+                double zoomValue = _zoomSlider.Value / 10.0;
+                _zoomValueLabel.Text = $"{zoomValue:0.0}x";
+                ZoomValueChanged?.Invoke(this, zoomValue);
+            };
+
+            sliderContainer.Controls.Add(_zoomSlider);
+
+            _zoomValueLabel.Paint += (s, e) =>
+            {
+                using var pen = new Pen(Color.FromArgb(0, 120, 215));
+                e.Graphics.DrawRectangle(pen, 0, 0, _zoomValueLabel.Width - 1, _zoomValueLabel.Height - 1);
+            };
+
+            _zoomOverlay.Controls.Add(_zoomValueLabel);
+            _zoomOverlay.Controls.Add(sliderContainer);
+
+            picCameraPreview.Controls.Add(_zoomOverlay);
+
+            PositionZoomOverlay();
+            picCameraPreview.Resize += (s, e) => PositionZoomOverlay();
+        }
+        private void PositionZoomOverlay()
+        {
+            if (_zoomOverlay == null) return;
+
+            _zoomOverlay.Left = picCameraPreview.Width - _zoomOverlay.Width - 10;
+            _zoomOverlay.Top = 10;//(picCameraPreview.Height - _zoomOverlay.Height) / 2;
         }
         private void InitializeFocusOverlay()
         {
@@ -809,7 +905,7 @@ namespace LASYS.DesktopApp.Views.UserControls
 
             labelInfoLayout.Controls.Add(_printSampleLabelButton, 4, 1);
 
-            _printSampleLabelButton.Click += (sender, e) => 
+            _printSampleLabelButton.Click += (sender, e) =>
             {
                 PrintLabelRequested?.Invoke(this, new PrintLabelEventArgs(_txtItemCode!.Text.Trim(), uint.Parse(_txtRevisionNumber!.Text.Trim()), _txtBoxType!.Text.Trim(), _selectedFilePath));
             };
@@ -1004,7 +1100,7 @@ namespace LASYS.DesktopApp.Views.UserControls
         private void ClearCoordinateFields()
         {
             _txtItemCode!.Text =
-            _txtRevisionNumber!.Text =  
+            _txtRevisionNumber!.Text =
             _txtBoxType!.Text =
             _txtX!.Text =
             _txtY!.Text =
@@ -1142,7 +1238,7 @@ namespace LASYS.DesktopApp.Views.UserControls
             _cameraResolutionComboBox?.Items.AddRange(resolution.ToArray());
         }
 
-        public void SelectCamera(string cameraName, string resolution, int focus)
+        public void SelectCamera(string cameraName, string resolution, int focus, double zoom)
         {
             // Camera selection
             var index = _cameraSelectionComboBox!.FindStringExact(cameraName);
@@ -1156,9 +1252,10 @@ namespace LASYS.DesktopApp.Views.UserControls
                 _cameraResolutionComboBox.SelectedIndex = resIndex;
 
             UpdateFocusUI(focus);
+            UpdateZoomUI(zoom);
 
             CameraPreviewStateChanged?.Invoke(this, new CameraSelectedEventArgs(cameraName));
-            
+
         }
 
         private void UpdateFocusUI(int value)
@@ -1236,7 +1333,7 @@ namespace LASYS.DesktopApp.Views.UserControls
             MessageBox.Show(message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
 
-       
+
     }
 }
 public static class ControlExtensions

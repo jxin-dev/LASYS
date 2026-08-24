@@ -81,7 +81,15 @@ namespace LASYS.DesktopApp.Presenters
             _view.SelectOcrItemRequested += OnSelectOcrItemRequested;
             _view.OcrItemChosen += OnOcrItemChosen;
             _view.PrintLabelRequested += OnPrintLabelRequested;
+
+            _view.ZoomValueChanged += OnZoomValueChanged;
         }
+
+        private void OnZoomValueChanged(object? sender, double e)
+        {
+            _deviceManager.Camera.SetZoom(e);
+        }
+
         private readonly SemaphoreSlim _printSemaphore = new(1, 1);
         private async void OnPrintLabelRequested(object? sender, PrintLabelEventArgs e)
         {
@@ -272,6 +280,7 @@ namespace LASYS.DesktopApp.Presenters
             var cameraName = e.CameraName;
             var resolutionKey = e.Resolution;
             var focusValue = e.Focus;
+            var zoomValue = e.Zoom; 
 
             var cameraResolutions = _deviceManager.Camera.GetCameraResolutions();
 
@@ -288,7 +297,8 @@ namespace LASYS.DesktopApp.Presenters
                     Index = cameraIndex,
                     Name = cameraName,
                     Resolution = resolutionKey,
-                    Focus = focusValue
+                    Focus = focusValue,
+                    Zoom = zoomValue
                 };
 
                 _deviceManager.Camera.SaveCameraConfigAsync(config);
@@ -332,7 +342,7 @@ namespace LASYS.DesktopApp.Presenters
 
                     if (config != null)
                     {
-                        _view.SelectCamera(config.Name, config.Resolution, config.Focus);
+                        _view.SelectCamera(config.Name, config.Resolution, config.Focus,config.Zoom);
                     }
                 }
                 else

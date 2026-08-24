@@ -26,6 +26,7 @@ namespace LASYS.Infrastructure.Hardware.Camera
         public event EventHandler<DeviceStatusChangedEventArgs>? DeviceStatusChanged;
         public DeviceStatus CurrentStatus { get; private set; } = DeviceStatusFactory.Create(DeviceType.Camera, DeviceStatusCode.NotConfigured);
 
+        private double _zoomFactor = 1.0;
 
         public event EventHandler? CameraDisconnected;
         public event EventHandler? CameraConnected;
@@ -60,6 +61,31 @@ namespace LASYS.Infrastructure.Hardware.Camera
 
         }
 
+        public void SetZoom(double zoomFactor)
+        {
+            _zoomFactor = Math.Clamp(zoomFactor, 1.0, 10.0);
+            SetStatus(DeviceStatusCode.CameraFocusing, $"Digital zoom is being set to {_zoomFactor:0.0}x.");
+        }
+
+        public double GetZoom() => _zoomFactor;
+        private Mat ApplyDigitalZoom(Mat frame)
+        {
+            var zoom = _zoomFactor; 
+            if (zoom <= 1.0)
+                return frame;
+
+            int cropWidth = (int)(frame.Width / zoom);
+            int cropHeight = (int)(frame.Height / zoom);
+
+            cropWidth = Math.Max(1, Math.Min(cropWidth, frame.Width));
+            cropHeight = Math.Max(1, Math.Min(cropHeight, frame.Height));
+
+            int x = (frame.Width - cropWidth) / 2;
+            int y = (frame.Height - cropHeight) / 2;
+
+            var roi = new OpenCvSharp.Rect(x, y, cropWidth, cropHeight);
+            return new Mat(frame, roi);
+        }
         private void SetStatus(DeviceStatusCode statusCode, string? descriptionOverride = null)
         {
             CurrentStatus = DeviceStatusFactory.Create(
@@ -74,10 +100,11 @@ namespace LASYS.Infrastructure.Hardware.Camera
         {
             await StopAsync();
             _activeConfig = await LoadCameraConfigAsync();
+            _zoomFactor = Math.Clamp(_activeConfig.Zoom, 1.0, 10.0);
             await OpenCameraAsync(_activeConfig);
         }
 
-        
+
         private async Task OpenCameraAsync(CameraConfig config)
         {
             ReleaseCamera();
@@ -96,7 +123,7 @@ namespace LASYS.Infrastructure.Hardware.Camera
                             SetStatus(DeviceStatusCode.NotConfigured);
                         else
                             SetStatus(DeviceStatusCode.NotDetected);
-                            
+
                         CameraDisconnected?.Invoke(this, EventArgs.Empty);
                         _isCameraConnected = false;
                         cameraIndex = 0;
@@ -217,8 +244,11 @@ namespace LASYS.Infrastructure.Hardware.Camera
 
                     lastUpdate = DateTime.Now;
 
+                    using var zoomed = ApplyDigitalZoom(frame);
+
                     var targetSize = getTargetResolution();
-                    Cv2.Resize(frame, resized, new OpenCvSharp.Size(targetSize.Width, targetSize.Height));
+                    Cv2.Resize(zoomed, resized, new OpenCvSharp.Size(targetSize.Width, targetSize.Height));
+                    //Cv2.Resize(frame, resized, new OpenCvSharp.Size(targetSize.Width, targetSize.Height));
 
                     PublishFrame(resized);
 
@@ -300,7 +330,7 @@ namespace LASYS.Infrastructure.Hardware.Camera
         //            if (!IsCameraReady())
         //            {
         //                CreateAndCaptureEmptyFrame(getTargetResolution(), onFrameCaptured);
-                        
+
         //                SetStatus(DeviceStatusCode.Disconnected);
         //                CameraDisconnected?.Invoke(this, EventArgs.Empty);
 
@@ -605,7 +635,7 @@ namespace LASYS.Infrastructure.Hardware.Camera
             var focus = _capture?.Get(VideoCaptureProperties.Focus);
             //Debug.WriteLine($"Focus: {focus}");
 
-            SetStatus(DeviceStatusCode.CameraFocusing, 
+            SetStatus(DeviceStatusCode.CameraFocusing,
                 focusValue == 0
                 ? "Auto focus is being enabled."
                 : $"Manual focus is being set to value {focusValue}.");

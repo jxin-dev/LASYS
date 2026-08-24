@@ -18,6 +18,9 @@ namespace LASYS.DesktopApp.Views.Interfaces
         void DisplayFrame(Bitmap bitmap);
 
         event EventHandler<int> FocusValueChanged;
+        event EventHandler<double> ZoomValueChanged;
+        void UpdateZoomUI(double zoomValue);
+
         event EventHandler<CalibrationEventArgs> SaveCalibrationClicked;
         event EventHandler<ImageRegionEventArgs> ComputeImageRegionRequested;
         void FinishCalibration(string message, bool isError = false);
@@ -38,7 +41,7 @@ namespace LASYS.DesktopApp.Views.Interfaces
         event EventHandler LoadCamerasRequested;
         event EventHandler<string> CameraResolutionSelected;
 
-        void SelectCamera(string cameraName, string resolution, int focus);
+        void SelectCamera(string cameraName, string resolution, int focus, double zoom);
         void ShowCameraNotification(string message, string caption, bool isError = false);
 
         event EventHandler SelectOcrItemRequested;
