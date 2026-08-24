@@ -294,114 +294,7 @@ namespace LASYS.Infrastructure.Hardware.Camera
             using var mat = new Mat(size.Height, size.Width, MatType.CV_8UC3, Scalar.All(0));
             PublishFrame(mat);
         }
-        //public Task StartStreamingAsync(
-        //    Action<Mat, Bitmap> onFrameCaptured,
-        //    Func<DrawingSize> getTargetResolution)
-        //{
-
-        //    lock (_captureLock)
-        //    {
-        //        if (_isStreaming)
-        //            return Task.CompletedTask; // Already streaming
-
-        //        if (_capture == null || !_capture.IsOpened())
-        //        {
-        //            SetStatus(DeviceStatusCode.Disconnected);
-        //            CameraDisconnected?.Invoke(this, EventArgs.Empty);
-        //            return Task.CompletedTask;
-        //        }
-
-        //        _isStreaming = true;
-        //        _cts ??= new CancellationTokenSource();
-        //    }
-
-
-        //    _isCameraConnected = false;
-
-        //    var token = _cts.Token;
-
-        //    _streamingTask = Task.Factory.StartNew(() =>
-        //    {
-        //        var frameInterval = TimeSpan.FromMilliseconds(100);
-        //        var lastUpdate = DateTime.Now;
-
-        //        while (!token.IsCancellationRequested)
-        //        {
-        //            if (!IsCameraReady())
-        //            {
-        //                CreateAndCaptureEmptyFrame(getTargetResolution(), onFrameCaptured);
-
-        //                SetStatus(DeviceStatusCode.Disconnected);
-        //                CameraDisconnected?.Invoke(this, EventArgs.Empty);
-
-        //                Thread.Sleep(1000);
-        //                continue;
-        //            }
-
-        //            using var frame = new Mat();
-        //            using var resized = new Mat();
-
-        //            if (!TryReadFrame(frame) || frame.Empty())
-        //            {
-        //                HandleEmptyFrame(onFrameCaptured, getTargetResolution);
-
-        //                SetStatus(DeviceStatusCode.Disconnected);
-
-        //                CameraDisconnected?.Invoke(this, EventArgs.Empty);
-        //                continue;
-        //            }
-
-        //            var elapsed = DateTime.Now - lastUpdate;
-        //            if (elapsed < frameInterval)
-        //                Thread.Sleep(frameInterval - elapsed);
-
-        //            lastUpdate = DateTime.Now;
-
-        //            var targetSize = getTargetResolution();
-        //            Cv2.Resize(frame, resized, new OpenCvSharp.Size(targetSize.Width, targetSize.Height));
-
-        //            HandleFrameSafe(resized, onFrameCaptured);
-
-        //            lock (_frameLock)
-        //            {
-        //                //LastCapturedFrame?.Dispose();
-        //                //LastCapturedFrame = resized.Clone();
-        //                if (LastCapturedFrame == null)
-        //                {
-        //                    LastCapturedFrame = resized.Clone();
-        //                }
-        //                else
-        //                {
-        //                    SetStatus(DeviceStatusCode.Connected);
-        //                    //CameraStatusChanged?.Invoke(this, new CameraStatusEventArgs(CameraStatus.CameraConnected));
-        //                    resized.CopyTo(LastCapturedFrame);
-
-        //                    //var focus = _capture?.Get(VideoCaptureProperties.Focus);
-        //                    //Debug.WriteLine($"Focus: {focus}");
-
-        //                    //double actualWidth = _capture.Get(VideoCaptureProperties.FrameWidth);
-        //                    //double actualHeight = _capture.Get(VideoCaptureProperties.FrameHeight);
-        //                    //Debug.WriteLine($"Camera Resolution: {actualWidth}x{actualHeight}");
-        //                }
-        //            }
-
-        //            ReportConnectedOnce();
-        //        }
-
-        //    }, token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
-
-
-        //    return _streamingTask;
-        //}
-        //private void HandleFrameSafe(Mat resized, Action<Mat, Bitmap> onFrameCaptured)
-        //{
-        //    var bitmap = resized.ToBitmap();
-        //    onFrameCaptured(resized, bitmap);
-
-        //    //if (_capture != null)
-        //    //    Debug.Write($"FH:{_capture.FrameHeight} | FW:{_capture.FrameWidth} | FPS: {_capture.Fps}\n");
-        //}
-
+        
 
         // ----------------------------------------------------
         // Helpers
@@ -440,43 +333,7 @@ namespace LASYS.Infrastructure.Hardware.Camera
         public bool IsCameraReady() =>
             _capture != null && _capture.IsOpened() && !_capture.IsDisposed;
 
-        //private async Task HandleDisconnectedCamera(
-        //    Action<Mat, Bitmap> onFrameCaptured,
-        //    Func<DrawingSize> getTargetResolution)
-        //{
-        //    try
-        //    {
-        //        CreateAndCaptureEmptyFrame(getTargetResolution(), onFrameCaptured);
-
-        //        await Task.Delay(1000, _cts.Token);
-
-        //        if (_activeConfig != null && !_cts.Token.IsCancellationRequested)
-        //        {
-        //            //await OpenCameraAsync(_activeConfig);
-
-        //            if (IsCameraReady())
-        //            {
-        //                await OpenCameraAsync(_activeConfig);
-        //                _hasReportedEmptyFrame = false;
-        //                _isCameraConnected = false;
-        //                _streamingTask = null; // Restart streaming
-        //            }
-        //            else
-        //            {
-        //                SetStatus(DeviceStatusCode.Disconnected);
-        //                //CameraStatusChanged?.Invoke(this, new CameraStatusEventArgs(CameraStatus.CameraDisconnected));
-        //                CameraDisconnected?.Invoke(this, EventArgs.Empty);
-        //            }
-        //        }
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        Debug.WriteLine($"HandleDisconnectedCamera failed: {ex}");
-        //    }
-
-
-        //}
-
+       
         protected virtual void OnCameraDisconnected()
         {
             var handler = CameraDisconnected;
@@ -494,28 +351,6 @@ namespace LASYS.Infrastructure.Hardware.Camera
                 }
             }
         }
-
-        //private void HandleEmptyFrame(
-        //    Action<Mat, Bitmap> onFrameCaptured,
-        //    Func<DrawingSize> getTargetResolution)
-        //{
-        //    if (_hasReportedEmptyFrame)
-        //        return;
-
-        //    _hasReportedEmptyFrame = true;
-        //    _isCameraConnected = false;
-
-        //    CreateAndCaptureEmptyFrame(getTargetResolution(), onFrameCaptured);
-        //}
-
-        //private static void Throttle(ref DateTime lastUpdate, TimeSpan interval)
-        //{
-        //    var now = DateTime.Now;
-        //    if (now - lastUpdate < interval)
-        //        return;
-
-        //    lastUpdate = now;
-        //}
 
         private void ReportConnectedOnce()
         {
