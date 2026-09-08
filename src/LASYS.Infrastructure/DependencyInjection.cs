@@ -68,6 +68,7 @@ public static class DependencyInjection
     public static IServiceCollection AddSessionServices(this IServiceCollection services)
     {
         services.AddSingleton<ISessionTracker, SessionTracker>();
+        services.AddSingleton<IUserCacheService, UserCacheService>();
 
         return services;
     }

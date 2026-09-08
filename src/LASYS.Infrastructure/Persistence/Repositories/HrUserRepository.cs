@@ -13,6 +13,28 @@ namespace LASYS.Infrastructure.Persistence.Repositories
             _factory = factory;
         }
 
+        public async Task<IEnumerable<HrUser>> GetAllEmployeesAsync()
+        {
+            const string sql = @"
+                SELECT 
+                    USER_CODE,
+                    FIRST_NAME,
+                    MIDDLE_NAME,
+                    LAST_NAME,
+                    NICKNAME,
+                    POSITION,
+                    DEPARTMENT_CODE,
+                    SECTION_ID,
+                    SECTION_NAME,
+                    TEAM,
+                    PICTURE
+                FROM sec_hr_users_tmp;";
+
+            using var connection = await _factory.CreateConnectionAsync();
+
+            return await connection.QueryAsync<HrUser>(sql);
+        }
+
         public async Task<HrUser?> GetEmployeeInfoByIdAsync(string employeeId)
         {
 

@@ -5,5 +5,6 @@ namespace LASYS.Application.Interfaces.Persistence.Repositories
     public interface IHrUserRepository
     {
         Task<HrUser?> GetEmployeeInfoByIdAsync(string employeeId);
+        Task<IEnumerable<HrUser>> GetAllEmployeesAsync();
     }
 }

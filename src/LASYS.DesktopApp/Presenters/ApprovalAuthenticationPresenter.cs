@@ -16,16 +16,29 @@ namespace LASYS.DesktopApp.Presenters
     {
         public ApprovalAuthenticationForm View { get; }
         private readonly IApprovalAuthenticationView _view;
-        private readonly IMediator _mediator;
+        //private readonly IMediator _mediator;
         private readonly ICurrentUser _currentUser;
         private readonly IPermissionService _permissionService;
+        private readonly IUserCacheService _userCacheService;
+
         public event EventHandler<ApprovalAuthorizedEventArgs>? AuthorizationSucceeded;
         public event EventHandler? AuthorizationCancelled;
 
-        public ApprovalAuthenticationPresenter(IApprovalAuthenticationView view, IMediator mediator, ICurrentUser currentUser, IPermissionService permissionService)
+        //public ApprovalAuthenticationPresenter(IApprovalAuthenticationView view, IMediator mediator, ICurrentUser currentUser, IPermissionService permissionService)
+        //{
+        //    _view = view;
+        //    _mediator = mediator;
+
+        //    View = (ApprovalAuthenticationForm)view;
+
+        //    _view.ApprovalRequested += OnApprovalRequested;
+        //    _view.ApprovalCancelled += OnApprovalCancelled;
+        //    _currentUser = currentUser;
+        //    _permissionService = permissionService;
+        //}
+        public ApprovalAuthenticationPresenter(IApprovalAuthenticationView view, ICurrentUser currentUser, IPermissionService permissionService, IUserCacheService userCacheService)
         {
             _view = view;
-            _mediator = mediator;
 
             View = (ApprovalAuthenticationForm)view;
 
@@ -33,26 +46,26 @@ namespace LASYS.DesktopApp.Presenters
             _view.ApprovalCancelled += OnApprovalCancelled;
             _currentUser = currentUser;
             _permissionService = permissionService;
+            _userCacheService = userCacheService;
         }
-
         private void OnApprovalCancelled(object? sender, EventArgs e)
         {
             _view.CloseApproval();
             AuthorizationCancelled?.Invoke(this, EventArgs.Empty);
         }
 
-        private async void OnApprovalRequested(object? sender, ApprovalCredentialsEventArgs e)
+        private void OnApprovalRequested(object? sender, ApprovalCredentialsEventArgs e)
         {
-            if (_currentUser.Username.ToLower().Trim() == e.Username.ToLower().Trim())
+            if (_currentUser.Username!.ToLower().Trim() == e.Username.ToLower().Trim())
             {
                 _view.ApprovalFailed("You cannot approve your own request.");
                 return;
             }
 
            _view.InvokeOnUI(()=> _view.EnableApproveButton(false));
-            var result = await _mediator.Send(new LoginCommand(e.Username, e.Password));
-
-            if (result.IsSuccess)
+            //var result = await _mediator.Send(new LoginCommand(e.Username, e.Password));
+            var userCache = _userCacheService.Authenticate(e.Username, e.Password);
+            if (userCache != null)
             {
                 var hasAccess = _permissionService.HasAccess("Barcode Label Work Order", AccessLevel.Admin);
                 if (!hasAccess)
@@ -62,13 +75,13 @@ namespace LASYS.DesktopApp.Presenters
                     return;
                 }
                 _view.ApprovalSucceeded();
-                var user = result.Value!;
+                var user = userCache;
 
-                AuthorizationSucceeded?.Invoke(this, new ApprovalAuthorizedEventArgs(user.UserCode, user.SectionId!));
+                AuthorizationSucceeded?.Invoke(this, new ApprovalAuthorizedEventArgs(user.USER_CODE, user.SECTION_ID!));
             }
             else
             {
-                _view.ApprovalFailed(result.Error!);
+                _view.ApprovalFailed("Invalid username or password.");
             }
             _view.InvokeOnUI(() => _view.EnableApproveButton(true));
         }

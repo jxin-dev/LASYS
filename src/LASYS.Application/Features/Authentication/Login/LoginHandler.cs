@@ -15,7 +15,8 @@ namespace LASYS.Application.Features.Authentication.Login
         private readonly IImageService _imageService;
         private readonly IPermissionService _permissionService;
         private readonly IMediator _mediator;
-        public LoginHandler(ILogService logService, IUserRepository userRepository, IImageService imageService, IPermissionService permissionService, IMediator mediator, IHrUserRepository hrUserRepository)
+        private readonly IUserCacheService _userCacheService;
+        public LoginHandler(ILogService logService, IUserRepository userRepository, IImageService imageService, IPermissionService permissionService, IMediator mediator, IHrUserRepository hrUserRepository, IUserCacheService userCacheService)
         {
             _logService = logService;
             _userRepository = userRepository;
@@ -23,6 +24,7 @@ namespace LASYS.Application.Features.Authentication.Login
             _permissionService = permissionService;
             _mediator = mediator;
             _hrUserRepository = hrUserRepository;
+            _userCacheService = userCacheService;
         }
 
         public async Task<Result<LoginResponse>> Handle(LoginCommand request, CancellationToken cancellationToken)
@@ -37,6 +39,8 @@ namespace LASYS.Application.Features.Authentication.Login
                     _logService.Log($"Login failed for '{request.Username}'", MessageType.Warning);
                     return Result.Failure<LoginResponse>("Invalid username or password.");
                 }
+
+                await _userCacheService.LoadUsersAsync(cancellationToken);
 
                 var hrUser = await _hrUserRepository.GetEmployeeInfoByIdAsync(user.USER_CODE);
                 if (hrUser == null)

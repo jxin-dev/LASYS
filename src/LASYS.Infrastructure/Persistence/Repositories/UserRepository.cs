@@ -97,9 +97,9 @@ namespace LASYS.Infrastructure.Persistence.Repositories
                 throw;
             }
         }
-        public async Task<IEnumerable<User>> GetAllUser()
+        public async Task<IEnumerable<User>> GetAllUsersAsync()
         {
-            string sql = "select * from sec_users_mst";
+            string sql = "SELECT * FROM sec_users_mst WHERE ACTIVE_FLAG = ' '";
 
             try
             {
