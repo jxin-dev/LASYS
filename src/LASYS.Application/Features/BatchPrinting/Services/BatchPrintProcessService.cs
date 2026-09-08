@@ -206,21 +206,31 @@ namespace LASYS.Application.Features.BatchPrinting.Services
                     }
 
                     var stopRequested = false;
-                    var pairCount = job.IsPairedType ? 2 : 1;
+                    //var pairCount = job.IsPairedType && job.BoxType == Common.Enums.BoxType.CartonBox ? 2 : 1;
+
+                    bool isFirstSample =
+                            hasFirstSample && printIteration == 1;
+
+                    bool isLastSample =
+                        hasLastSample && printIteration == totalPrintIterations;
+
+                    var isSampleLabel =
+                        isFirstSample || isLastSample;
+
+                    var pairCount =
+                        isSampleLabel
+                            ? 1 : job.IsPairedType && job.BoxType == Common.Enums.BoxType.CartonBox ? 2 : 1;
                     var completedPairs = 0;
                     foreach (var pairIndex in Enumerable.Range(1, pairCount))
                     {
-                        //bool isFirstLabel = job.Context.PrintDetails!.NextSequence == startSequence;
-                        //bool isLastLabel = job.Context.PrintDetails!.NextSequence == (startSequence + job.TotalQuantity - 1);
-                        //var isSampleLabel = (!hasOpenBatch && isFirstLabel) || (isLastLabel && job.EndOfBatch);
-                        bool isFirstSample =
-                            hasFirstSample && printIteration == 1;
+                        //bool isFirstSample =
+                        //    hasFirstSample && printIteration == 1;
 
-                        bool isLastSample =
-                            hasLastSample && printIteration == totalPrintIterations;
+                        //bool isLastSample =
+                        //    hasLastSample && printIteration == totalPrintIterations;
 
-                        var isSampleLabel =
-                            isFirstSample || isLastSample;
+                        //var isSampleLabel =
+                        //    isFirstSample || isLastSample;
 
                         job.SetCurrentPair(pairIndex, pairCount);
 
