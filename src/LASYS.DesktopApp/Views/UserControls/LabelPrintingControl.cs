@@ -1,4 +1,4 @@
-﻿using System.Windows.Forms;
+﻿using LASYS.Application.Common.Enums;
 using LASYS.Application.Common.Messaging;
 using LASYS.Application.Features.BatchPrinting.Enums;
 using LASYS.Application.Features.BatchPrinting.Events;
@@ -94,6 +94,7 @@ namespace LASYS.DesktopApp.Views.UserControls
             btnBack.Click += (_, _) => BackToWorkOrdersRequested?.Invoke(this, EventArgs.Empty);
             btnPrint.Click += (_, _) =>
             {
+
                 if (_printJobId is null)
                     return;
 
@@ -105,6 +106,13 @@ namespace LASYS.DesktopApp.Views.UserControls
                     {
                         quantity = _minimumQuantity;
                         txtQuantity.Text = quantity.ToString();
+                        MessageBox.Show(
+                          $"Quantity must be at least {_minimumQuantity}.",
+                          "Invalid Quantity",
+                          MessageBoxButtons.OK,
+                          MessageBoxIcon.Warning);
+                        return;
+
                     }
 
                     PrintRequested?.Invoke(this, new PrintRequestedEventArgs(_printJobId.Value, quantity, chkEndOfBatch.Checked));
@@ -546,6 +554,17 @@ namespace LASYS.DesktopApp.Views.UserControls
 
             UpdateQuantityControl(printJob);
 
+            if (printJob.RemainingQuantity == 0)
+            {
+                SetLoading(false);
+
+                MessageBox.Show(
+                    "The print quantity has been completed.",
+                    "Printing Complete",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Information);
+            }
+
         }
 
         public void UpdateQuantityControl(PrintJobState printJob)
@@ -557,21 +576,18 @@ namespace LASYS.DesktopApp.Views.UserControls
             var currentBatchCount = printDetails.TotalPassed % batchSize;
             var remaining = printJob.RemainingQuantity;
 
-            //var remainingInBatch = currentBatchCount == 0
-            //    ? batchSize
-            //    : batchSize - currentBatchCount;
+            var remainingInBatch = currentBatchCount == 0
+                ? batchSize
+                : batchSize - currentBatchCount;
 
-            //var maxQty = Math.Min((long)remaining, remainingInBatch);
-
-            //nudQuantity.Minimum = remaining == 0 ? 0 : 1;
-            //nudQuantity.Maximum = (decimal)maxQty;
-            //nudQuantity.Value = (decimal)maxQty;
+            var maxQty = Math.Min((long)remaining, remainingInBatch);
 
             _minimumQuantity = 1;
             _maximumQuantity = (int)remaining;
-            //nudQuantity.Minimum = 1;
-            //nudQuantity.Maximum = remaining;
-            //nudQuantity.Value = remaining < 50 ? remaining : 50;
+            txtQuantity.Text = maxQty.ToString();
+
+            txtQuantity.Enabled = maxQty > 0;
+            chkEndOfBatch.Enabled = maxQty > 0;
         }
 
         private Color GetColor(MessageType type)
@@ -645,6 +661,9 @@ namespace LASYS.DesktopApp.Views.UserControls
 
                     lblPrintingProgress.Visible = false;
                     pbPrintingProgress.Visible = false;
+
+                    txtQuantity.Enabled = false;
+
                     break;
                 case PrintJobStatus.Ready:
                 case PrintJobStatus.Completed:
@@ -657,6 +676,9 @@ namespace LASYS.DesktopApp.Views.UserControls
                     btnPrint.Image = _startIcon;
                     btnPrint.ForeColor = Color.Black;
                     btnPrint.BackColor = Color.SeaGreen;
+
+                    txtQuantity.Enabled = true;
+
                     break;
                 case PrintJobStatus.Pending:
                     btnPrint.Enabled = false;
@@ -676,6 +698,8 @@ namespace LASYS.DesktopApp.Views.UserControls
                     btnPrint.Image = _stopIcon;
                     btnPrint.ForeColor = Color.White;
                     btnPrint.BackColor = Color.Crimson;
+
+                    txtQuantity.Enabled = false;
                     break;
                 case PrintJobStatus.Paused:
                     btnPauseResume.Visible = true;
@@ -828,9 +852,22 @@ namespace LASYS.DesktopApp.Views.UserControls
         {
             btnBack.Enabled = enabled;
         }
-
-        public void ResetView()
+        private readonly ToolTip _toolTip = new ToolTip();
+        public void ResetView(BoxType boxType)
         {
+            lblLabelPrintingHeader.Text = boxType switch
+            {
+                BoxType.CaseLabel => "Label Printing (CASE)",
+                BoxType.UnitBox => "Label Printing (Unit Box)",
+                BoxType.AdditionalUnitBox => "Label Printing (Additional Unit Box)",
+                BoxType.OuterUnitBox => "Label Printing (Outer Unit Box)",
+                BoxType.CartonBox => "Label Printing (Carton Box)",
+                BoxType.OuterCartonBox => "Label Printing (Outer Carton Box)",
+                BoxType.AdditionalCartonBox => "Label Printing (Additional Carton Box)",
+                BoxType.QualityControlSample => "Label Printing (QC Sample)",
+                _ => "Label Printing"
+            };
+
             var loadingText = "Initializing...";
             lblInstructionCode.Text = loadingText;
             lblItemCode.Text = loadingText;
@@ -853,11 +890,19 @@ namespace LASYS.DesktopApp.Views.UserControls
 
             _minimumQuantity = 0;
             _maximumQuantity = 0;
-            //nudQuantity.Minimum = 0;
-            //nudQuantity.Maximum = 0;
-            //nudQuantity.Value = 0;
-            chkEndOfBatch.Checked = false;
+            chkEndOfBatch.Checked = true;
+            txtQuantity.Enabled = false;
+            txtQuantity.Text = "0";
             ClearLogs();
+
+            _toolTip.SetToolTip(
+              chkEndOfBatch,
+              "• Prints a First Sample before the production quantity and an additional Last Sample after the production quantity.\n" +
+              "• The Last Sample must pass visual inspection to complete the batch.\n" +
+              "• If the Last Sample fails, reprint it by keeping End of Batch enabled and setting Quantity to 1.\n" +
+              "• If the previous batch was not completed and a new print job is started with End of Batch disabled,\n" +
+              "  no visual inspection is required. If End of Batch is enabled, only the Last Sample requires visual inspection.\n" +
+              "• For a new batch with End of Batch disabled, only the First Sample requires visual inspection.");
         }
 
         public void ShowApprovalAuthorization(ApprovalAuthenticationForm approvalForm)
@@ -983,6 +1028,12 @@ namespace LASYS.DesktopApp.Views.UserControls
                 value = _maximumQuantity;
 
             tb.Text = value.ToString(); // Removes leading zeros
+        }
+
+        public void ShowVisualInspection(VisualInspectionForm visualInspectionForm)
+        {
+            visualInspectionForm.ControlBox = false;
+            _modalOverlay.Show(visualInspectionForm);
         }
     }
 

@@ -1,4 +1,5 @@
-﻿using LASYS.Application.Common.Messaging;
+﻿using LASYS.Application.Common.Enums;
+using LASYS.Application.Common.Messaging;
 using LASYS.Application.Features.BatchPrinting.Enums;
 using LASYS.Application.Features.BatchPrinting.Events;
 using LASYS.Application.Features.BatchPrinting.Models;
@@ -37,6 +38,7 @@ namespace LASYS.DesktopApp.Views.Interfaces
         void ShowNotification(string message, MessageBoxIcon icon);
 
         void ShowApprovalAuthorization(ApprovalAuthenticationForm approvalForm);
+        void ShowVisualInspection(VisualInspectionForm visualInspectionForm);
         void HideModal();
         void InvokeOnUI(Action action);
         void AddLog(MessageType type, DateTime timeStamp, string message);
@@ -48,7 +50,7 @@ namespace LASYS.DesktopApp.Views.Interfaces
         void UpdateDeviceStatus(DeviceStatus status);
         void SetLoading(bool isLoading);
         void SetBackButtonEnabled(bool enabled);
-        void ResetView();
+        void ResetView(BoxType boxType);
         void SetEndOfBatch(bool isChecked);
         int Quantity { get; }
         bool IsEndOfBatchChecked { get; }

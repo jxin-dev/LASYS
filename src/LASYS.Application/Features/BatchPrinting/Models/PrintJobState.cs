@@ -45,6 +45,8 @@ namespace LASYS.Application.Features.BatchPrinting.Models
         public string? ApprovedByIpAddress { get; private set; }
         public string? ApprovedByDateTime { get; private set; }
 
+        public bool IsPassed { get; private set; }
+        public int TotalPrintQuantity { get; private set; }
         public static PrintJobState Create(string printerName, LabelPrintingContext context)
         {
 
@@ -72,19 +74,29 @@ namespace LASYS.Application.Features.BatchPrinting.Models
                 Status = remaining == 0 ? PrintJobStatus.Printed : PrintJobStatus.Ready
             };
         }
-
+        public void SetTotalPrintQuantity(int totalPrintQuantity)
+        {
+            TotalPrintQuantity = totalPrintQuantity;
+        }
         public void MarkFirst()
         {
+            IsPassed = true;
             CurrentLabelStatus = "First";
             Context.PrintDetails!.TotalSample += 1;
         }
 
         public void MarkLast()
         {
+            IsPassed = true;
             CurrentLabelStatus = "Last";
             Context.PrintDetails!.TotalSample += 1;
         }
 
+        public void MarkFailedDuringPrinting()
+        {
+            IsPassed = false;
+            CurrentLabelStatus = "Failed During Printing";
+        }
         public void ResetPrintType()
         {
             CurrentLabelStatus = Context.LabelInstructionDetails!.PrintType;
@@ -114,6 +126,11 @@ namespace LASYS.Application.Features.BatchPrinting.Models
             }
         }
 
+        public void MoveToNextSample()
+        {
+            PrintedCount++;
+        }
+
         public void SetQuantity(int quantity)
         {
             TotalQuantity = quantity;
@@ -131,6 +148,9 @@ namespace LASYS.Application.Features.BatchPrinting.Models
 
         public void UpdateSetNumber()
         {
+            if (PrintedCount == 0)
+                return;
+
             var remaining = Context.PrintDetails != null ? Context.PrintDetails.GetRemainingPrintQuantity(Context.ProductDetails?.Quantity) : throw new InvalidOperationException("RemainingQuantity is not available.");
             var setNumber = Context.PrintDetails?.SetNumber != null ? (int)Context.PrintDetails.SetNumber : throw new InvalidOperationException("SetNumber is not available.");
             Context.PrintDetails.SetNumber = remaining == 0 ? setNumber : ++setNumber;

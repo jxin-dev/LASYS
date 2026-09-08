@@ -72,7 +72,7 @@
             label2 = new Label();
             pnlHeader = new Panel();
             btnBack = new Button();
-            label1 = new Label();
+            lblLabelPrintingHeader = new Label();
             pnlContent.SuspendLayout();
             groupBox4.SuspendLayout();
             groupBox3.SuspendLayout();
@@ -567,7 +567,7 @@
             pnlHeader.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             pnlHeader.BackColor = Color.White;
             pnlHeader.Controls.Add(btnBack);
-            pnlHeader.Controls.Add(label1);
+            pnlHeader.Controls.Add(lblLabelPrintingHeader);
             pnlHeader.Location = new Point(3, 3);
             pnlHeader.Name = "pnlHeader";
             pnlHeader.Size = new Size(1235, 48);
@@ -591,16 +591,16 @@
             btnBack.TextImageRelation = TextImageRelation.ImageBeforeText;
             btnBack.UseVisualStyleBackColor = false;
             // 
-            // label1
+            // lblLabelPrintingHeader
             // 
-            label1.AutoSize = true;
-            label1.Font = new Font("Segoe UI", 15.75F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            label1.ForeColor = Color.FromArgb(240, 84, 84);
-            label1.Location = new Point(12, 8);
-            label1.Name = "label1";
-            label1.Size = new Size(151, 30);
-            label1.TabIndex = 0;
-            label1.Text = "Label Printing";
+            lblLabelPrintingHeader.AutoSize = true;
+            lblLabelPrintingHeader.Font = new Font("Segoe UI", 15.75F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            lblLabelPrintingHeader.ForeColor = Color.FromArgb(240, 84, 84);
+            lblLabelPrintingHeader.Location = new Point(12, 8);
+            lblLabelPrintingHeader.Name = "lblLabelPrintingHeader";
+            lblLabelPrintingHeader.Size = new Size(151, 30);
+            lblLabelPrintingHeader.TabIndex = 0;
+            lblLabelPrintingHeader.Text = "Label Printing";
             // 
             // LabelPrintingControl
             // 
@@ -629,7 +629,7 @@
 
         private Panel pnlContent;
         private Panel pnlHeader;
-        private Label label1;
+        private Label lblLabelPrintingHeader;
         private Button btnBack;
         private GroupBox groupBox1;
         private Label lblInstructionCode;

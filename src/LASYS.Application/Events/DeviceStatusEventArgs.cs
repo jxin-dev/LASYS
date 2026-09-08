@@ -4,10 +4,10 @@ namespace LASYS.Application.Events
 {
     public class DeviceStatusEventArgs : EventArgs
     {
-        public DeviceType Device { get; }
+        public DeviceType_RemoveThis Device { get; }
         public string Message { get; }
         public string Description { get; }
-        public DeviceStatusEventArgs(DeviceType device, string message, string description)
+        public DeviceStatusEventArgs(DeviceType_RemoveThis device, string message, string description)
         {
             Device = device;
             Message = message;

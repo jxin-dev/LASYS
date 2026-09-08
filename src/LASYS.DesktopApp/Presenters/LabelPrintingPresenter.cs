@@ -24,6 +24,7 @@ using LASYS.Application.Interfaces.Services;
 using LASYS.Application.Interfaces.Services.Camera;
 using LASYS.Application.Interfaces.Services.NiceLabel;
 using LASYS.DesktopApp.Events;
+using LASYS.DesktopApp.Views.Forms;
 using LASYS.DesktopApp.Views.Interfaces;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
@@ -107,7 +108,7 @@ namespace LASYS.DesktopApp.Presenters
             _batchPrintService.LogGenerated += OnLogGenerated;
 
             _batchPrintService.ApprovalAuthorizationRequired += OnApprovalAuthorizationRequired;
-
+            _batchPrintService.VisualInspectionRequired += OnVisualInspectionRequired;
 
             // CAMERA PREVIEW
             _cameraPreviewPresenter = services.GetRequiredService<CameraPreviewPresenter>();
@@ -117,6 +118,14 @@ namespace LASYS.DesktopApp.Presenters
             _labelTemplatePreviewPresenter = services.GetRequiredService<LabelTemplatePreviewPresenter>();
             _view.SetPreview(_labelTemplatePreviewPresenter.View);
             _view.LabelTemplatePreviewRequested += OnLabelTemplatePreviewRequested;
+        }
+
+        private void OnVisualInspectionRequired(object? sender, VisualInspectionRequiredEventArgs e)
+        {
+            var visualInspectionPresenter = _services.GetRequiredService<VisualInspectionPresenter>();
+            visualInspectionPresenter.View.Configure(e.SampleType, e.SequenceNo);
+            _view.InvokeOnUI(() => _view.ShowVisualInspection(visualInspectionPresenter.View));
+
         }
 
         private async void OnEndOfBatchChanged(object? sender, EventArgs e)
@@ -232,7 +241,7 @@ namespace LASYS.DesktopApp.Presenters
         {
             _view.InvokeOnUI(() => _view.SetPrintingState(e.Status));
 
-            _view.InvokeOnUI(() => _view.UpdateProgress(e.PrintedCount, e.TotalQuantity));
+            _view.InvokeOnUI(() => _view.UpdateProgress(e.PrintedCount, e.TotalPrintQuantity));
 
             _view.InvokeOnUI(() => _view.UpdatePrintingResults(e.TargetQuantity, e.Context.PrintDetails!.SetNumber, e.Context.PrintDetails!.BatchNumber, e.DisplaySequence, e.RemainingQuantity, e.Context.PrintDetails!.TotalPrinted, e.Context.PrintDetails!.TotalPassed, e.Context.PrintDetails!.TotalFailed, e.Context.PrintDetails!.TotalSample));
 
@@ -310,12 +319,7 @@ namespace LASYS.DesktopApp.Presenters
         public async Task InitializeDataAsync(WorkOrderItem labelInstruction, BoxType boxType)
         {
             _labelPreviewHub.Clear();
-            _view.InvokeOnUI(() => _view.ResetView());
-            //_initializeCts?.Cancel();
-            //_initializeCts?.Dispose();
-
-            //_initializeCts = new CancellationTokenSource();
-            //var token = _initializeCts.Token;
+            _view.InvokeOnUI(() => _view.ResetView(boxType));
 
             try
             {
@@ -326,7 +330,6 @@ namespace LASYS.DesktopApp.Presenters
                 _isLoading = true;
                 _view.SetLoading(true);
 
-                //token.ThrowIfCancellationRequested();
 
                 _view.InvokeOnUI(() => _view.SetPrintingState(PrintJobStatus.Initializing));
                 var itemCode = labelInstruction.ItemCode;
@@ -335,7 +338,6 @@ namespace LASYS.DesktopApp.Presenters
 
                 var result = await _mediator.Send(new GetLabelInstructionContextQuery(itemCode, lotNo, masterLabelRevNumber, boxType));
 
-                //token.ThrowIfCancellationRequested();
 
                 if (!result.IsSuccess)
                 {
@@ -355,9 +357,6 @@ namespace LASYS.DesktopApp.Presenters
                 string filePath = NiceLabelFilePathBuilder.Build(itemCode, masterLabelRevNumber, boxType);
                 bool isNiceLabelExist = !string.IsNullOrWhiteSpace(niceLabelPath) && File.Exists(niceLabelPath);
 
-                //var copyTask = isNiceLabelExist ?
-                //    NiceLabelFilePathBuilder.CopyFileAsync(niceLabelPath!, filePath) :
-                //    NiceLabelFilePathBuilder.CreateFileAsync(filePath, niceLabelFile!);
 
                 if (isNiceLabelExist)
                     await NiceLabelFilePathBuilder.CopyFileAsync(niceLabelPath!, filePath);
@@ -374,17 +373,11 @@ namespace LASYS.DesktopApp.Presenters
                 };
 
                 var printJobContext = await _mediator.Send(new InitializeBatchPrintCommand(updatedContext));
-                //var batchTask = _mediator.Send(new InitializeBatchPrintCommand(updatedContext));
-                //await Task.WhenAll(copyTask, batchTask);
-                //var printJobContext = await batchTask;
 
-                //token.ThrowIfCancellationRequested();
+                await DisplayTemplate(context);
 
                 _view.InvokeOnUI(() => _view.InitializePrintingContext(printJobContext));
 
-                // Display the label template in the preview
-                //token.ThrowIfCancellationRequested();
-                DisplayTemplate(context);
             }
             catch (OperationCanceledException)
             {
@@ -407,7 +400,7 @@ namespace LASYS.DesktopApp.Presenters
         }
 
 
-        private void DisplayTemplate(LabelPrintingContext context)
+        private Task DisplayTemplate(LabelPrintingContext context)
         {
             try
             {
@@ -453,6 +446,8 @@ namespace LASYS.DesktopApp.Presenters
             {
 
             }
+
+            return Task.CompletedTask;
         }
 
         private void OnBackToWorkOrdersRequested(object? sender, EventArgs e)

@@ -41,22 +41,66 @@ namespace LASYS.Infrastructure.Persistence.Repositories
                 FROM PRDPRNT_CASE_LABELS_TCL "" & _
                 WHERE ITEM_CODE = @ItemCode AND LOT_NO = @LotNo {{2}} ORDER BY BATCH_NUMBER, SET_NUMBER {{3}}; """
                 :
-                $@"
-                SELECT 
-                    ITEM_CODE AS ItemCode,
-                    LOT_NO AS LotNo,
-                    COUNT(CASE WHEN LABEL_STATUS IN ('Original','Replacement','Additional','Returned') THEN 1 END) AS TotalPassed,
-                    COUNT(CASE WHEN LABEL_STATUS IN ('Failed During Printing','Failed After Printing') THEN 1 END) AS TotalFailed,
-                    COUNT(CASE WHEN LABEL_STATUS IN ('First', 'Last') THEN 1 END) AS TotalSample,
-                    COUNT(CASE WHEN LABEL_STATUS IN 
-                        ('First','Last','Original','Replacement','Additional','Failed During Printing','Failed After Printing','Returned') THEN 1 END) AS TotalPrinted,
-                    IFNULL(MAX(SEQUENCE_NUMBER) + 1, 1) AS NextSequence,
-                    COALESCE(SUM(LABEL_STATUS = 'Last'), 0) + 1 AS BatchNumber,
-                    -- IFNULL(MAX(LABEL_STATUS IN ('Last')) + 1, 1) AS BatchNumber,
-                    -- IFNULL(MAX(CASE WHEN LABEL_STATUS IN (@PrintType, 'Failed During Printing','Failed After Printing','First','Last') THEN BATCH_NUMBER END), 1) AS BatchNumber,
-                    IFNULL(MAX(SET_NUMBER) + 1, 1) AS SetNumber
-                FROM {tableName} 
+                $@" 
+                SELECT  
+                    ITEM_CODE AS ItemCode, 
+                    LOT_NO AS LotNo, 
+
+                    COUNT(DISTINCT CASE 
+                        WHEN LABEL_STATUS IN ('Original','Replacement','Additional','Returned') 
+                        THEN SEQUENCE_NUMBER 
+                    END) AS TotalPassed, 
+
+                    COUNT(DISTINCT CASE 
+                        WHEN LABEL_STATUS IN ('Failed During Printing','Failed After Printing') 
+                        THEN SEQUENCE_NUMBER 
+                    END) AS TotalFailed, 
+
+                    COUNT(DISTINCT CASE 
+                        WHEN LABEL_STATUS IN ('First', 'Last') 
+                        THEN SEQUENCE_NUMBER 
+                    END) AS TotalSample, 
+
+                    COUNT(DISTINCT CASE 
+                        WHEN LABEL_STATUS IN (
+                            'First',
+                            'Last',
+                            'Original',
+                            'Replacement',
+                            'Additional',
+                            'Failed During Printing',
+                            'Failed After Printing',
+                            'Returned'
+                        ) 
+                        THEN SEQUENCE_NUMBER 
+                    END) AS TotalPrinted, 
+
+                    IFNULL(MAX(SEQUENCE_NUMBER) + 1, 1) AS NextSequence, 
+
+                    COUNT(DISTINCT CASE 
+                        WHEN LABEL_STATUS = 'Last' 
+                        THEN SEQUENCE_NUMBER 
+                    END) + 1 AS BatchNumber,
+
+                    IFNULL(MAX(SET_NUMBER) + 1, 1) AS SetNumber 
+                FROM {tableName}  
                 WHERE ITEM_CODE = @ItemCode AND LOT_NO = @LotNo;";
+            //$@"
+            //SELECT 
+            //    ITEM_CODE AS ItemCode,
+            //    LOT_NO AS LotNo,
+            //    COUNT(CASE WHEN LABEL_STATUS IN ('Original','Replacement','Additional','Returned') THEN 1 END) AS TotalPassed,
+            //    COUNT(CASE WHEN LABEL_STATUS IN ('Failed During Printing','Failed After Printing') THEN 1 END) AS TotalFailed,
+            //    COUNT(CASE WHEN LABEL_STATUS IN (' ', 'Last') THEN 1 END) AS TotalSample,
+            //    COUNT(CASE WHEN LABEL_STATUS IN 
+            //        ('First','Last','Original','Replacement','Additional','Failed During Printing','Failed After Printing','Returned') THEN 1 END) AS TotalPrinted,
+            //    IFNULL(MAX(SEQUENCE_NUMBER) + 1, 1) AS NextSequence,
+            //    COALESCE(SUM(LABEL_STATUS = 'Last'), 0) + 1 AS BatchNumber,
+            //    -- IFNULL(MAX(LABEL_STATUS IN ('Last')) + 1, 1) AS BatchNumber,
+            //    -- IFNULL(MAX(CASE WHEN LABEL_STATUS IN (@PrintType, 'Failed During Printing','Failed After Printing','First','Last') THEN BATCH_NUMBER END), 1) AS BatchNumber,
+            //    IFNULL(MAX(SET_NUMBER) + 1, 1) AS SetNumber
+            //FROM {tableName} 
+            //WHERE ITEM_CODE = @ItemCode AND LOT_NO = @LotNo;";
             try
             {
 

@@ -63,6 +63,26 @@ namespace LASYS.DesktopApp.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap arrow_left_alt_24 {
+            get {
+                object obj = ResourceManager.GetObject("arrow_left_alt_24", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap arrow_right_alt_24 {
+            get {
+                object obj = ResourceManager.GetObject("arrow_right_alt_24", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap camera_off_24 {
             get {
                 object obj = ResourceManager.GetObject("camera_off_24", resourceCulture);
@@ -83,6 +103,16 @@ namespace LASYS.DesktopApp.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap cancel_24 {
+            get {
+                object obj = ResourceManager.GetObject("cancel_24", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap check_small24 {
             get {
                 object obj = ResourceManager.GetObject("check_small24", resourceCulture);
@@ -93,9 +123,39 @@ namespace LASYS.DesktopApp.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap done_outline_24 {
+            get {
+                object obj = ResourceManager.GetObject("done_outline_24", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap error24 {
             get {
                 object obj = ResourceManager.GetObject("error24", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap expand_circle_right_24 {
+            get {
+                object obj = ResourceManager.GetObject("expand_circle_right_24", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap frame_inspect_24 {
+            get {
+                object obj = ResourceManager.GetObject("frame_inspect_24", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }

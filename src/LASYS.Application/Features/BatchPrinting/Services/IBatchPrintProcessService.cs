@@ -29,5 +29,8 @@ namespace LASYS.Application.Features.BatchPrinting.Services
         event EventHandler<LogEventArgs> LogGenerated;
 
         Task<bool> HasOpenBatchAsync();
+
+        event EventHandler<VisualInspectionRequiredEventArgs> VisualInspectionRequired;
+        void CompleteVisualInspection(VisualInspectionResult result, string userCode, string sectionId);
     }
 }

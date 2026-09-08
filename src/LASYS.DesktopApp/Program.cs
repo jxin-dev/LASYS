@@ -6,6 +6,7 @@ using LASYS.Application.Interfaces.Context;
 using LASYS.Application.Interfaces.Services;
 using LASYS.DesktopApp.Extensions;
 using LASYS.DesktopApp.Presenters;
+using LASYS.DesktopApp.Views.Forms;
 using LASYS.Infrastructure;
 using LASYS.Shared.Cleanup.Services;
 using MediatR;
@@ -116,6 +117,7 @@ namespace LASYS.DesktopApp
 
             var mainPresenter = host.Services.GetRequiredService<MainPresenter>();
             System.Windows.Forms.Application.Run(mainPresenter.View);
+            //System.Windows.Forms.Application.Run(new VisualInspectionForm(VisualInspectionForm.VisualInspectionSampleType.FirstSample));
 
         }
     }

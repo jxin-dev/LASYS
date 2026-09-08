@@ -27,5 +27,6 @@
         CartonBox,
         OuterCartonBox,
         AdditionalCartonBox,
+        QualityControlSample,
     }
 }

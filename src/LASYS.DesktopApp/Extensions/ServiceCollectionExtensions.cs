@@ -56,6 +56,10 @@ namespace LASYS.DesktopApp.Extensions
             services.AddTransient<ILabelTemplatePreviewView, LabelTemplatePreviewControl>();
             services.AddTransient<LabelTemplatePreviewPresenter>();
 
+
+            services.AddTransient<IVisualInspectionView, VisualInspectionForm>();
+            services.AddTransient<VisualInspectionPresenter>();
+
             // Services
             services.AddSingleton<ICurrentUser, CurrentUser>();
             services.AddSingleton<IPrintingState, PrintingState>();

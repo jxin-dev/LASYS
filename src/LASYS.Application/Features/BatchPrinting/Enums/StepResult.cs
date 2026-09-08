@@ -6,5 +6,5 @@
         Retry,
         Skip,
         Stop
-    }
+    }    
 }

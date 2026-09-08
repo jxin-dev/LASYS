@@ -40,6 +40,8 @@ namespace LASYS.Application.Features.BatchPrinting.Services
         public event EventHandler<LogEventArgs>? LogGenerated;
         public event EventHandler? ApprovalAuthorizationRequired;
 
+        public event EventHandler<VisualInspectionRequiredEventArgs>? VisualInspectionRequired;
+        private TaskCompletionSource<VisualInspectionCompletion>? _visualInspectionTcs;
         public BatchPrintProcessService(ICurrentUser currentUser, IPrintJobController jobController, INiceLabelTemplateService niceLabelTemplateService, IDeviceManager deviceManager, IPrintLabelRepository printLabelRepository, IMediator mediator, ILabelPreviewHub labelPreviewHub, IOCRService ocrService, ICalibrationService calibrationService, IIpAddressProvider ipAddressProvider)
         {
             _currentUser = currentUser;
@@ -135,8 +137,37 @@ namespace LASYS.Application.Features.BatchPrinting.Services
                 var latestSpecialStatus = await _printLabelRepository.GetLatestSpecialLabelStatusAsync(job.ItemCode, job.LotNo, job.BoxType);
                 bool hasOpenBatch = latestSpecialStatus == "First";
 
-                while (job.Context.PrintDetails!.NextSequence <= (job.TotalQuantity + startSequence) - 1) // 1 - 50
+                var productionQuantity = job.TotalQuantity;
+
+                var hasFirstSample = !hasOpenBatch;
+                var hasLastSample = job.EndOfBatch;
+
+                //var additionalSampleCount =
+                //    (hasFirstSample ? 1 : 0) +
+                //    (hasLastSample ? 1 : 0);
+                var isSingleLastSample =
+                    hasOpenBatch &&
+                    hasLastSample &&
+                    productionQuantity == 1;
+
+                var additionalSampleCount =
+                    (hasFirstSample ? 1 : 0) +
+                    (hasLastSample && !isSingleLastSample ? 1 : 0);
+
+                var totalPrintIterations =
+                    productionQuantity + additionalSampleCount;
+
+                job.SetTotalPrintQuantity(totalPrintIterations);
+                NotifyJobStateChanged(jobId);
+
+                var printIteration = 0;
+
+             
+                //while (job.Context.PrintDetails!.NextSequence <= (job.TotalQuantity + startSequence) - 1) // 1 - 50
+                while (printIteration < totalPrintIterations)
                 {
+                    printIteration++;
+
                     var prnFileLocation = string.Empty;
                     EnsureCanContinue(job);
                     // Generate Label Files Once per sequence, regardless of pair count.
@@ -179,9 +210,17 @@ namespace LASYS.Application.Features.BatchPrinting.Services
                     var completedPairs = 0;
                     foreach (var pairIndex in Enumerable.Range(1, pairCount))
                     {
-                        bool isFirstLabel = job.Context.PrintDetails!.NextSequence == startSequence;
-                        bool isLastLabel = job.Context.PrintDetails!.NextSequence == (startSequence + job.TotalQuantity - 1);
-                        var isSampleLabel = (!hasOpenBatch && isFirstLabel) || (isLastLabel && job.EndOfBatch);
+                        //bool isFirstLabel = job.Context.PrintDetails!.NextSequence == startSequence;
+                        //bool isLastLabel = job.Context.PrintDetails!.NextSequence == (startSequence + job.TotalQuantity - 1);
+                        //var isSampleLabel = (!hasOpenBatch && isFirstLabel) || (isLastLabel && job.EndOfBatch);
+                        bool isFirstSample =
+                            hasFirstSample && printIteration == 1;
+
+                        bool isLastSample =
+                            hasLastSample && printIteration == totalPrintIterations;
+
+                        var isSampleLabel =
+                            isFirstSample || isLastSample;
 
                         job.SetCurrentPair(pairIndex, pairCount);
 
@@ -248,7 +287,7 @@ namespace LASYS.Application.Features.BatchPrinting.Services
                             if (validationBarcodeResult == StepResult.Stop)
                             {
                                 if (!isSampleLabel)
-                                    await SaveFailedLabelAsync(job);
+                                    await SaveFailedLabelAsync(job); //Uncomment if you want to save when user stops the job due to Barcode validation failure
 
                                 LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Error, $"Barcode validation failed. Job stopped by {_currentUser.FullName} on label {job.CurrentSequenceFormat}{pairText}."));
                                 stopRequested = true;
@@ -291,7 +330,8 @@ namespace LASYS.Application.Features.BatchPrinting.Services
                             if (validationOcrResult == StepResult.Stop)
                             {
                                 if (!isSampleLabel)
-                                    await SaveFailedLabelAsync(job);
+                                    await SaveFailedLabelAsync(job); //Uncomment if you want to save when user stops the job due to OCR validation failure
+
                                 LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Error, $"OCR validation failed. Job stopped by {_currentUser.FullName} on label {job.CurrentSequenceFormat}{pairText}."));
                                 stopRequested = true;
                                 _jobController.Stop(jobId, isSampleLabel);
@@ -300,65 +340,156 @@ namespace LASYS.Application.Features.BatchPrinting.Services
                             break; //
                         }
 
-                        //bool isFirstLabel =job.Context.PrintDetails!.NextSequence == startSequence;
-                        //bool isLastLabel = job.Context.PrintDetails!.NextSequence == (startSequence + job.TotalQuantity - 1);
 
-                        await PrepareLabelStatusAsync(
-                            job,
-                            jobId,
-                            hasOpenBatch,
-                            isFirstLabel,
-                            isLastLabel,
-                            job.EndOfBatch,
-                            cancellationToken);
-
-                        //Save Data 
-                        var saveAttempt = 0;
-                        while (true)
+                        if (pairIndex == pairCount)
                         {
-                            saveAttempt++;
-                            if (saveAttempt == 1)
-                            {
-                                LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Info, $"Starting save operation for label {job.CurrentSequenceFormat}{pairText}."));
-                            }
-                            else
-                            {
-                                LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Info, $"Retrying save operation for label {job.CurrentSequenceFormat}{pairText}. Attempt {saveAttempt}."));
-                            }
-                            var saveResult = await SavePrintedLabelAsync(job, cancellationToken);
-                            if (saveResult == StepResult.Success)
-                            {
-                                var hasSampleLabel = (!hasOpenBatch && isFirstLabel) || (isLastLabel && job.EndOfBatch);
-                                job.MarkSaved(hasSampleLabel);
-                                LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Info, $"Save operation completed for label {job.CurrentSequenceFormat}{pairText}."));
+                            await PrepareLabelStatusAsync(
+                                job,
+                                jobId,
+                                hasOpenBatch,
+                                isFirstSample,
+                                isLastSample,
+                                job.EndOfBatch,
+                                cancellationToken);
+                        }
 
-                                completedPairs++;
-                                if (completedPairs == pairCount)
+                        // ==========================================
+                        // SAVE DATA
+                        // ==========================================
+
+                        // Sample + Paired:
+                        // Save only once after BOTH pairs are completed.
+                        if (isSampleLabel && pairCount > 1)
+                        {
+                            if (pairIndex == pairCount)
+                            {
+                                if (!job.IsPassed)
                                 {
-                                    job.MoveToNextLabel();
-                                    NotifyJobStateChanged(job.JobId);
+                                    LogGenerated?.Invoke(
+                                        this,
+                                        new LogEventArgs(
+                                            MessageType.Error,
+                                            $"Sample label {job.CurrentSequenceFormat} failed visual inspection. Save operation stopped."));
+
+                                    stopRequested = true;
+                                    break; //comment this if you want to continue saving even if sample label failed visual inspection
+                                }
+                                var saveAttempt = 0;
+
+                                while (true)
+                                {
+                                    saveAttempt++;
+
+                                    LogGenerated?.Invoke(
+                                        this,
+                                        new LogEventArgs(
+                                            MessageType.Info,
+                                            $"Starting save operation for sample label {job.CurrentSequenceFormat}."));
+
+                                    var saveResult = await SavePrintedLabelAsync(job, cancellationToken);
+
+                                    if (saveResult == StepResult.Success)
+                                    {
+
+                                        job.MarkSaved(true);
+
+                                        LogGenerated?.Invoke(this,
+                                            new LogEventArgs(
+                                                MessageType.Info,
+                                                $"Save operation completed for sample label {job.CurrentSequenceFormat}."));
+
+                                        job.MoveToNextLabel();
+                                        NotifyJobStateChanged(job.JobId);
+
+                                        break;
+                                    }
+
+                                    if (saveResult == StepResult.Retry)
+                                        continue;
+
+                                    if (saveResult == StepResult.Stop)
+                                    {
+                                        stopRequested = true;
+                                        _jobController.Stop(jobId);
+                                        EnsureCanContinue(job);
+                                    }
+
+                                    break;
+                                }
+                            }
+                        }
+                        else
+                        {
+                            // Normal labels OR single sample:
+                            // Save normally.
+                            var saveAttempt = 0;
+                            if (isSampleLabel && !job.IsPassed)
+                            {
+                                LogGenerated?.Invoke(
+                                    this,
+                                    new LogEventArgs(
+                                        MessageType.Error,
+                                       $"Label {job.CurrentSequenceFormat} was not approved during visual inspection."));
+
+                                stopRequested = true;
+                                break; //comment this if you want to continue saving even if label failed visual inspection
+                            }
+
+                            while (true)
+                            {
+                                saveAttempt++;
+
+                                LogGenerated?.Invoke(
+                                    this,
+                                    new LogEventArgs(
+                                        MessageType.Info,
+                                        $"Starting save operation for label {job.CurrentSequenceFormat}{pairText}."));
+
+                                var saveResult =
+                                    await SavePrintedLabelAsync(
+                                        job,
+                                        cancellationToken);
+
+                                if (saveResult == StepResult.Success)
+                                {
+
+                                    LogGenerated?.Invoke(
+                                        this,
+                                        new LogEventArgs(
+                                            MessageType.Info,
+                                            $"Save operation completed for label {job.CurrentSequenceFormat}{pairText}."));
+
+                                    completedPairs++;
+
+                                    if (completedPairs == pairCount)
+                                    {
+                                        job.MarkSaved(isSampleLabel);
+                                        job.MoveToNextLabel();
+                                        NotifyJobStateChanged(job.JobId);
+                                    }
+
+                                    break;
+                                }
+
+                                if (saveResult == StepResult.Retry)
+                                    continue;
+
+                                if (saveResult == StepResult.Stop)
+                                {
+                                    stopRequested = true;
+                                    _jobController.Stop(jobId);
+                                    EnsureCanContinue(job);
                                 }
 
                                 break;
                             }
-                            if (saveResult == StepResult.Retry)
-                            {
-                                continue;
-                            }
-                            if (saveResult == StepResult.Stop)
-                            {
-                                LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Error, $"Save operation failed. Job stopped by {_currentUser.FullName} on label {job.CurrentSequenceFormat}{pairText}."));
-                                stopRequested = true;
-                                _jobController.Stop(jobId);
-                                EnsureCanContinue(job);
-                            }
-                            break;
                         }
+
                     }
 
                     if (stopRequested) break;
                 }
-                
+
                 _jobController.Complete(jobId);
                 NotifyJobStateChanged(jobId);
                 LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Info, "Batch printing completed."));
@@ -429,6 +560,46 @@ namespace LASYS.Application.Features.BatchPrinting.Services
             Debug.WriteLine($"TrySetResult = {success}");
         }
 
+        public void CompleteVisualInspection(VisualInspectionResult result, string userCode, string sectionId)
+        {
+            Debug.WriteLine($"CompleteVisualInspection called: {result}");
+
+            var success = _visualInspectionTcs?.TrySetResult(
+                new VisualInspectionCompletion(
+                    result,
+                    userCode,
+                    sectionId));
+
+            Debug.WriteLine($"TrySetResult success: {success}");
+        }
+        private async Task<VisualInspectionCompletion> RequestVisualInspectionAsync(VisualInspectionSampleType sampleType, string sequenceNo, CancellationToken cancellationToken)
+        {
+            Debug.WriteLine("VI-1 Creating TCS");
+            _visualInspectionTcs =
+                new TaskCompletionSource<VisualInspectionCompletion>(
+                    TaskCreationOptions.RunContinuationsAsynchronously);
+
+            using (cancellationToken.Register(() => _visualInspectionTcs.TrySetResult(new VisualInspectionCompletion(VisualInspectionResult.Cancelled, string.Empty, string.Empty))))
+            {
+                Debug.WriteLine("VI-2 Raising VisualInspectionRequired");
+
+                VisualInspectionRequired?.Invoke(
+                    this,
+                    new VisualInspectionRequiredEventArgs(
+                        sampleType,
+                        sequenceNo));
+
+                Debug.WriteLine("VI-3 Waiting for inspection result");
+
+                var result = await _visualInspectionTcs.Task
+                    .ConfigureAwait(false);
+
+                Debug.WriteLine($"VI-4 Result received: {result}");
+
+                return result;
+            }
+        }
+
         private static string FormatPair(int pairIndex, int pairCount)
         {
             return pairCount > 1 ? $" (Pair {pairIndex}/{pairCount})" : string.Empty;
@@ -449,53 +620,89 @@ namespace LASYS.Application.Features.BatchPrinting.Services
             }
         }
 
-        private async Task PrepareLabelStatusAsync(PrintJobState job, Guid jobId, bool hasOpenBatch, bool isFirstLabel, bool isLastLabel, bool isEndOfBatch, CancellationToken cancellationToken)
+        private async Task PrepareLabelStatusAsync(
+            PrintJobState job,
+            Guid jobId,
+            bool hasOpenBatch,
+            bool isFirstSample,
+            bool isLastSample,
+            bool isEndOfBatch,
+            CancellationToken cancellationToken)
         {
             job.ResetPrintType();
 
-            if (isFirstLabel && !hasOpenBatch)
+            // ==========================================
+            // FIRST SAMPLE
+            // ==========================================
+            if (isFirstSample && !hasOpenBatch)
             {
-                var approval = await RequestApprovalAuthorizationAsync(cancellationToken);
+                var inspectionResult =
+                    await RequestVisualInspectionAsync(
+                        VisualInspectionSampleType.FirstSample,
+                        job.CurrentSequenceFormat,
+                        cancellationToken);
 
-                if (!approval.IsApproved)
+                if (inspectionResult.Result == VisualInspectionResult.Approved)
+                {
+                    job.MarkFirst();
+                }
+                else if (inspectionResult.Result == VisualInspectionResult.Rejected)
+                {
+                    job.MarkFailedDuringPrinting();
+                }
+                else
                 {
                     _jobController.Stop(jobId, true);
                     EnsureCanContinue(job);
+                    return;
                 }
 
-                var ipAddress = _ipAddressProvider.GetLocalIpAddress();
 
+                var ipAddress = _ipAddressProvider.GetLocalIpAddress();
                 job.SetApproval(
-                    approval.UserCode!,
-                    approval.SectionId!,
+                    inspectionResult.UserCode!,
+                    inspectionResult.SectionId!,
                     ipAddress);
 
-                job.MarkFirst();
-                NotifyJobStateChanged(jobId);
+                //NotifyJobStateChanged(jobId);
             }
-            else if (isLastLabel && isEndOfBatch)
-            {
-                var approval = await RequestApprovalAuthorizationAsync(cancellationToken);
 
-                if (!approval.IsApproved)
+            // ==========================================
+            // LAST SAMPLE
+            // ==========================================
+            else if (isLastSample && isEndOfBatch)
+            {
+                var inspectionResult = await RequestVisualInspectionAsync(
+                        VisualInspectionSampleType.LastSample,
+                        job.CurrentSequenceFormat,
+                        cancellationToken);
+
+                if (inspectionResult.Result == VisualInspectionResult.Approved)
+                {
+                    job.MarkLast();
+                }
+                else if (inspectionResult.Result == VisualInspectionResult.Rejected)
+                {
+                    job.MarkFailedDuringPrinting();
+                }
+                else
                 {
                     _jobController.Stop(jobId, true);
                     EnsureCanContinue(job);
+                    return;
                 }
 
                 var ipAddress = _ipAddressProvider.GetLocalIpAddress();
-
                 job.SetApproval(
-                    approval.UserCode!,
-                    approval.SectionId!,
+                    inspectionResult.UserCode!,
+                    inspectionResult.SectionId!,
                     ipAddress);
 
-                job.MarkLast();
-                NotifyJobStateChanged(jobId);
-
+                //NotifyJobStateChanged(jobId);
+                //job.MarkLast();
+                //NotifyJobStateChanged(jobId);
             }
         }
-
         private async Task<StepResult> SavePrintedLabelAsync(PrintJobState job, CancellationToken cancellationToken)
         {
             EnsureCanContinue(job);
@@ -612,7 +819,7 @@ namespace LASYS.Application.Features.BatchPrinting.Services
             EnsureCanContinue(job);
             NotifyJobStateChanged(job.JobId);
 
-            //return StepResult.Success; //comment for real implementation
+            return StepResult.Success; //comment for real implementation
 
             var isPrinted = await _deviceManager.Printer.IsPrinted(prnFileLocation);
             if (isPrinted)
@@ -785,8 +992,8 @@ namespace LASYS.Application.Features.BatchPrinting.Services
         {
             EnsureCanContinue(job);
 
-            //return StepResult.Success; //comment for real implementation
-            if (!_deviceManager.Camera.IsCameraConnected) 
+            return StepResult.Success; //comment for real implementation
+            if (!_deviceManager.Camera.IsCameraConnected)
             {
                 var connected = await _deviceManager.Camera.ReconnectAsync();
 
@@ -801,7 +1008,7 @@ namespace LASYS.Application.Features.BatchPrinting.Services
                         cancellationToken);
                 }
             }
-            
+
 
             var coordinates = await _calibrationService.GetCoordinatesAsync(job.ItemCode, job.Revision, job.BoxType);
             if (coordinates == null)
