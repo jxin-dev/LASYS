@@ -1053,7 +1053,11 @@
                 if (!_isExternalData) UpdatePage();
             };
         }
-
+        public void RefreshRows()
+        {
+            _rowsVersion++;
+            UpdatePage();
+        }
 
         private IconButton CreateButton(string text, string imagePath)
         {

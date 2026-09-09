@@ -12,10 +12,12 @@ namespace LASYS.Infrastructure.Persistence.Repositories
     {
         private readonly IDbConnectionFactory _factory;
         private readonly ILabelInstructionColumnResolver _labelInstructionColumnResolver;
-        public LabelInstructionRepository(IDbConnectionFactory factory, ILabelInstructionColumnResolver labelInstructionColumnResolver)
+        private readonly ILabelStatusColumnResolver _labelStatusColumnResolver;
+        public LabelInstructionRepository(IDbConnectionFactory factory, ILabelInstructionColumnResolver labelInstructionColumnResolver, ILabelStatusColumnResolver labelStatusColumnResolver)
         {
             _factory = factory;
             _labelInstructionColumnResolver = labelInstructionColumnResolver;
+            _labelStatusColumnResolver = labelStatusColumnResolver;
         }
 
         public async Task<LabelInstructionDetails> GetDetailsAsync(string itemCode, string lotNo, uint masterRevision, BoxType boxType)
@@ -99,6 +101,30 @@ namespace LASYS.Infrastructure.Persistence.Repositories
             {
                 throw;
                 //throw new Exception($"Error retrieving label instruction details: {ex.Message}", ex);
+            }
+        }
+
+        public async Task<bool> SetLabelStatusToCompletelyPrintedAsync(string itemCode, string lotNo, uint masterRevision, BoxType boxType)
+        {
+            var statusColumn = _labelStatusColumnResolver.GetLabelStatusColumnName(boxType);
+            var sql = $@"
+            UPDATE ppt_lbl_instructn_plns_hst
+            SET {statusColumn} = 'Completely Printed' 
+            WHERE ITEM_CODE = @itemCode AND LOT_NO = @lotNo AND MASTER_LABEL_REVISION_NUMBER = @masterRevision";
+
+            try
+            {
+                using var connection = await _factory.CreateConnectionAsync();
+                var result = await connection.ExecuteAsync(sql, new { itemCode, lotNo, masterRevision });
+                if (result == 0)
+                {
+                    return false; // No rows were updated, meaning the record was not found
+                }
+                return true;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error updating label instruction details: {ex.Message}", ex);
             }
         }
     }

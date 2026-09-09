@@ -87,6 +87,7 @@ public static class DependencyInjection
         services.AddScoped<IProductColumnResolver, ProductColumnResolver>();
         services.AddScoped<IMasterLabelColumnResolver, MasterLabelColumnResolver>();
         services.AddScoped<ILabelInstructionColumnResolver,  LabelInstructionColumnResolver>();
+        services.AddScoped<ILabelStatusColumnResolver, LabelStatusColumnResolver>();
 
         //Repositories
         services.AddScoped<IUserRepository, UserRepository>();

@@ -199,7 +199,23 @@ namespace LASYS.Application.Features.LabelInstructions.GetLabelInstructionsBySec
                     ApprovedBy = x.UbApprovedBy,
                     DateApproved = x.UbDateApproved
                 };
+
+                if(x.UbLabelStatus == "Completely Printed")
+                {
+                    details[BoxType.QualityControlSample] = new BoxLabelInstructionDetails
+                    {
+                        InstructionCode = x.UbInstructionCode,
+                        TargetPrintQuantity = x.UbTargetPrintQuantity,
+                        PrintType = x.UbPrintType,
+                        Verdict = x.UbVerdict,
+                        InstructionStatus = x.UbInstructionStatus,
+                        LabelStatus = x.UbLabelStatus,
+                        ApprovedBy = x.UbApprovedBy,
+                        DateApproved = x.UbDateApproved
+                    };
+                }
             }
+
 
             if (x.AubInstructionCode != null && !string.IsNullOrEmpty(x.AubInstructionCode) && x.IS_AUB_OCR_SUPPORTED == true)
             {

@@ -5,6 +5,7 @@ using LASYS.Application.Features.BatchPrinting.Events;
 using LASYS.Application.Features.BatchPrinting.Models;
 using LASYS.Application.Features.Devices.Enums;
 using LASYS.Application.Features.Devices.Models;
+using LASYS.DesktopApp.Events;
 using LASYS.DesktopApp.Views.Forms;
 using LASYS.DesktopApp.Views.Interfaces;
 using LASYS.UIControls.Controls;
@@ -32,8 +33,8 @@ namespace LASYS.DesktopApp.Views.UserControls
         public event EventHandler? StopPrintingRequested;
         public event EventHandler? CameraPreviewRequested;
         public event EventHandler? LabelTemplatePreviewRequested;
-        public event EventHandler? QuantityChanged;
-        public event EventHandler? EndOfBatchChanged;
+        public event EventHandler<QuantityChangedEventArgs>? QuantityChanged;
+        public event EventHandler<QuantityChangedEventArgs>? EndOfBatchChanged;
 
         private PrintJobStatus _currentJobStatus = PrintJobStatus.Initializing;
 
@@ -146,9 +147,16 @@ namespace LASYS.DesktopApp.Views.UserControls
             btnLabelTemplatePreview.Click += (_, _) => LabelTemplatePreviewRequested?.Invoke(this, EventArgs.Empty);
 
             //nudQuantity.ValueChanged += (_, _) => QuantityChanged?.Invoke(this, EventArgs.Empty);
-            txtQuantity.TextChanged += (_, _) => QuantityChanged?.Invoke(this, EventArgs.Empty);
+            txtQuantity.TextChanged += (_, _) => QuantityChanged?.Invoke(this, new QuantityChangedEventArgs(
+                int.Parse(txtQuantity.Text),
+                _selectedBoxType.HasValue ? _selectedBoxType.Value
+                : null));
 
-            chkEndOfBatch.CheckedChanged += (_, _) => EndOfBatchChanged?.Invoke(this, EventArgs.Empty);
+            //chkEndOfBatch.CheckedChanged += (_, _) => EndOfBatchChanged?.Invoke(this, EventArgs.Empty);
+            txtQuantity.TextChanged += (_, _) => EndOfBatchChanged?.Invoke(this, new QuantityChangedEventArgs(
+               int.Parse(txtQuantity.Text),
+               _selectedBoxType.HasValue ? _selectedBoxType.Value
+               : null));
 
             //Loading card setup
             _loadingCard = new Panel
@@ -464,64 +472,8 @@ namespace LASYS.DesktopApp.Views.UserControls
             errorForm.ControlBox = false;
             errorForm.Text = "Validation Error";
             _modalOverlay.Show(errorForm);
-
-            //_modalOverlay.Show();
-
-            //try
-            //{
-            //    errorForm.ControlBox = false;
-            //    errorForm.Text = "Validation Error";
-            //    errorForm.ShowDialog(_modalOverlay.Overlay);
-            //}
-            //finally
-            //{
-            //    _modalOverlay.Hide();
-            //}
-
-            //errorForm.ControlBox = false;
-            //errorForm.Text = "Validation Error";
-
-            //_modalOverlay.Show(errorForm);
-
-            //// Force layout updates first
-            //pnlContent.Update();
-
-            //var panelBounds = new Rectangle(
-            //    pnlContent.PointToScreen(Point.Empty),
-            //    pnlContent.ClientSize);
-
-            //var modalBackground = new Form
-            //{
-            //    StartPosition = FormStartPosition.Manual,
-            //    FormBorderStyle = FormBorderStyle.None,
-            //    Bounds = panelBounds,
-            //    Opacity = 0.5,
-            //    BackColor = Color.Black,
-            //    ShowInTaskbar = false,
-            //    Owner = FindForm()
-            //};
-
-            //try
-            //{
-            //    modalBackground.Show();
-            //    modalBackground.Update();
-
-            //    errorForm.Text = "Validation Error";
-            //    errorForm.ControlBox = false;
-
-            //    // Let WinForms center it relative to the overlay
-            //    errorForm.StartPosition = FormStartPosition.CenterParent;
-
-            //    errorForm.Invalidate(true);
-            //    errorForm.Update();
-            //    errorForm.ShowDialog(modalBackground);
-            //}
-            //finally
-            //{
-            //    modalBackground.Dispose();
-            //}
         }
-
+        private Application.Common.Enums.BoxType? _selectedBoxType;
         public void InitializePrintingContext(PrintJobState printJob)
         {
             _printJobId = printJob.JobId;
@@ -554,6 +506,13 @@ namespace LASYS.DesktopApp.Views.UserControls
 
             UpdateQuantityControl(printJob);
 
+            _selectedBoxType = printJob.BoxType;
+
+            if (printJob.BoxType == BoxType.QualityControlSample)
+            {
+                return;
+            }
+
             if (printJob.RemainingQuantity == 0)
             {
                 SetLoading(false);
@@ -581,13 +540,26 @@ namespace LASYS.DesktopApp.Views.UserControls
                 : batchSize - currentBatchCount;
 
             var maxQty = Math.Min((long)remaining, remainingInBatch);
+            if (printJob.BoxType == BoxType.QualityControlSample)
+            {
+                _minimumQuantity = 1;
+                _maximumQuantity = 1;
+                txtQuantity.Text = _minimumQuantity.ToString();
 
-            _minimumQuantity = 1;
-            _maximumQuantity = (int)remaining;
-            txtQuantity.Text = maxQty.ToString();
+                txtQuantity.Enabled = false;
+                chkEndOfBatch.Enabled = false;
+                chkEndOfBatch.Checked = false;
+            }
+            else
+            {
+                _minimumQuantity = 1;
+                _maximumQuantity = (int)remaining;
+                txtQuantity.Text = maxQty.ToString();
 
-            txtQuantity.Enabled = maxQty > 0;
-            chkEndOfBatch.Enabled = maxQty > 0;
+                txtQuantity.Enabled = maxQty > 0;
+                chkEndOfBatch.Enabled = maxQty > 0;
+            }
+
         }
 
         private Color GetColor(MessageType type)
@@ -909,43 +881,6 @@ namespace LASYS.DesktopApp.Views.UserControls
         {
             approvalForm.ControlBox = false;
             _modalOverlay.Show(approvalForm);
-
-
-            //pnlContent.Update();
-
-            //var panelBounds = new Rectangle(
-            //    pnlContent.PointToScreen(Point.Empty),
-            //    pnlContent.ClientSize);
-
-            //var modalBackground = new Form
-            //{
-            //    StartPosition = FormStartPosition.Manual,
-            //    FormBorderStyle = FormBorderStyle.None,
-            //    Bounds = panelBounds,
-            //    Opacity = 0.5,
-            //    BackColor = Color.Black,
-            //    ShowInTaskbar = false,
-            //    Owner = FindForm()
-            //};
-
-            //try
-            //{
-            //    modalBackground.Show();
-            //    modalBackground.Update();
-            //    approvalForm.ControlBox = false;
-
-            //    // Let WinForms center it relative to the overlay
-            //    approvalForm.StartPosition = FormStartPosition.CenterParent;
-
-            //    //approvalForm.Invalidate(true);
-            //    //approvalForm.Update();
-            //    approvalForm.ShowDialog(modalBackground);
-
-            //}
-            //finally
-            //{
-            //    modalBackground.Dispose();
-            //}
         }
 
         public void HideModal()

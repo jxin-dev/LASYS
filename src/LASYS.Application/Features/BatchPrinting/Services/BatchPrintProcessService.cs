@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using System.Threading.Tasks;
 using LASYS.Application.Common.Mappings;
 using LASYS.Application.Common.Messaging;
 using LASYS.Application.Common.Utilities;
@@ -28,6 +29,7 @@ namespace LASYS.Application.Features.BatchPrinting.Services
         private readonly IOCRService _ocrService;
         private readonly ICalibrationService _calibrationService;
         private readonly IPrintLabelRepository _printLabelRepository;
+        private readonly ILabelInstructionRepository _labelInstructionRepository;
         private readonly IMediator _mediator;
         private readonly ILabelPreviewHub _labelPreviewHub;
         private readonly IIpAddressProvider _ipAddressProvider;
@@ -42,7 +44,7 @@ namespace LASYS.Application.Features.BatchPrinting.Services
 
         public event EventHandler<VisualInspectionRequiredEventArgs>? VisualInspectionRequired;
         private TaskCompletionSource<VisualInspectionCompletion>? _visualInspectionTcs;
-        public BatchPrintProcessService(ICurrentUser currentUser, IPrintJobController jobController, INiceLabelTemplateService niceLabelTemplateService, IDeviceManager deviceManager, IPrintLabelRepository printLabelRepository, IMediator mediator, ILabelPreviewHub labelPreviewHub, IOCRService ocrService, ICalibrationService calibrationService, IIpAddressProvider ipAddressProvider)
+        public BatchPrintProcessService(ICurrentUser currentUser, IPrintJobController jobController, INiceLabelTemplateService niceLabelTemplateService, IDeviceManager deviceManager, IPrintLabelRepository printLabelRepository, IMediator mediator, ILabelPreviewHub labelPreviewHub, IOCRService ocrService, ICalibrationService calibrationService, IIpAddressProvider ipAddressProvider, ILabelInstructionRepository labelInstructionRepository)
         {
             _currentUser = currentUser;
             _jobController = jobController;
@@ -54,6 +56,7 @@ namespace LASYS.Application.Features.BatchPrinting.Services
             _ocrService = ocrService;
             _calibrationService = calibrationService;
             _ipAddressProvider = ipAddressProvider;
+            _labelInstructionRepository = labelInstructionRepository;
         }
         public PrintJobState? GetJob(Guid jobId)
         {
@@ -74,9 +77,13 @@ namespace LASYS.Application.Features.BatchPrinting.Services
             _activeJobId = jobId;
 
             var job = _jobController.GetJob(jobId)!;
-            if (job.RemainingQuantity == 0)
+            if (job.RemainingQuantity == 0 && job.BoxType != Common.Enums.BoxType.QualityControlSample)
             {
                 _jobController.Printed(jobId);
+            }
+            else
+            {
+                _jobController.Reset(jobId);
             }
 
             var isTemplateLoaded = _niceLabelTemplateService.IsTemplateLoaded;
@@ -223,15 +230,6 @@ namespace LASYS.Application.Features.BatchPrinting.Services
                     var completedPairs = 0;
                     foreach (var pairIndex in Enumerable.Range(1, pairCount))
                     {
-                        //bool isFirstSample =
-                        //    hasFirstSample && printIteration == 1;
-
-                        //bool isLastSample =
-                        //    hasLastSample && printIteration == totalPrintIterations;
-
-                        //var isSampleLabel =
-                        //    isFirstSample || isLastSample;
-
                         job.SetCurrentPair(pairIndex, pairCount);
 
                         var pairText = FormatPair(pairIndex, pairCount);
@@ -829,7 +827,7 @@ namespace LASYS.Application.Features.BatchPrinting.Services
             EnsureCanContinue(job);
             NotifyJobStateChanged(job.JobId);
 
-            //return StepResult.Success; //comment for real implementation
+            return StepResult.Success; //comment for real implementation
 
             var isPrinted = await _deviceManager.Printer.IsPrinted(prnFileLocation);
             if (isPrinted)
@@ -878,7 +876,7 @@ namespace LASYS.Application.Features.BatchPrinting.Services
         {
             EnsureCanContinue(job);
 
-            //return StepResult.Success; //comment for real implementation
+            return StepResult.Success; //comment for real implementation
 
             // Ensure scanner is connected
             if (!_deviceManager.Barcode.IsConnected)
@@ -1002,7 +1000,7 @@ namespace LASYS.Application.Features.BatchPrinting.Services
         {
             EnsureCanContinue(job);
 
-            //return StepResult.Success; //comment for real implementation
+            return StepResult.Success; //comment for real implementation
             if (!_deviceManager.Camera.IsCameraConnected)
             {
                 var connected = await _deviceManager.Camera.ReconnectAsync();
@@ -1089,6 +1087,25 @@ namespace LASYS.Application.Features.BatchPrinting.Services
             var latestSpecialStatus = await _printLabelRepository.GetLatestSpecialLabelStatusAsync(job.ItemCode, job.LotNo, job.BoxType);
             bool hasOpenBatch = latestSpecialStatus == "First";
             return hasOpenBatch;
+        }
+
+        public async Task<bool> SetCompletelyPrintedStatus(PrintJobState jobState)
+        {
+            var boxType = jobState.BoxType switch
+            { 
+                Common.Enums.BoxType.QualityControlSample => Common.Enums.BoxType.UnitBox,
+                _ => jobState.BoxType
+            };
+
+            if (jobState.RemainingQuantity == 0)
+            {
+               return await _labelInstructionRepository.SetLabelStatusToCompletelyPrintedAsync(
+                     jobState.ItemCode,
+                     jobState.LotNo,
+                     jobState.Revision,
+                     boxType);
+            }
+            return false;
         }
     }
 }

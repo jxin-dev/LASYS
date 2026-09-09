@@ -4,6 +4,7 @@ using LASYS.Application.Features.BatchPrinting.Enums;
 using LASYS.Application.Features.BatchPrinting.Events;
 using LASYS.Application.Features.BatchPrinting.Models;
 using LASYS.Application.Features.Devices.Models;
+using LASYS.DesktopApp.Events;
 using LASYS.DesktopApp.Views.Forms;
 
 namespace LASYS.DesktopApp.Views.Interfaces
@@ -20,8 +21,8 @@ namespace LASYS.DesktopApp.Views.Interfaces
         event EventHandler CameraPreviewRequested;
         event EventHandler LabelTemplatePreviewRequested;
 
-        event EventHandler QuantityChanged;
-        event EventHandler EndOfBatchChanged;
+        event EventHandler<QuantityChangedEventArgs> QuantityChanged;
+        event EventHandler<QuantityChangedEventArgs> EndOfBatchChanged;
         //void SetCameraPreview(UserControl control);
         void ToggleCameraPreview(bool visible);
 

@@ -42,6 +42,7 @@ namespace LASYS.DesktopApp.Presenters
         private readonly INiceLabelTemplateService _niceLabelTemplateService;
         private readonly IDeviceManager _deviceManager;
         private readonly ILabelPreviewHub _labelPreviewHub;
+        private readonly IWorkOrdersView _workOrdersView;
 
         private readonly CameraPreviewPresenter _cameraPreviewPresenter;
         private readonly LabelTemplatePreviewPresenter _labelTemplatePreviewPresenter;
@@ -64,7 +65,8 @@ namespace LASYS.DesktopApp.Presenters
                                       INiceLabelTemplateService niceLabelTemplateService,
                                       IDeviceManager deviceManager,
                                       IFrameHub frameHub,
-                                      ILabelPreviewHub labelPreviewHub)
+                                      ILabelPreviewHub labelPreviewHub,
+                                      IWorkOrdersView workOrdersView)
         {
             _batchPrintService = batchPrintService;
             _mediator = mediator;
@@ -74,6 +76,7 @@ namespace LASYS.DesktopApp.Presenters
             _niceLabelTemplateService = niceLabelTemplateService;
             _deviceManager = deviceManager;
             _labelPreviewHub = labelPreviewHub;
+            _workOrdersView = workOrdersView;
 
 
             View = (UserControl)view;
@@ -120,6 +123,38 @@ namespace LASYS.DesktopApp.Presenters
             _view.LabelTemplatePreviewRequested += OnLabelTemplatePreviewRequested;
         }
 
+        private async void OnEndOfBatchChanged(object? sender, QuantityChangedEventArgs e)
+        {
+            if (_view.Quantity == 1 && _view.IsEndOfBatchChecked)
+            {
+                if (e.BoxType is BoxType.QualityControlSample or null)
+                    return;
+
+                var hasOpenBatch = await _batchPrintService.HasOpenBatchAsync();
+                if (!hasOpenBatch)
+                {
+                    _view.ShowNotification("There is no open batch to end.", MessageBoxIcon.Warning);
+                    _view.SetEndOfBatch(false);   // uncheck it
+                }
+            }
+        }
+
+        private async void OnQuantityChanged(object? sender, QuantityChangedEventArgs e)
+        {
+            if (_view.Quantity == 1 && _view.IsEndOfBatchChecked)
+            {
+                if (e.BoxType is BoxType.QualityControlSample or null)
+                    return;
+
+                var hasOpenBatch = await _batchPrintService.HasOpenBatchAsync();
+                if (!hasOpenBatch)
+                {
+                    _view.ShowNotification("There is no open batch to end.", MessageBoxIcon.Warning);
+                    _view.SetEndOfBatch(false);   // uncheck it
+                }
+            }
+        }
+
         private void OnVisualInspectionRequired(object? sender, VisualInspectionRequiredEventArgs e)
         {
             var visualInspectionPresenter = _services.GetRequiredService<VisualInspectionPresenter>();
@@ -128,31 +163,38 @@ namespace LASYS.DesktopApp.Presenters
 
         }
 
-        private async void OnEndOfBatchChanged(object? sender, EventArgs e)
-        {
-            if (_view.Quantity == 1 && _view.IsEndOfBatchChecked)
-            {
-                var hasOpenBatch = await _batchPrintService.HasOpenBatchAsync();
-                if (!hasOpenBatch)
-                {
-                    _view.ShowNotification("There is no open batch to end.", MessageBoxIcon.Warning);
-                    _view.SetEndOfBatch(false);   // uncheck it
-                }
-            }
-        }
+        //private async void OnEndOfBatchChanged(object? sender, EventArgs e)
+        //{
+        //    if (_view.Quantity == 1 && _view.IsEndOfBatchChecked)
+        //    {
+        //        if (e.BoxType is BoxType.QualityControlSample or null)
+        //            return;
 
-        private async void OnQuantityChanged(object? sender, EventArgs e)
-        {
-            if (_view.Quantity == 1 && _view.IsEndOfBatchChecked)
-            {
-                var hasOpenBatch = await _batchPrintService.HasOpenBatchAsync();
-                if (!hasOpenBatch)
-                {
-                    _view.ShowNotification("There is no open batch to end.", MessageBoxIcon.Warning);
-                    _view.SetEndOfBatch(false);   // uncheck it
-                }
-            }
-        }
+        //        var hasOpenBatch = await _batchPrintService.HasOpenBatchAsync();
+        //        if (!hasOpenBatch)
+        //        {
+        //            _view.ShowNotification("There is no open batch to end.", MessageBoxIcon.Warning);
+        //            _view.SetEndOfBatch(false);   // uncheck it
+        //        }
+        //    }
+        //}
+
+        //private async void OnQuantityChanged(object? sender, EventArgs e)
+        //{
+        //    if (_view.Quantity == 1 && _view.IsEndOfBatchChecked)
+        //    {
+        //        //var job = _batchPrintService.GetJob(_activePrintJobId!.Value);
+        //        if (job is not null && job.BoxType == BoxType.QualityControlSample)
+        //            return;
+
+        //        var hasOpenBatch = await _batchPrintService.HasOpenBatchAsync();
+        //        if (!hasOpenBatch)
+        //        {
+        //            _view.ShowNotification("There is no open batch to end.", MessageBoxIcon.Warning);
+        //            _view.SetEndOfBatch(false);   // uncheck it
+        //        }
+        //    }
+        //}
 
         private void OnApprovalAuthorizationRequired(object? sender, EventArgs e)
         {
@@ -237,20 +279,29 @@ namespace LASYS.DesktopApp.Presenters
             _view.InvokeOnUI(() => _view.AddLog(e.Type, DateTime.Now, e.Message));
         }
 
-        private void OnJobStateChanged(object? sender, PrintJobState e)
+        private async void OnJobStateChanged(object? sender, PrintJobState e)
         {
-            _view.InvokeOnUI(() => _view.SetPrintingState(e.Status));
+            var status = e.BoxType switch
+            {
+                BoxType.QualityControlSample when e.Status == PrintJobStatus.Printed => PrintJobStatus.Ready,
+                _ => e.Status
+            };
+
+            _view.InvokeOnUI(() => _view.SetPrintingState(status));
 
             _view.InvokeOnUI(() => _view.UpdateProgress(e.PrintedCount, e.TotalPrintQuantity));
 
             _view.InvokeOnUI(() => _view.UpdatePrintingResults(e.TargetQuantity, e.Context.PrintDetails!.SetNumber, e.Context.PrintDetails!.BatchNumber, e.DisplaySequence, e.RemainingQuantity, e.Context.PrintDetails!.TotalPrinted, e.Context.PrintDetails!.TotalPassed, e.Context.PrintDetails!.TotalFailed, e.Context.PrintDetails!.TotalSample));
 
-            if (e.Status is PrintJobStatus.Completed or PrintJobStatus.Stopped)
+            if (status is PrintJobStatus.Completed or PrintJobStatus.Stopped)
             {
                 _view.InvokeOnUI(() => _view.UpdateQuantityControl(e));
+                var updated = await _batchPrintService.SetCompletelyPrintedStatus(e); //If completed then update the status to completely printed
+                if(updated)
+                    _workOrdersView.SetWorkOrderCompletelyPrinted(e.ItemCode, e.LotNo, e.Revision, e.BoxType);
             }
 
-            _printJobStatus = e.Status;
+            _printJobStatus = status;
 
 
         }
@@ -369,10 +420,14 @@ namespace LASYS.DesktopApp.Presenters
 
                 var updatedContext = context with
                 {
-                    MasterLabelDetails = masterLabel?.WithResolvedFilePath(filePath)
+                    MasterLabelDetails = masterLabel?
+                        .WithResolvedFilePath(filePath)
+                        .WithBoxType(boxType)
                 };
 
                 var printJobContext = await _mediator.Send(new InitializeBatchPrintCommand(updatedContext));
+
+                //printJobContext.UpdateBoxType(boxType);
 
                 await DisplayTemplate(context);
 

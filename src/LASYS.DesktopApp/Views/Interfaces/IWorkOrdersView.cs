@@ -1,4 +1,5 @@
-﻿using LASYS.Application.Features.LabelInstructions.GetWorkOrderListBySectionId;
+﻿using LASYS.Application.Common.Enums;
+using LASYS.Application.Features.LabelInstructions.GetWorkOrderListBySectionId;
 using LASYS.DesktopApp.Events;
 
 namespace LASYS.DesktopApp.Views.Interfaces
@@ -12,5 +13,6 @@ namespace LASYS.DesktopApp.Views.Interfaces
         void SetLoading(bool isLoading);
         void SetWorkOrders(List<WorkOrderItem> labelInstructions, int totalCount);
         void InvokeOnUI(Action action);
+        void SetWorkOrderCompletelyPrinted(string itemCode, string lotNo, uint revision, BoxType boxType);
     }
 }

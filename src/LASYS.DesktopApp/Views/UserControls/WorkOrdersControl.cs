@@ -16,6 +16,8 @@ namespace LASYS.DesktopApp.Views.UserControls
         private readonly Panel _loadingAccent;
         private readonly Label _loadingLabel;
         private readonly ProgressBar _loadingProgress;
+
+        private List<WorkOrderItem> _workOrders = [];
         public WorkOrdersControl()
         {
             InitializeComponent();
@@ -129,6 +131,8 @@ namespace LASYS.DesktopApp.Views.UserControls
 
         public void SetWorkOrders(List<WorkOrderItem> workOrders, int totalPages)
         {
+            _workOrders = workOrders;
+
             _gridWithPagination.PageSize = 10;
             _gridWithPagination.SetExternalDataMode(false);
             _gridWithPagination.SetTotalPages(totalPages);
@@ -207,6 +211,31 @@ namespace LASYS.DesktopApp.Views.UserControls
                 Invoke(action);
             else
                 action();
+        }
+
+        public void SetWorkOrderCompletelyPrinted(string itemCode, string lotNo, uint revision, BoxType boxType)
+        {
+            var workOrder = _workOrders.FirstOrDefault(x =>
+             x.ItemCode == itemCode &&
+             x.LotNo == lotNo &&
+             x.MasterLabelRevNumber == revision);
+
+            if (workOrder?.Details?.TryGetValue(boxType, out var details) != true)
+                return;
+
+            workOrder.Details[boxType] = details! with
+            {
+                LabelStatus = "Completely Printed"
+            };
+
+            if (!workOrder.Details.ContainsKey(BoxType.QualityControlSample) &&
+            workOrder.Details.TryGetValue(BoxType.UnitBox, out var ubDetails))
+            {
+                workOrder.Details[BoxType.QualityControlSample] = ubDetails;
+            }
+
+            // Refresh the current page
+            _gridWithPagination.RefreshRows();
         }
     }
 }

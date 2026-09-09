@@ -10,6 +10,7 @@ namespace LASYS.Infrastructure.Persistence.TableMappings
             {
                 BoxType.CaseLabel => "prdprnt_case_labels_tcl",
                 BoxType.UnitBox => "prdprnt_ub_labels_tcl",
+                BoxType.QualityControlSample => "prdprnt_ub_labels_tcl",
                 BoxType.AdditionalUnitBox => "prdprnt_aub_labels_tcl",
                 BoxType.OuterUnitBox => "prdprnt_oub_labels_tcl",
                 BoxType.CartonBox => "prdprnt_cb_labels_tcl",

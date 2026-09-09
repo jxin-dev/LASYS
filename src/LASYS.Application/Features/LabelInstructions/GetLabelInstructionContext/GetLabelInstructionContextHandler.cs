@@ -1,4 +1,5 @@
-﻿using LASYS.Application.Common.Results;
+﻿using LASYS.Application.Common.Enums;
+using LASYS.Application.Common.Results;
 using LASYS.Application.Interfaces.Persistence.Repositories;
 using LASYS.Application.Interfaces.Services;
 using MediatR;
@@ -26,11 +27,16 @@ namespace LASYS.Application.Features.LabelInstructions.GetLabelInstructionContex
         {
             try
             {
-                var labelInstruction = await _labelInstructionRepository.GetDetailsAsync(request.ItemCode, request.LotNo, request.MasterRevision, request.BoxType);
-                var productTask = _productRepository.GetDetailsAsync(request.ItemCode, request.MasterRevision, request.BoxType);
-                var masterLabelTask = _masterLabelRepository.GetDetailsAsync(request.ItemCode, request.MasterRevision, request.BoxType);
-                var printDetailsTask = _printLabelRepository.GetDetailsAsync(request.ItemCode, request.LotNo, labelInstruction.PrintType, request.BoxType);
+                var boxType = request.BoxType switch
+                {
+                    BoxType.QualityControlSample => BoxType.UnitBox,
+                    _ => request.BoxType
+                };
 
+                var labelInstruction = await _labelInstructionRepository.GetDetailsAsync(request.ItemCode, request.LotNo, request.MasterRevision, boxType);
+                var productTask = _productRepository.GetDetailsAsync(request.ItemCode, request.MasterRevision, boxType);
+                var masterLabelTask = _masterLabelRepository.GetDetailsAsync(request.ItemCode, request.MasterRevision, boxType);
+                var printDetailsTask = _printLabelRepository.GetDetailsAsync(request.ItemCode, request.LotNo, labelInstruction.PrintType, boxType);
 
                 await Task.WhenAll(productTask, masterLabelTask, printDetailsTask);
 

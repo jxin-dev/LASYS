@@ -21,29 +21,5 @@ namespace LASYS.DesktopApp.Presenters
                 ? _view.SelectedType
                 : null;
         }
-
-        //private IEnumerable<BoxType> BuildTypes(string? availableBoxTypes)
-        //{
-        //    if (string.IsNullOrWhiteSpace(availableBoxTypes))
-        //        return Enumerable.Empty<BoxType>();
-
-        //    var boxTypes = availableBoxTypes
-        //        .Split(',', StringSplitOptions.RemoveEmptyEntries)
-        //        .Select(x => x.Trim())
-        //        .ToHashSet(StringComparer.OrdinalIgnoreCase);
-
-        //    return new[]
-        //    {
-        //        ("CASE", BoxType.CaseLabel),
-        //        ("UB", BoxType.UnitBox),
-        //        ("AUB", BoxType.AdditionalUnitBox),
-        //        ("OUB", BoxType.OuterUnitBox),
-        //        ("CB", BoxType.CartonBox),
-        //        ("OCB", BoxType.OuterCartonBox),
-        //        ("ACB", BoxType.AdditionalCartonBox)
-        //    }
-        //    .Where(x => boxTypes.Contains(x.Item1))
-        //    .Select(x => x.Item2);
-        //}
     }
 }

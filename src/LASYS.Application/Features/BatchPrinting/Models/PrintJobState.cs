@@ -22,7 +22,8 @@ namespace LASYS.Application.Features.BatchPrinting.Models
         public string ItemCode => Context.LabelInstructionDetails?.ItemCode ?? throw new InvalidOperationException("ItemCode is not available.");
         public string LotNo => Context.LabelInstructionDetails?.LotNo ?? throw new InvalidOperationException("LotNo is not available.");
         public uint Revision => Context.LabelInstructionDetails?.MasterLabelRevNumber ?? throw new InvalidOperationException("MasterLabelRevNumber is not available.");
-        public BoxType BoxType => Context.MasterLabelDetails?.BoxType ?? throw new InvalidOperationException("BoxType is not available.");
+        //public BoxType BoxType => Context.MasterLabelDetails?.BoxType ?? throw new InvalidOperationException("BoxType is not available.");
+        public BoxType BoxType { get; private set; }
         public bool IsPairedType => Context.ProductDetails?.IsPairedBoxType ?? throw new InvalidOperationException("IsPairedBoxType is not available.");
         public int SequenceLength { get; init; } = 6;
         public string NiceLabelFilePath => Context.MasterLabelDetails?.FilePath ?? throw new InvalidOperationException("NiceLabelFilePath is not available.");
@@ -60,6 +61,7 @@ namespace LASYS.Application.Features.BatchPrinting.Models
             context.PrintDetails.NextSequence = remaining == 0 ? --startSequence : startSequence;
             context.PrintDetails.SetNumber = remaining == 0 ? --setNumber : setNumber;
             context.PrintDetails.BatchNumber = remaining == 0 ? --batchNumber : batchNumber;
+            var boxType = context.MasterLabelDetails?.BoxType ?? throw new InvalidOperationException("BoxType is not available.");
 
             return new PrintJobState
             {
@@ -71,8 +73,14 @@ namespace LASYS.Application.Features.BatchPrinting.Models
                     context.LabelInstructionDetails!.ItemCode,
                     context.LabelInstructionDetails!.LotNo,
                     context.MasterLabelDetails!.BoxType.ToString()),
-                Status = remaining == 0 ? PrintJobStatus.Printed : PrintJobStatus.Ready
+                Status = remaining == 0 ? PrintJobStatus.Printed : PrintJobStatus.Ready,
+                BoxType = boxType
             };
+        }
+
+        public void UpdateBoxType(BoxType boxType)
+        {
+           BoxType = boxType;
         }
         public void SetTotalPrintQuantity(int totalPrintQuantity)
         {
@@ -211,7 +219,7 @@ namespace LASYS.Application.Features.BatchPrinting.Models
         public void Reset()
         {
             var remaining = Context.PrintDetails != null ? Context.PrintDetails.GetRemainingPrintQuantity(Context.ProductDetails?.Quantity) : throw new InvalidOperationException("RemainingQuantity is not available.");
-            if (remaining == 0)
+            if (remaining == 0 && BoxType != BoxType.QualityControlSample)
             {
                 Status = PrintJobStatus.Printed;
             }

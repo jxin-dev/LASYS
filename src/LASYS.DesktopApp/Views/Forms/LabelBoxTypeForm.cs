@@ -33,12 +33,13 @@ namespace LASYS.DesktopApp.Views.Forms
         private readonly Dictionary<BoxType, string> _buttonLabels = new()
         {
             { BoxType.CaseLabel, "Case Label" },
-            { BoxType.UnitBox, "Unit Box" },
+            { BoxType.UnitBox, "Unit Box" },            
+            { BoxType.QualityControlSample, "QC Sample" },
             { BoxType.AdditionalUnitBox, "Additional Unit Box" },
             { BoxType.OuterUnitBox, "Outer Unit Box" },
             { BoxType.CartonBox, "Carton Box" },
             { BoxType.OuterCartonBox, "Outer Carton Box" },
-            { BoxType.AdditionalCartonBox, "Additional Carton Box" }
+            { BoxType.AdditionalCartonBox, "Additional Carton Box" },
         };
         private void ResizeForm()
         {
@@ -125,14 +126,4 @@ namespace LASYS.DesktopApp.Views.Forms
         }
     }
 
-    //public enum BoxType
-    //{
-    //    CaseLabel,
-    //    UnitBox,
-    //    AdditionalUnitBox,
-    //    OuterUnitBox,
-    //    CartonBox,
-    //    OuterCartonBox,
-    //    AdditionalCartonBox,
-    //}
 }

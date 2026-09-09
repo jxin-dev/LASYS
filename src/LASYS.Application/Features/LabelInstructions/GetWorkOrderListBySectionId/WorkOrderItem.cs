@@ -17,7 +17,7 @@ namespace LASYS.Application.Features.LabelInstructions.GetWorkOrderListBySection
         public DateTime? ProductionDate { get; init; }
         public DateTime? SterilizationDate { get; init; }
         public int TargetProductionQuantity { get; init; }
-        public IReadOnlyDictionary<BoxType, BoxLabelInstructionDetails>? Details { get; init; }
+        public Dictionary<BoxType, BoxLabelInstructionDetails>? Details { get; init; }
         public IReadOnlyCollection<BoxType> AvailableBoxTypes => Details?.Keys.ToList() ?? [];
     }
 }

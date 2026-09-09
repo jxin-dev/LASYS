@@ -7,5 +7,7 @@ namespace LASYS.Application.Interfaces.Persistence.Repositories
     {
         Task<LabelInstructionDetails> GetDetailsAsync(string itemCode, string lotNo, uint masterRevision, BoxType boxType);
         Task<LabelInstructionDetails> GetDetailsAsync(string itemCode, uint masterRevision, BoxType boxType);
+
+        Task<bool> SetLabelStatusToCompletelyPrintedAsync(string itemCode, string lotNo, uint masterRevision, BoxType boxType);
     }
 }
