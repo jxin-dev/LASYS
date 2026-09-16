@@ -104,18 +104,24 @@ namespace LASYS.Infrastructure.Persistence.Repositories
             }
         }
 
-        public async Task<bool> SetLabelStatusToCompletelyPrintedAsync(string itemCode, string lotNo, uint masterRevision, BoxType boxType)
+        public async Task<bool> SetLabelPrintedStatusAsync(string itemCode, string lotNo, uint masterRevision, BoxType boxType, LabelPrintedStatus status)
         {
+            var labelStatus = status switch
+            {
+                LabelPrintedStatus.PartiallyPrinted => "Partially Printed",
+                LabelPrintedStatus.CompletelyPrinted => "Completely Printed",
+                _ => "Not Printed"
+            };
             var statusColumn = _labelStatusColumnResolver.GetLabelStatusColumnName(boxType);
             var sql = $@"
             UPDATE ppt_lbl_instructn_plns_hst
-            SET {statusColumn} = 'Completely Printed' 
+            SET {statusColumn} = @labelStatus
             WHERE ITEM_CODE = @itemCode AND LOT_NO = @lotNo AND MASTER_LABEL_REVISION_NUMBER = @masterRevision";
 
             try
             {
                 using var connection = await _factory.CreateConnectionAsync();
-                var result = await connection.ExecuteAsync(sql, new { itemCode, lotNo, masterRevision });
+                var result = await connection.ExecuteAsync(sql, new { labelStatus, itemCode, lotNo, masterRevision });
                 if (result == 0)
                 {
                     return false; // No rows were updated, meaning the record was not found

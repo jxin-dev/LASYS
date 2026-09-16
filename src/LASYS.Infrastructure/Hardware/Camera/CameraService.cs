@@ -92,7 +92,7 @@ namespace LASYS.Infrastructure.Hardware.Camera
                 DeviceType.Camera,
                 statusCode,
                 descriptionOverride);
-
+           
             DeviceStatusChanged?.Invoke(this, new DeviceStatusChangedEventArgs(CurrentStatus));
         }
 

@@ -21,8 +21,10 @@ namespace LASYS.DesktopApp.Views.Interfaces
         event EventHandler CameraPreviewRequested;
         event EventHandler LabelTemplatePreviewRequested;
 
-        event EventHandler<QuantityChangedEventArgs> QuantityChanged;
-        event EventHandler<QuantityChangedEventArgs> EndOfBatchChanged;
+        //event EventHandler<QuantityChangedEventArgs> QuantityChanged;
+        //event EventHandler<QuantityChangedEventArgs> EndOfBatchChanged;
+        event EventHandler QuantityChanged;
+        event EventHandler EndOfBatchChanged;
         //void SetCameraPreview(UserControl control);
         void ToggleCameraPreview(bool visible);
 
@@ -55,6 +57,7 @@ namespace LASYS.DesktopApp.Views.Interfaces
         void SetEndOfBatch(bool isChecked);
         int Quantity { get; }
         bool IsEndOfBatchChecked { get; }
+        void UpdateControlState(bool enabled);
     }
 
 }

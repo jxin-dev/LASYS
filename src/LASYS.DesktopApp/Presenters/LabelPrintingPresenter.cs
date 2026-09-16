@@ -43,6 +43,7 @@ namespace LASYS.DesktopApp.Presenters
         private readonly IDeviceManager _deviceManager;
         private readonly ILabelPreviewHub _labelPreviewHub;
         private readonly IWorkOrdersView _workOrdersView;
+        private readonly IPrintJobController _jobController;
 
         private readonly CameraPreviewPresenter _cameraPreviewPresenter;
         private readonly LabelTemplatePreviewPresenter _labelTemplatePreviewPresenter;
@@ -66,7 +67,8 @@ namespace LASYS.DesktopApp.Presenters
                                       IDeviceManager deviceManager,
                                       IFrameHub frameHub,
                                       ILabelPreviewHub labelPreviewHub,
-                                      IWorkOrdersView workOrdersView)
+                                      IWorkOrdersView workOrdersView,
+                                      IPrintJobController jobController)
         {
             _batchPrintService = batchPrintService;
             _mediator = mediator;
@@ -77,6 +79,7 @@ namespace LASYS.DesktopApp.Presenters
             _deviceManager = deviceManager;
             _labelPreviewHub = labelPreviewHub;
             _workOrdersView = workOrdersView;
+            _jobController = jobController;
 
 
             View = (UserControl)view;
@@ -123,11 +126,15 @@ namespace LASYS.DesktopApp.Presenters
             _view.LabelTemplatePreviewRequested += OnLabelTemplatePreviewRequested;
         }
 
-        private async void OnEndOfBatchChanged(object? sender, QuantityChangedEventArgs e)
+        private async void OnEndOfBatchChanged(object? sender, EventArgs e)
         {
+            if (_activePrintJobId is null)
+                return;
             if (_view.Quantity == 1 && _view.IsEndOfBatchChecked)
             {
-                if (e.BoxType is BoxType.QualityControlSample or null)
+                var job = _jobController.GetJob(_activePrintJobId!.Value);
+
+                if (job.BoxType is BoxType.QualityControlSample)
                     return;
 
                 var hasOpenBatch = await _batchPrintService.HasOpenBatchAsync();
@@ -139,11 +146,16 @@ namespace LASYS.DesktopApp.Presenters
             }
         }
 
-        private async void OnQuantityChanged(object? sender, QuantityChangedEventArgs e)
+        private async void OnQuantityChanged(object? sender, EventArgs e)
         {
+            if (_activePrintJobId is null)
+                return;
+
             if (_view.Quantity == 1 && _view.IsEndOfBatchChecked)
             {
-                if (e.BoxType is BoxType.QualityControlSample or null)
+                var job = _jobController.GetJob(_activePrintJobId!.Value);
+
+                if (job.BoxType is BoxType.QualityControlSample)
                     return;
 
                 var hasOpenBatch = await _batchPrintService.HasOpenBatchAsync();
@@ -154,6 +166,48 @@ namespace LASYS.DesktopApp.Presenters
                 }
             }
         }
+
+        //private async void OnEndOfBatchChanged(object? sender, QuantityChangedEventArgs e)
+        //{
+        //    if (_view.Quantity == 1 && _view.IsEndOfBatchChecked)
+        //    {
+        //        if (_activePrintJobId is null)
+        //            return;
+
+        //        var job = _jobController.GetJob(_activePrintJobId!.Value);
+
+        //        if (job.BoxType is BoxType.QualityControlSample)
+        //            return;
+
+        //        var hasOpenBatch = await _batchPrintService.HasOpenBatchAsync();
+        //        if (!hasOpenBatch)
+        //        {
+        //            _view.ShowNotification("There is no open batch to end.", MessageBoxIcon.Warning);
+        //            _view.SetEndOfBatch(false);   // uncheck it
+        //        }
+        //    }
+        //}
+
+        //private async void OnQuantityChanged(object? sender, QuantityChangedEventArgs e)
+        //{
+        //    if (_view.Quantity == 1 && _view.IsEndOfBatchChecked)
+        //    {
+        //        if (_activePrintJobId is null)
+        //            return;
+
+        //        var job = _jobController.GetJob(_activePrintJobId!.Value);
+
+        //        if (job.BoxType is BoxType.QualityControlSample)
+        //            return;
+
+        //        var hasOpenBatch = await _batchPrintService.HasOpenBatchAsync();
+        //        if (!hasOpenBatch)
+        //        {
+        //            _view.ShowNotification("There is no open batch to end.", MessageBoxIcon.Warning);
+        //            _view.SetEndOfBatch(false);   // uncheck it
+        //        }
+        //    }
+        //}
 
         private void OnVisualInspectionRequired(object? sender, VisualInspectionRequiredEventArgs e)
         {
@@ -291,16 +345,36 @@ namespace LASYS.DesktopApp.Presenters
 
             _view.InvokeOnUI(() => _view.UpdateProgress(e.PrintedCount, e.TotalPrintQuantity));
 
-            _view.InvokeOnUI(() => _view.UpdatePrintingResults(e.TargetQuantity, e.Context.PrintDetails!.SetNumber, e.Context.PrintDetails!.BatchNumber, e.DisplaySequence, e.RemainingQuantity, e.Context.PrintDetails!.TotalPrinted, e.Context.PrintDetails!.TotalPassed, e.Context.PrintDetails!.TotalFailed, e.Context.PrintDetails!.TotalSample));
+            //_view.InvokeOnUI(() => _view.UpdatePrintingResults(e.TargetQuantity, e.Context.PrintDetails!.SetNumber, e.Context.PrintDetails!.BatchNumber, e.DisplaySequence, e.RemainingQuantity, e.Context.PrintDetails!.TotalPrinted, e.Context.PrintDetails!.TotalPassed, e.Context.PrintDetails!.TotalFailed, e.Context.PrintDetails!.TotalSample));
 
             if (status is PrintJobStatus.Completed or PrintJobStatus.Stopped)
             {
+                if (status is PrintJobStatus.Completed)
+                {
+                    if (e.BoxType == BoxType.QualityControlSample)
+                    {
+                        _view.InvokeOnUI(() => _view.UpdateControlState(false));
+                    }
+                    else
+                    {
+                        _view.InvokeOnUI(() => _view.UpdateControlState(true));
+                    }
+                }
+
                 _view.InvokeOnUI(() => _view.UpdateQuantityControl(e));
-                var updated = await _batchPrintService.SetCompletelyPrintedStatus(e); //If completed then update the status to completely printed
-                if(updated)
+                var isCompleted = await _batchPrintService.SetPrintedStatusAsCompleted(e); //If completed then update the status to completely printed
+                if (isCompleted)
                     _workOrdersView.SetWorkOrderCompletelyPrinted(e.ItemCode, e.LotNo, e.Revision, e.BoxType);
+
+                if (e.BoxType == BoxType.QualityControlSample)
+                {
+                    e.QCSampleCompletion();
+
+                }
+                _activePrintJobId = null;
             }
 
+            _view.InvokeOnUI(() => _view.UpdatePrintingResults(e.TargetQuantity, e.Context.PrintDetails!.SetNumber, e.Context.PrintDetails!.BatchNumber, e.DisplaySequence, e.RemainingQuantity, e.Context.PrintDetails!.TotalPrinted, e.Context.PrintDetails!.TotalPassed, e.Context.PrintDetails!.TotalFailed, e.Context.PrintDetails!.TotalSample));
             _printJobStatus = status;
 
 

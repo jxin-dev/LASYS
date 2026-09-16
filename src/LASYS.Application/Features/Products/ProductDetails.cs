@@ -35,6 +35,7 @@
         public string TransferInstruction { get; private set; } = string.Empty;
         public string PssIdNo { get; private set; } = string.Empty;
         public string FlowRate { get; private set; } = string.Empty;
+        public bool OCBNoLotExpFlag { get; private set; } = false;
         public string? Description1 { get; private set; }
         public string? Description2 { get; private set; }
         public string? Custom1 { get; private set; }

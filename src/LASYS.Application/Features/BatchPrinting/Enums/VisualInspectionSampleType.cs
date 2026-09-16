@@ -3,6 +3,7 @@
     public enum VisualInspectionSampleType
     {
         FirstSample,
-        LastSample
+        LastSample,
+        QCSample
     }
 }

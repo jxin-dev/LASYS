@@ -32,7 +32,8 @@ namespace LASYS.Application.Features.BatchPrinting.Models
         public int PrintedCount { get; private set; } = 0;
         public uint TargetQuantity => Context.ProductDetails?.Quantity ?? throw new InvalidOperationException("TargetProductionQuantity is not available");
         public long RemainingQuantity => Context.PrintDetails != null ? Context.PrintDetails.GetRemainingPrintQuantity(Context.ProductDetails?.Quantity) : throw new InvalidOperationException("RemainingQuantity is not available.");
-        public long DisplaySequence => RemainingQuantity == 0 ? Context.PrintDetails!.NextSequence - 1 : Context.PrintDetails!.NextSequence;
+        //public long DisplaySequence => RemainingQuantity == 0 ? Context.PrintDetails!.NextSequence - 1 : Context.PrintDetails!.NextSequence;
+        public long DisplaySequence { get; private set; }
         public string CurrentSequenceFormat => SequenceFormatter.Format(Context.PrintDetails!.NextSequence, SequenceLength);
         public string LastSequenceFormat => SequenceFormatter.Format((Context.PrintDetails!.NextSequence + TotalQuantity) - 1, SequenceLength);
         public PrintJobStatus Status { get; private set; } = PrintJobStatus.Pending;
@@ -58,10 +59,23 @@ namespace LASYS.Application.Features.BatchPrinting.Models
             //var batchNumber = context.PrintDetails.TotalPassed == 0 ? 1 : (int)((context.PrintDetails.TotalPassed - 1) / context.ProductDetails!.BatchSize) + 1;
             var batchNumber = context.PrintDetails?.BatchNumber != null ? (int)context.PrintDetails.BatchNumber : throw new InvalidOperationException("BatchNumber is not available.");
 
-            context.PrintDetails.NextSequence = remaining == 0 ? --startSequence : startSequence;
-            context.PrintDetails.SetNumber = remaining == 0 ? --setNumber : setNumber;
-            context.PrintDetails.BatchNumber = remaining == 0 ? --batchNumber : batchNumber;
             var boxType = context.MasterLabelDetails?.BoxType ?? throw new InvalidOperationException("BoxType is not available.");
+
+            if (boxType == BoxType.QualityControlSample)
+            {
+                context.PrintDetails.NextSequence = startSequence;
+                context.PrintDetails.SetNumber = setNumber;
+                context.PrintDetails.BatchNumber = batchNumber;
+                //DisplaySequence = context.PrintDetails.NextSequence;
+            }
+            else
+            {
+                context.PrintDetails.NextSequence = remaining == 0 ? --startSequence : startSequence;
+                context.PrintDetails.SetNumber = remaining == 0 ? --setNumber : setNumber;
+                context.PrintDetails.BatchNumber = remaining == 0 ? --batchNumber : batchNumber;
+                //DisplaySequence = context.PrintDetails.NextSequence;
+            }
+
 
             return new PrintJobState
             {
@@ -74,13 +88,14 @@ namespace LASYS.Application.Features.BatchPrinting.Models
                     context.LabelInstructionDetails!.LotNo,
                     context.MasterLabelDetails!.BoxType.ToString()),
                 Status = remaining == 0 ? PrintJobStatus.Printed : PrintJobStatus.Ready,
-                BoxType = boxType
+                BoxType = boxType,
+                DisplaySequence = context.PrintDetails.NextSequence
             };
         }
 
         public void UpdateBoxType(BoxType boxType)
         {
-           BoxType = boxType;
+            BoxType = boxType;
         }
         public void SetTotalPrintQuantity(int totalPrintQuantity)
         {
@@ -90,14 +105,20 @@ namespace LASYS.Application.Features.BatchPrinting.Models
         {
             IsPassed = true;
             CurrentLabelStatus = "First";
-            Context.PrintDetails!.TotalSample += 1;
+            //Context.PrintDetails!.TotalSample += 1;
         }
 
         public void MarkLast()
         {
             IsPassed = true;
             CurrentLabelStatus = "Last";
-            Context.PrintDetails!.TotalSample += 1;
+            //Context.PrintDetails!.TotalSample += 1;
+        }
+        public void MarkQC()
+        {
+            IsPassed = true;
+            CurrentLabelStatus = "QC";
+            //Context.PrintDetails!.TotalSample += 1;
         }
 
         public void MarkFailedDuringPrinting()
@@ -128,9 +149,9 @@ namespace LASYS.Application.Features.BatchPrinting.Models
             if (Context.PrintDetails != null)
             {
                 PrintedCount++;
-                Context.PrintDetails.NextSequence++;
-
                 CurrentLabelStatus = Context.LabelInstructionDetails!.PrintType;
+                Context.PrintDetails.NextSequence++;
+                DisplaySequence = Context.PrintDetails.NextSequence;
             }
         }
 
@@ -182,20 +203,43 @@ namespace LASYS.Application.Features.BatchPrinting.Models
         public void MarkSaved(bool hasSampleLabel)
         {
             CurrentStage = ProcessingStage.Saved;
-            if (!hasSampleLabel)
-            {
-                Context.PrintDetails!.TotalPassed++;
-            }
             Context.PrintDetails!.TotalPrinted++;
 
+            if (IsPassed)
+            {
+                if (!hasSampleLabel)
+                {
+                    Context.PrintDetails!.TotalPassed++;
+                }
+                else
+                {
+                    Context.PrintDetails!.TotalSample++;
+                }
+            }
+            else
+            {
+                Context.PrintDetails!.TotalFailed++;
+            }
+
             //Update Batch No.
-            if (CurrentLabelStatus == "Last")
+            var batchNumber = Context.PrintDetails?.BatchNumber != null ? (int)Context.PrintDetails.BatchNumber : throw new InvalidOperationException("BatchNumber is not available.");
+            if (CurrentLabelStatus is "Last" or "QC")
             {
                 var remaining = Context.PrintDetails != null ? Context.PrintDetails.GetRemainingPrintQuantity(Context.ProductDetails?.Quantity) : throw new InvalidOperationException("RemainingQuantity is not available.");
-                var batchNumber = Context.PrintDetails?.BatchNumber != null ? (int)Context.PrintDetails.BatchNumber : throw new InvalidOperationException("BatchNumber is not available.");
                 Context.PrintDetails.BatchNumber = remaining == 0 ? batchNumber : ++batchNumber;
             }
 
+        }
+
+        public void QCSampleCompletion()
+        {
+            if (BoxType == BoxType.QualityControlSample)
+            {
+                CurrentLabelStatus = "QC";
+                Context.PrintDetails!.SetNumber++;
+                //Context.PrintDetails!.BatchNumber++;
+                DisplaySequence = Context.PrintDetails!.NextSequence;
+            }
         }
 
         public void MarkFailed()
@@ -212,6 +256,7 @@ namespace LASYS.Application.Features.BatchPrinting.Models
             {
                 Context.PrintDetails.TotalPrinted++;
                 Context.PrintDetails.NextSequence++;
+                DisplaySequence = Context.PrintDetails.NextSequence;
             }
 
         }

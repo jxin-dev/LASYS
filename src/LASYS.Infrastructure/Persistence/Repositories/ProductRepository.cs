@@ -55,6 +55,7 @@ namespace LASYS.Infrastructure.Persistence.Repositories
                 TRANSFER_INSTRUCTION AS TransferInstruction,
                 PSS_ID_NO AS PssIdNo,
                 FLOW_RATE AS FlowRate,
+                OCB_NO_LOT_EXP_FLAG AS OCBNoLotExpFlag, 
                 DESCRIPTION_1 AS Description1,
                 DESCRIPTION_2 AS Description2,
                 Custom_1 AS Custom1,
@@ -71,6 +72,8 @@ namespace LASYS.Infrastructure.Persistence.Repositories
                 pre_tpc_products_tcl
             WHERE
                 ITEM_CODE = @itemCode AND MASTERLABEL_REVISION_NUMBER = @masterRevision";
+
+            //OCBNoLotExpFlag new column for barcode validation
 
             try
             {

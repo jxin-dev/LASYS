@@ -33,9 +33,10 @@ namespace LASYS.DesktopApp.Views.UserControls
         public event EventHandler? StopPrintingRequested;
         public event EventHandler? CameraPreviewRequested;
         public event EventHandler? LabelTemplatePreviewRequested;
-        public event EventHandler<QuantityChangedEventArgs>? QuantityChanged;
-        public event EventHandler<QuantityChangedEventArgs>? EndOfBatchChanged;
-
+        //public event EventHandler<QuantityChangedEventArgs>? QuantityChanged;
+        //public event EventHandler<QuantityChangedEventArgs>? EndOfBatchChanged;
+        public event EventHandler? QuantityChanged;
+        public event EventHandler? EndOfBatchChanged;
         private PrintJobStatus _currentJobStatus = PrintJobStatus.Initializing;
 
         private readonly DraggableResizerPanel _resizablePanel;
@@ -147,16 +148,17 @@ namespace LASYS.DesktopApp.Views.UserControls
             btnLabelTemplatePreview.Click += (_, _) => LabelTemplatePreviewRequested?.Invoke(this, EventArgs.Empty);
 
             //nudQuantity.ValueChanged += (_, _) => QuantityChanged?.Invoke(this, EventArgs.Empty);
-            txtQuantity.TextChanged += (_, _) => QuantityChanged?.Invoke(this, new QuantityChangedEventArgs(
-                int.Parse(txtQuantity.Text),
-                _selectedBoxType.HasValue ? _selectedBoxType.Value
-                : null));
+            //txtQuantity.TextChanged += (_, _) => QuantityChanged?.Invoke(this, new QuantityChangedEventArgs(
+            //    int.Parse(string.IsNullOrEmpty(txtQuantity.Text) ? "1" : txtQuantity.Text),
+            //    _selectedBoxType.HasValue ? _selectedBoxType.Value
+            //    : null));
 
-            //chkEndOfBatch.CheckedChanged += (_, _) => EndOfBatchChanged?.Invoke(this, EventArgs.Empty);
-            txtQuantity.TextChanged += (_, _) => EndOfBatchChanged?.Invoke(this, new QuantityChangedEventArgs(
-               int.Parse(txtQuantity.Text),
-               _selectedBoxType.HasValue ? _selectedBoxType.Value
-               : null));
+            txtQuantity.TextChanged += (_, _) => QuantityChanged?.Invoke(this, EventArgs.Empty);
+            chkEndOfBatch.CheckedChanged += (_, _) => EndOfBatchChanged?.Invoke(this, EventArgs.Empty);
+            //chkEndOfBatch.CheckedChanged += (_, _) => EndOfBatchChanged?.Invoke(this, new QuantityChangedEventArgs(
+            //   int.Parse(txtQuantity.Text),
+            //   _selectedBoxType.HasValue ? _selectedBoxType.Value
+            //   : null));
 
             //Loading card setup
             _loadingCard = new Panel
@@ -546,7 +548,7 @@ namespace LASYS.DesktopApp.Views.UserControls
                 _maximumQuantity = 1;
                 txtQuantity.Text = _minimumQuantity.ToString();
 
-                txtQuantity.Enabled = false;
+                //txtQuantity.Enabled = false;
                 chkEndOfBatch.Enabled = false;
                 chkEndOfBatch.Checked = false;
             }
@@ -558,6 +560,7 @@ namespace LASYS.DesktopApp.Views.UserControls
 
                 txtQuantity.Enabled = maxQty > 0;
                 chkEndOfBatch.Enabled = maxQty > 0;
+                chkEndOfBatch.Checked = maxQty == remaining;
             }
 
         }
@@ -635,7 +638,7 @@ namespace LASYS.DesktopApp.Views.UserControls
                     pbPrintingProgress.Visible = false;
 
                     txtQuantity.Enabled = false;
-
+                    chkEndOfBatch.Enabled = false;
                     break;
                 case PrintJobStatus.Ready:
                 case PrintJobStatus.Completed:
@@ -649,7 +652,9 @@ namespace LASYS.DesktopApp.Views.UserControls
                     btnPrint.ForeColor = Color.Black;
                     btnPrint.BackColor = Color.SeaGreen;
 
-                    txtQuantity.Enabled = true;
+                    //txtQuantity.Enabled = true;
+                    //chkEndOfBatch.Enabled = true;
+
 
                     break;
                 case PrintJobStatus.Pending:
@@ -672,6 +677,8 @@ namespace LASYS.DesktopApp.Views.UserControls
                     btnPrint.BackColor = Color.Crimson;
 
                     txtQuantity.Enabled = false;
+                    chkEndOfBatch.Enabled = false;
+
                     break;
                 case PrintJobStatus.Paused:
                     btnPauseResume.Visible = true;
@@ -969,6 +976,12 @@ namespace LASYS.DesktopApp.Views.UserControls
         {
             visualInspectionForm.ControlBox = false;
             _modalOverlay.Show(visualInspectionForm);
+        }
+
+        public void UpdateControlState(bool enabled)
+        {
+            txtQuantity.Enabled = enabled;
+            chkEndOfBatch.Enabled = enabled;
         }
     }
 

@@ -49,7 +49,7 @@ namespace LASYS.Infrastructure.Hardware.Printers.Sato
                 DeviceType.Printer,
                 statusCode,
                 descriptionOverride);
-
+           
             DeviceStatusChanged?.Invoke(this, new DeviceStatusChangedEventArgs(CurrentStatus));
 
         }

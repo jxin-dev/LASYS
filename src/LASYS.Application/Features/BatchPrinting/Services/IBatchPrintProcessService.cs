@@ -33,6 +33,6 @@ namespace LASYS.Application.Features.BatchPrinting.Services
         event EventHandler<VisualInspectionRequiredEventArgs> VisualInspectionRequired;
         void CompleteVisualInspection(VisualInspectionResult result, string userCode, string sectionId);
 
-        Task<bool> SetCompletelyPrintedStatus(PrintJobState jobState);
+        Task<bool> SetPrintedStatusAsCompleted(PrintJobState jobState);
     }
 }

@@ -164,6 +164,9 @@ namespace LASYS.Infrastructure.Hardware.Printers.Sato
 
                 var outputImagePath = Path.Combine(outputDirectory, $"{fileName}.jpg");
 
+                if (File.Exists(outputImagePath))
+                    File.Delete(outputImagePath);
+
                 lock (_sync)
                 {
                     Label.GetLabelPreview(outputImagePath, width, height);

@@ -1,5 +1,4 @@
 ﻿using System.Diagnostics;
-using System.Threading.Tasks;
 using LASYS.Application.Common.Mappings;
 using LASYS.Application.Common.Messaging;
 using LASYS.Application.Common.Utilities;
@@ -143,33 +142,47 @@ namespace LASYS.Application.Features.BatchPrinting.Services
 
                 var latestSpecialStatus = await _printLabelRepository.GetLatestSpecialLabelStatusAsync(job.ItemCode, job.LotNo, job.BoxType);
                 bool hasOpenBatch = latestSpecialStatus == "First";
-
-                var productionQuantity = job.TotalQuantity;
-
                 var hasFirstSample = !hasOpenBatch;
                 var hasLastSample = job.EndOfBatch;
 
-                //var additionalSampleCount =
-                //    (hasFirstSample ? 1 : 0) +
-                //    (hasLastSample ? 1 : 0);
-                var isSingleLastSample =
-                    hasOpenBatch &&
-                    hasLastSample &&
-                    productionQuantity == 1;
+                var isQualityControlSample = job.BoxType == Common.Enums.BoxType.QualityControlSample;
+                var totalPrintIterations = 0;
 
-                var additionalSampleCount =
-                    (hasFirstSample ? 1 : 0) +
-                    (hasLastSample && !isSingleLastSample ? 1 : 0);
+                if (isQualityControlSample)
+                {
+                    // QC Sample: always print exactly 1 label
+                    totalPrintIterations = 1;
+                    job.SetTotalPrintQuantity(1);
+                }
+                else
+                {
+                    var productionQuantity = job.BoxType == Common.Enums.BoxType.QualityControlSample
+                     ? 1
+                     : job.TotalQuantity;
 
-                var totalPrintIterations =
-                    productionQuantity + additionalSampleCount;
 
-                job.SetTotalPrintQuantity(totalPrintIterations);
+
+
+                    var isSingleLastSample =
+                        hasOpenBatch &&
+                        hasLastSample &&
+                        productionQuantity == 1;
+
+                    var additionalSampleCount =
+                        (hasFirstSample ? 1 : 0) +
+                        (hasLastSample && !isSingleLastSample ? 1 : 0);
+
+                    totalPrintIterations =
+                       productionQuantity + additionalSampleCount;
+
+                    job.SetTotalPrintQuantity(totalPrintIterations);
+                }
+
                 NotifyJobStateChanged(jobId);
 
                 var printIteration = 0;
 
-             
+
                 //while (job.Context.PrintDetails!.NextSequence <= (job.TotalQuantity + startSequence) - 1) // 1 - 50
                 while (printIteration < totalPrintIterations)
                 {
@@ -221,12 +234,25 @@ namespace LASYS.Application.Features.BatchPrinting.Services
                     bool isLastSample =
                         hasLastSample && printIteration == totalPrintIterations;
 
+                    //var isSampleLabel =
+                    //    isFirstSample || isLastSample;
+
+                    //var pairCount =
+                    //    isSampleLabel
+                    //        ? 1 : job.IsPairedType && job.BoxType == Common.Enums.BoxType.CartonBox ? 2 : 1;
+
                     var isSampleLabel =
-                        isFirstSample || isLastSample;
+                        isQualityControlSample || isFirstSample || isLastSample;
 
                     var pairCount =
-                        isSampleLabel
-                            ? 1 : job.IsPairedType && job.BoxType == Common.Enums.BoxType.CartonBox ? 2 : 1;
+                        isQualityControlSample
+                            ? 1
+                            : isSampleLabel
+                                ? 1
+                                : job.IsPairedType && job.BoxType == Common.Enums.BoxType.CartonBox
+                                    ? 2
+                                    : 1;
+
                     var completedPairs = 0;
                     foreach (var pairIndex in Enumerable.Range(1, pairCount))
                     {
@@ -294,8 +320,8 @@ namespace LASYS.Application.Features.BatchPrinting.Services
                             }
                             if (validationBarcodeResult == StepResult.Stop)
                             {
-                                if (!isSampleLabel)
-                                    await SaveFailedLabelAsync(job); //Uncomment if you want to save when user stops the job due to Barcode validation failure
+                                //if (!isSampleLabel)
+                                await SaveFailedLabelAsync(job);
 
                                 LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Error, $"Barcode validation failed. Job stopped by {_currentUser.FullName} on label {job.CurrentSequenceFormat}{pairText}."));
                                 stopRequested = true;
@@ -337,8 +363,8 @@ namespace LASYS.Application.Features.BatchPrinting.Services
                             }
                             if (validationOcrResult == StepResult.Stop)
                             {
-                                if (!isSampleLabel)
-                                    await SaveFailedLabelAsync(job); //Uncomment if you want to save when user stops the job due to OCR validation failure
+                                //if (!isSampleLabel)
+                                await SaveFailedLabelAsync(job);
 
                                 LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Error, $"OCR validation failed. Job stopped by {_currentUser.FullName} on label {job.CurrentSequenceFormat}{pairText}."));
                                 stopRequested = true;
@@ -440,7 +466,7 @@ namespace LASYS.Application.Features.BatchPrinting.Services
                                        $"Label {job.CurrentSequenceFormat} was not approved during visual inspection."));
 
                                 stopRequested = true;
-                                break; //comment this if you want to continue saving even if label failed visual inspection
+                                //break; //comment this if you want to continue saving even if label failed visual inspection
                             }
 
                             while (true)
@@ -639,6 +665,38 @@ namespace LASYS.Application.Features.BatchPrinting.Services
         {
             job.ResetPrintType();
 
+            if (job.BoxType == Common.Enums.BoxType.QualityControlSample)
+            {
+                var inspectionResult = await RequestVisualInspectionAsync(
+                VisualInspectionSampleType.QCSample,
+                job.CurrentSequenceFormat,
+                cancellationToken);
+
+                if (inspectionResult.Result == VisualInspectionResult.Approved)
+                {
+                    job.MarkQC();
+                }
+                else if (inspectionResult.Result == VisualInspectionResult.Rejected)
+                {
+                    job.MarkFailedDuringPrinting();
+                }
+                else
+                {
+                    _jobController.Stop(jobId, true);
+                    EnsureCanContinue(job);
+                    return;
+                }
+
+                var ipAddress = _ipAddressProvider.GetLocalIpAddress();
+
+                job.SetApproval(
+                    inspectionResult.UserCode!,
+                    inspectionResult.SectionId!,
+                    ipAddress);
+
+                return;
+            }
+
             // ==========================================
             // FIRST SAMPLE
             // ==========================================
@@ -827,7 +885,7 @@ namespace LASYS.Application.Features.BatchPrinting.Services
             EnsureCanContinue(job);
             NotifyJobStateChanged(job.JobId);
 
-            return StepResult.Success; //comment for real implementation
+            //return StepResult.Success; //comment for real implementation
 
             var isPrinted = await _deviceManager.Printer.IsPrinted(prnFileLocation);
             if (isPrinted)
@@ -876,7 +934,7 @@ namespace LASYS.Application.Features.BatchPrinting.Services
         {
             EnsureCanContinue(job);
 
-            return StepResult.Success; //comment for real implementation
+            //return StepResult.Success; //comment for real implementation
 
             // Ensure scanner is connected
             if (!_deviceManager.Barcode.IsConnected)
@@ -910,8 +968,11 @@ namespace LASYS.Application.Features.BatchPrinting.Services
                     cancellationToken);
             }
 
+
+            //barcodeScanned = "0174806017513718";
             bool isEumdr = job.Context.ProductDetails!.IsEumdr;
-            var validationResult = await _mediator.Send(new ValidateLabelBarcodeQuery(barcodeScanned, isEumdr), cancellationToken);
+            bool isOcbNoLotExp = job.Context.ProductDetails!.OCBNoLotExpFlag;
+            var validationResult = await _mediator.Send(new ValidateLabelBarcodeQuery(barcodeScanned, isEumdr, isOcbNoLotExp), cancellationToken);
             if (!validationResult.IsValid)
             {
                 LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Error, validationResult.ErrorMessage));
@@ -934,6 +995,7 @@ namespace LASYS.Application.Features.BatchPrinting.Services
                 Common.Enums.BoxType.OuterCartonBox => "7",
                 Common.Enums.BoxType.AdditionalCartonBox => "9",
                 Common.Enums.BoxType.UnitBox => "3",
+                Common.Enums.BoxType.QualityControlSample => "3",
                 Common.Enums.BoxType.AdditionalUnitBox => "8",
                 Common.Enums.BoxType.OuterUnitBox => "4",
                 _ => "1"
@@ -942,6 +1004,20 @@ namespace LASYS.Application.Features.BatchPrinting.Services
             var barcodeNumber = $"{boxType}{job.Context.ProductDetails!.BarcodeNumber}";
             //var barcodeNumber = $"{barcodeType}{job.Context.ProductDetails!.BarcodeNumber}";
 
+            if (job.Context.ProductDetails.OCBNoLotExpFlag == true && boxType == "7") // Only for OCB with no lot and exp date
+            {
+                if (!Matches(validationResult, "01", barcodeNumber))
+                {
+                    return await RequestOperatorDecisionAsync(
+                        new OperatorDecisionRequiredEventArgs(
+                            ValidationFailure.BarcodeMismatch,
+                            job.CurrentSequenceFormat,
+                            pairNumber,
+                            totalPairs),
+                        cancellationToken);
+                }
+                return StepResult.Success;
+            }
 
             if (!Matches(validationResult, "01", barcodeNumber))
             {
@@ -1000,7 +1076,7 @@ namespace LASYS.Application.Features.BatchPrinting.Services
         {
             EnsureCanContinue(job);
 
-            return StepResult.Success; //comment for real implementation
+            //return StepResult.Success; //comment for real implementation
             if (!_deviceManager.Camera.IsCameraConnected)
             {
                 var connected = await _deviceManager.Camera.ReconnectAsync();
@@ -1089,23 +1165,34 @@ namespace LASYS.Application.Features.BatchPrinting.Services
             return hasOpenBatch;
         }
 
-        public async Task<bool> SetCompletelyPrintedStatus(PrintJobState jobState)
+        public async Task<bool> SetPrintedStatusAsCompleted(PrintJobState jobState)
         {
             var boxType = jobState.BoxType switch
-            { 
+            {
                 Common.Enums.BoxType.QualityControlSample => Common.Enums.BoxType.UnitBox,
                 _ => jobState.BoxType
             };
 
             if (jobState.RemainingQuantity == 0)
             {
-               return await _labelInstructionRepository.SetLabelStatusToCompletelyPrintedAsync(
+                var success = await _labelInstructionRepository.SetLabelPrintedStatusAsync(
                      jobState.ItemCode,
                      jobState.LotNo,
                      jobState.Revision,
-                     boxType);
+                     boxType, Common.Enums.LabelPrintedStatus.CompletelyPrinted);
+                return success;
             }
-            return false;
+            else
+            {
+                await _labelInstructionRepository.SetLabelPrintedStatusAsync(
+                     jobState.ItemCode,
+                     jobState.LotNo,
+                     jobState.Revision,
+                     boxType, Common.Enums.LabelPrintedStatus.PartiallyPrinted);
+
+                return false;
+            }
+
         }
     }
 }

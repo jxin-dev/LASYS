@@ -57,7 +57,7 @@ namespace LASYS.Infrastructure.Persistence.Repositories
                     END) AS TotalFailed, 
 
                     COUNT(DISTINCT CASE 
-                        WHEN LABEL_STATUS IN ('First', 'Last') 
+                        WHEN LABEL_STATUS IN ('First', 'Last', 'QC') 
                         THEN SEQUENCE_NUMBER 
                     END) AS TotalSample, 
 
@@ -65,6 +65,7 @@ namespace LASYS.Infrastructure.Persistence.Repositories
                         WHEN LABEL_STATUS IN (
                             'First',
                             'Last',
+                            'QC',
                             'Original',
                             'Replacement',
                             'Additional',
@@ -78,7 +79,7 @@ namespace LASYS.Infrastructure.Persistence.Repositories
                     IFNULL(MAX(SEQUENCE_NUMBER) + 1, 1) AS NextSequence, 
 
                     COUNT(DISTINCT CASE 
-                        WHEN LABEL_STATUS = 'Last' 
+                        WHEN LABEL_STATUS IN ('Last') 
                         THEN SEQUENCE_NUMBER 
                     END) + 1 AS BatchNumber,
 

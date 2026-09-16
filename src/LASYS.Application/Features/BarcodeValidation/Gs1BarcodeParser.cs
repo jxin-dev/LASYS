@@ -2,7 +2,7 @@
 {
     public class Gs1BarcodeParser
     {
-        public BarcodeValidationResult Parse(string? barcode, BarcodeContentType type, bool isEumdr)
+        public BarcodeValidationResult Parse(string? barcode, BarcodeContentType type, bool isEumdr, bool ocbNoLotExpFlag = false)
         {
             if (string.IsNullOrEmpty(barcode))
             {
@@ -12,7 +12,7 @@
             switch (type)
             {
                 case BarcodeContentType.Label:
-                    return ParseLabelBarcode(barcode, isEumdr);
+                    return ParseLabelBarcode(barcode, isEumdr, ocbNoLotExpFlag);
 
                 case BarcodeContentType.Instruction:
                     return ParseInstructionBarcode(barcode, isEumdr);
@@ -22,11 +22,25 @@
                         $"Unsupported barcode type: {type}");
             }
         }
-        private BarcodeValidationResult ParseLabelBarcode(string barcode, bool isEumdr)
+        private BarcodeValidationResult ParseLabelBarcode(string barcode, bool isEumdr, bool ocbNoLotExpFlag)
         {
-            return ParseLabelBarcode(barcode, Gs1ApplicationIdentifierDefinition.Label, isEumdr);
+            if (ocbNoLotExpFlag)
+            {
+                var aiDefinitions = new Dictionary<string, Gs1AiDefinition>
+                {
+                    ["01"] = Gs1ApplicationIdentifierDefinition.Label["01"]
+                };
+
+                return ParseLabelBarcode(
+                    barcode,
+                    aiDefinitions,
+                    false,
+                    true);
+            }
+
+            return ParseLabelBarcode(barcode, Gs1ApplicationIdentifierDefinition.Label, isEumdr, false);
         }
-        private BarcodeValidationResult ParseLabelBarcode(string barcode, Dictionary<string, Gs1AiDefinition> aiDefinitions, bool isEumdr = false)
+        private BarcodeValidationResult ParseLabelBarcode(string barcode, Dictionary<string, Gs1AiDefinition> aiDefinitions, bool isEumdr, bool ocbNoLotExpFlag)
         {
             var applicationIdentifiers = new Dictionary<string, string>();
 
@@ -104,6 +118,16 @@
                 applicationIdentifiers.Add(ai, fixedValue);
 
                 position += definition.Length;
+
+                if (ocbNoLotExpFlag && ai == "01")
+                {
+                    break;
+                }
+            }
+
+            if (ocbNoLotExpFlag)
+            {
+                return BarcodeValidationResult.Success(applicationIdentifiers);
             }
 
             if (isEumdr && !applicationIdentifiers.ContainsKey("11"))

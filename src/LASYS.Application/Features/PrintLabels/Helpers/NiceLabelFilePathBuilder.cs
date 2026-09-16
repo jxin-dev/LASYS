@@ -27,7 +27,7 @@ namespace LASYS.Application.Features.PrintLabels.Helpers
             if (!string.IsNullOrWhiteSpace(directory))
             {
                 Directory.CreateDirectory(directory);
-            }
+            }   
             // Decompress the GZip bytes before writing
             byte[] decompressedBytes = Decompress(compressedBytes);
             await File.WriteAllBytesAsync(
