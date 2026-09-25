@@ -130,62 +130,87 @@ namespace LASYS.Infrastructure.Hardware.Barcode
                 if (_port == null || !_port.IsOpen)
                     return;
 
-                var incoming = _port.ReadExisting();
-
-                if (string.IsNullOrEmpty(incoming))
+                int count = _port.BytesToRead;
+                if (count <= 1)
                     return;
 
-                _buffer.Append(incoming);
+                byte[] bytes = new byte[count];
+                _port.Read(bytes, 0, count);
 
-                while (true)
+                string hex = BitConverter.ToString(bytes);
+                string ascii = Encoding.ASCII.GetString(bytes);
+
+                if (string.IsNullOrWhiteSpace(ascii))
+                    return;
+
+                string barcode = new string([.. ascii.Where(c => c >= 32 && c <= 126)]).Trim();
+                barcode = Regex.Replace(barcode, @"^[^0-9]+", string.Empty);
+
+                if (string.IsNullOrWhiteSpace(barcode))
+                    return;
+
+                if (_scanTcs != null && !_scanTcs.Task.IsCompleted)
                 {
-                    var content = _buffer.ToString();
-
-                    var index = content.IndexOfAny(new[] { '\r', '\n' });
-
-                    if (index < 0)
-                        break;
-
-                    var barcode = content.Substring(0, index).Trim();
-
-                    _buffer.Remove(0, index + 1);
-
-                    while (_buffer.Length > 0 &&
-                           (_buffer[0] == '\r' || _buffer[0] == '\n'))
-                    {
-                        _buffer.Remove(0, 1);
-                    }
-
-                    if (string.IsNullOrWhiteSpace(barcode))
-                        continue;
-
-                    barcode = Regex.Replace(barcode, @"^[^0-9]+", string.Empty);
-
-                    if (_scanTcs == null || _scanTcs.Task.IsCompleted)
-                        break;
-
-                    StopScan();
-
-                    if (_scanTcs.TrySetResult(barcode))
-                    {
-                        BarcodeScanned?.Invoke(
-                            this,
-                            new BarcodeScannedEventArgs(barcode));
-
-                        SetStatus(
-                            DeviceStatusCode.Connected,
-                            $"Scanned barcode: {barcode}");
-                    }
-
-                    break;
+                    _scanTcs.TrySetResult(barcode);
+                    SetStatus(DeviceStatusCode.Scanned, $"Scanned barcode: {barcode}");
                 }
+
+                StopScan();
+
+                //var incoming = _port.ReadExisting();
+
+                //if (string.IsNullOrEmpty(incoming))
+                //    return;
+
+                //_buffer.Append(incoming);
+
+                //while (true)
+                //{
+                //    var content = _buffer.ToString();
+
+                //    var index = content.IndexOfAny(new[] { '\r', '\n' });
+
+                //    if (index < 0)
+                //        break;
+
+                //    var barcode = content.Substring(0, index).Trim();
+
+                //    _buffer.Remove(0, index + 1);
+
+                //    while (_buffer.Length > 0 &&
+                //           (_buffer[0] == '\r' || _buffer[0] == '\n'))
+                //    {
+                //        _buffer.Remove(0, 1);
+                //    }
+
+                //    if (string.IsNullOrWhiteSpace(barcode))
+                //        continue;
+
+                //    barcode = Regex.Replace(barcode, @"^[^0-9]+", string.Empty);
+
+                //    if (_scanTcs == null || _scanTcs.Task.IsCompleted)
+                //        break;
+
+                //    StopScan();
+
+                //    if (_scanTcs.TrySetResult(barcode))
+                //    {
+                //        BarcodeScanned?.Invoke(
+                //            this,
+                //            new BarcodeScannedEventArgs(barcode));
+
+                //        SetStatus(
+                //            DeviceStatusCode.Connected,
+                //            $"Scanned barcode: {barcode}");
+                //    }
+
+                //    break;
+                //}
             }
             catch (Exception ex)
             {
                 StopScan();
-
                 _scanTcs?.TrySetException(ex);
-
                 SetStatus(DeviceStatusCode.Error);
             }
         }
@@ -195,14 +220,14 @@ namespace LASYS.Infrastructure.Hardware.Barcode
             if (_port == null)
             {
                 SetStatus(DeviceStatusCode.Disconnected);
-                return;
+                await Task.CompletedTask;
             }
 
             try
             {
                 lock (_syncRoot)
                 {
-                    if (!_port.IsOpen)
+                    if (!_port!.IsOpen)
                         _port.Open();
 
                     _port.DiscardInBuffer();
@@ -389,7 +414,7 @@ namespace LASYS.Infrastructure.Hardware.Barcode
             {
                 var completedTask = await Task.WhenAny(
                     _scanTcs.Task,
-                    Task.Delay(TimeSpan.FromSeconds(2), token));
+                    Task.Delay(TimeSpan.FromSeconds(8), token));
 
                 if (completedTask != _scanTcs.Task)
                 {
@@ -397,17 +422,17 @@ namespace LASYS.Infrastructure.Hardware.Barcode
                     SetStatus(DeviceStatusCode.Timeout);
                     return null;
                 }
-
+                SetStatus(DeviceStatusCode.DataReceived, "Data received: " + _scanTcs.Task.Result);
                 return await _scanTcs.Task;
             }
             catch (OperationCanceledException)
             {
                 StopScan();
-                throw;
+                return null;
             }
             finally
             {
-                _scanTcs = null;
+                //_scanTcs = null;
             }
         }
         private void StopScan()
