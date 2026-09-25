@@ -80,6 +80,7 @@ namespace LASYS.DesktopApp.Presenters
             _logService.Log("User logged out", MessageType.Info);
             _currentUser.Clear();
             _view.CloseView();
+            System.Windows.Forms.Application.Exit();
         }
 
         private void OnFormClosingRequested(object? sender, EventArgs e)
