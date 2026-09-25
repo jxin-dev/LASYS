@@ -957,6 +957,10 @@ namespace LASYS.Application.Features.BatchPrinting.Services
             var waitScannedTextTask = _deviceManager.Barcode.WaitForBarcodeAsync(cancellationToken);
             await _deviceManager.Barcode.ScanAsync();
             var barcodeScanned = await waitScannedTextTask;
+
+            LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Info,
+              $"Barcode scanned successfully for label {job.CurrentSequenceFormat}. Barcode: {barcodeScanned}"));
+
             if (string.IsNullOrWhiteSpace(barcodeScanned))
             {
                 return await RequestOperatorDecisionAsync(
@@ -967,11 +971,6 @@ namespace LASYS.Application.Features.BatchPrinting.Services
                         totalPairs),
                     cancellationToken);
             }
-
-
-            LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Info,
-                $"Barcode scanned successfully for label {job.CurrentSequenceFormat}. Barcode: {barcodeScanned}"));
-
 
             //barcodeScanned = "0174806017513718";
             bool isEumdr = job.Context.ProductDetails!.IsEumdr;
