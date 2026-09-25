@@ -969,10 +969,27 @@ namespace LASYS.Application.Features.BatchPrinting.Services
             }
 
 
+            LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Info,
+                $"Barcode scanned successfully for label {job.CurrentSequenceFormat}. Barcode: {barcodeScanned}"));
+
+
             //barcodeScanned = "0174806017513718";
             bool isEumdr = job.Context.ProductDetails!.IsEumdr;
             bool isOcbNoLotExp = job.Context.ProductDetails!.OCBNoLotExpFlag;
+
+            LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Info,
+                $"Validating scanned barcode. EUMDR: {isEumdr}, OCB No Lot/Exp: {isOcbNoLotExp}."));
+
             var validationResult = await _mediator.Send(new ValidateLabelBarcodeQuery(barcodeScanned, isEumdr, isOcbNoLotExp), cancellationToken);
+
+            foreach (var identifier in validationResult.ApplicationIdentifiers)
+            {
+                LogGenerated?.Invoke(this,
+                    new LogEventArgs(
+                        MessageType.Info,
+                        $"Barcode AI {identifier.Key}: {identifier.Value}"));
+            }
+
             if (!validationResult.IsValid)
             {
                 LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Error, validationResult.ErrorMessage));
