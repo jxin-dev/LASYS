@@ -53,7 +53,7 @@ namespace LASYS.DesktopApp.Views.Interfaces
         void UpdateDeviceStatus(DeviceStatus status);
         void SetLoading(bool isLoading);
         void SetBackButtonEnabled(bool enabled);
-        void ResetView(BoxType boxType);
+        void ResetView(BoxType boxType, bool isPairedType = false);
         void SetEndOfBatch(bool isChecked);
         int Quantity { get; }
         bool IsEndOfBatchChecked { get; }

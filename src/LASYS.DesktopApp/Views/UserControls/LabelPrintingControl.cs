@@ -832,7 +832,7 @@ namespace LASYS.DesktopApp.Views.UserControls
             btnBack.Enabled = enabled;
         }
         private readonly ToolTip _toolTip = new ToolTip();
-        public void ResetView(BoxType boxType)
+        public void ResetView(BoxType boxType, bool isPairedType = false)
         {
             lblLabelPrintingHeader.Text = boxType switch
             {
@@ -846,6 +846,11 @@ namespace LASYS.DesktopApp.Views.UserControls
                 BoxType.QualityControlSample => "Label Printing (QC Sample)",
                 _ => "Label Printing"
             };
+
+            if (isPairedType)
+            {
+                lblLabelPrintingHeader.Text += " (Paired)";
+            }
 
             var loadingText = "Initializing...";
             lblInstructionCode.Text = loadingText;

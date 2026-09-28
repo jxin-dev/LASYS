@@ -471,10 +471,16 @@ namespace LASYS.DesktopApp.Presenters
                     return;
                 }
 
+
                 var context = result.Value!;
                 var masterLabel = context.MasterLabelDetails;
                 var niceLabelPath = masterLabel?.FilePath;
                 var niceLabelFile = masterLabel?.LabelFile;
+
+                if (boxType == BoxType.CartonBox && context.ProductDetails!.IsPairedBoxType == true)
+                {
+                    _view.InvokeOnUI(() => _view.ResetView(boxType, true));
+                }
 
 
                 var sw = Stopwatch.StartNew();

@@ -128,6 +128,7 @@ namespace LASYS.Application.Features.BatchPrinting.Models
         }
         public void ResetPrintType()
         {
+            IsPassed = true;
             CurrentLabelStatus = Context.LabelInstructionDetails!.PrintType;
         }
         public void SetApproval(string userCode, string sectionId, string ipAddress)

@@ -47,7 +47,15 @@ namespace LASYS.Infrastructure.Persistence.Repositories
                     LOT_NO AS LotNo, 
 
                     COUNT(DISTINCT CASE 
-                        WHEN LABEL_STATUS IN ('Original','Replacement','Additional','Returned') 
+                        WHEN LABEL_STATUS IN ('Original','Replacement','Additional','Returned')
+                            AND NOT EXISTS (
+                                 SELECT 1
+                                 FROM {tableName} f
+                                 WHERE f.ITEM_CODE = t.ITEM_CODE
+                                   AND f.LOT_NO = t.LOT_NO
+                                   AND f.SEQUENCE_NUMBER = t.SEQUENCE_NUMBER
+                                   AND f.LABEL_STATUS IN ('Failed During Printing','Failed After Printing')
+                             )
                         THEN SEQUENCE_NUMBER 
                     END) AS TotalPassed, 
 
@@ -84,7 +92,7 @@ namespace LASYS.Infrastructure.Persistence.Repositories
                     END) + 1 AS BatchNumber,
 
                     IFNULL(MAX(SET_NUMBER) + 1, 1) AS SetNumber 
-                FROM {tableName}  
+                FROM {tableName} t
                 WHERE ITEM_CODE = @ItemCode AND LOT_NO = @LotNo;";
             //$@"
             //SELECT 

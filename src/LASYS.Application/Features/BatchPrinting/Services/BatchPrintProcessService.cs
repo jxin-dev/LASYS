@@ -321,8 +321,10 @@ namespace LASYS.Application.Features.BatchPrinting.Services
                             if (validationBarcodeResult == StepResult.Stop)
                             {
                                 //if (!isSampleLabel)
-                                await SaveFailedLabelAsync(job);
-
+                                if (job.Context.PrintDetails!.NextSequence != 1)
+                                {
+                                    await SaveFailedLabelAsync(job);
+                                }
                                 LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Error, $"Barcode validation failed. Job stopped by {_currentUser.FullName} on label {job.CurrentSequenceFormat}{pairText}."));
                                 stopRequested = true;
                                 _jobController.Stop(jobId, isSampleLabel);
@@ -364,7 +366,10 @@ namespace LASYS.Application.Features.BatchPrinting.Services
                             if (validationOcrResult == StepResult.Stop)
                             {
                                 //if (!isSampleLabel)
-                                await SaveFailedLabelAsync(job);
+                                if (job.Context.PrintDetails!.NextSequence != 1)
+                                {
+                                    await SaveFailedLabelAsync(job);
+                                }
 
                                 LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Error, $"OCR validation failed. Job stopped by {_currentUser.FullName} on label {job.CurrentSequenceFormat}{pairText}."));
                                 stopRequested = true;
@@ -385,6 +390,21 @@ namespace LASYS.Application.Features.BatchPrinting.Services
                                 isLastSample,
                                 job.EndOfBatch,
                                 cancellationToken);
+                        }
+
+                        // ==========================================
+                        // DO NOT SAVE SEQ 1 IF IT FAILED
+                        // ==========================================
+                        if (job.Context.PrintDetails!.NextSequence == 1 && !job.IsPassed)
+                        {
+                            LogGenerated?.Invoke(
+                                this,
+                                new LogEventArgs(
+                                    MessageType.Error,
+                                    $"No data will be saved for label {job.CurrentSequenceFormat}."));
+
+                            stopRequested = true;
+                            break;
                         }
 
                         // ==========================================
@@ -679,6 +699,9 @@ namespace LASYS.Application.Features.BatchPrinting.Services
                 else if (inspectionResult.Result == VisualInspectionResult.Rejected)
                 {
                     job.MarkFailedDuringPrinting();
+                    LogGenerated?.Invoke(this,
+                      new LogEventArgs(MessageType.Error,
+                          $"Visual inspection rejected label {job.CurrentSequenceFormat}"));
                 }
                 else
                 {
@@ -715,6 +738,9 @@ namespace LASYS.Application.Features.BatchPrinting.Services
                 else if (inspectionResult.Result == VisualInspectionResult.Rejected)
                 {
                     job.MarkFailedDuringPrinting();
+                    LogGenerated?.Invoke(this,
+                        new LogEventArgs(MessageType.Error,
+                            $"Visual inspection rejected label {job.CurrentSequenceFormat}"));
                 }
                 else
                 {
