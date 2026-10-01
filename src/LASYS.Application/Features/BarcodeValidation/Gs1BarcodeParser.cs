@@ -66,41 +66,50 @@
 
                 if (definition.IsVariableLength)
                 {
-                    var nextAiPosition = -1;
+                    string value = barcode.Substring(position, barcode.Length - position);
+                    position = barcode.Length;
+                    //var nextAiPosition = -1;
 
-                    foreach (var knownAi in aiDefinitions.Keys)
-                    {
-                        var candidate =
-                            barcode.IndexOf(
-                                knownAi,
-                                position,
-                                StringComparison.Ordinal);
 
-                        if (candidate > position)
-                        {
-                            if (nextAiPosition == -1 ||
-                                candidate < nextAiPosition)
-                            {
-                                nextAiPosition = candidate;
-                            }
-                        }
-                    }
 
-                    string value;
+                    //foreach (var knownAi in aiDefinitions.Keys)
+                    //{
+                    //    var candidate =
+                    //    barcode.IndexOf(
+                    //        knownAi,
+                    //        position,
+                    //        StringComparison.Ordinal);
 
-                    if (nextAiPosition == -1)
-                    {
-                        value = barcode.Substring(position);
-                        position = barcode.Length;
-                    }
-                    else
-                    {
-                        value = barcode.Substring(
-                            position,
-                            nextAiPosition - position);
 
-                        position = nextAiPosition;
-                    }
+                    //    if (candidate > position)
+                    //    {
+                    //        if (nextAiPosition == -1 ||
+                    //            candidate < nextAiPosition)
+                    //        {
+                    //            nextAiPosition = candidate;
+                    //        }
+                    //    }
+
+                    //}
+
+                    //string value;
+
+                    //if (nextAiPosition == -1)
+                    //{
+                    //    value = barcode.Substring(position);
+                    //    position = barcode.Length;
+                    //}
+                    //else
+                    //{
+                    //    value = barcode.Substring(
+                    //        position,
+                    //        nextAiPosition - position);
+
+                    //    position = nextAiPosition;
+                    //}
+                    //    throw;
+                    //}
+
 
                     applicationIdentifiers.Add(ai, value);
 

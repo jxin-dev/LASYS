@@ -1000,7 +1000,7 @@ namespace LASYS.Application.Features.BatchPrinting.Services
 
             //barcodeScanned = "0174806017513718";
             bool isEumdr = job.Context.ProductDetails!.IsEumdr;
-            bool isOcbNoLotExp = job.Context.ProductDetails!.OCBNoLotExpFlag;
+            bool isOcbNoLotExp = job.Context.ProductDetails!.OCBNoLotExpFlag && job.Context.MasterLabelDetails!.BoxType == Common.Enums.BoxType.OuterCartonBox;
 
             LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Info,
                 $"Validating scanned barcode. EUMDR: {isEumdr}, OCB No Lot/Exp: {isOcbNoLotExp}."));
