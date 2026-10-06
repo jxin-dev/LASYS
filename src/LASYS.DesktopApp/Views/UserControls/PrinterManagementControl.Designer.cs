@@ -144,9 +144,9 @@
             label5.AutoSize = true;
             label5.Location = new Point(21, 44);
             label5.Name = "label5";
-            label5.Size = new Size(703, 30);
+            label5.Size = new Size(357, 30);
             label5.TabIndex = 8;
-            label5.Text = "Select the printer interface (USB or Serial COM), choose the appropriate port, click \"Save Printer Settings\" to apply the configuration, \r\nand then use \"Test Print\" to verify the connection.";
+            label5.Text = "Select the printer interface (USB) then choose the appropriate port,\r\nclick \"Save Printer Settings\" to apply the configuration.";
             // 
             // label4
             // 

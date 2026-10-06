@@ -57,26 +57,15 @@ namespace LASYS.DesktopApp.Presenters
 
         private async void OnLoadConfigRequest(object? sender, EventArgs e)
         {
-
             var types = new List<string>
             {
-                new SerialPrinterConnection().InterfaceType,
                 new UsbPrinterConnection().InterfaceType
             };
 
             _view.LoadInterfaceTypes(types);
 
             var config = await _printerService.LoadAsync(); // your LoadAsync call
-
-            if (config?.SatoPrinter is SerialPrinterConnection serial)
-            {
-                //var comPorts = _printerService.GetCOMList();
-                var comPorts = _printerService.GetManualCOMList(1, 50);
-                _view.SetPortList(comPorts);
-                _view.SetPort(180, "Select COM port");
-                _view.SetSelectedPort(serial.InterfaceType, serial.ComPort);
-            }
-            else if (config?.SatoPrinter is UsbPrinterConnection usb)
+            if (config?.SatoPrinter is UsbPrinterConnection usb)
             {
                 var usbPorts = _printerService.GetUSBList();
                 _view.SetPort(600, "Select USB port");
@@ -93,6 +82,42 @@ namespace LASYS.DesktopApp.Presenters
                     // not found
                 }
             }
+            
+            //var types = new List<string>
+            //{
+            //    new SerialPrinterConnection().InterfaceType,
+            //    new UsbPrinterConnection().InterfaceType
+            //};
+
+            //_view.LoadInterfaceTypes(types);
+
+            //var config = await _printerService.LoadAsync(); // your LoadAsync call
+
+            //if (config?.SatoPrinter is SerialPrinterConnection serial)
+            //{
+            //    //var comPorts = _printerService.GetCOMList();
+            //    var comPorts = _printerService.GetManualCOMList(1, 50);
+            //    _view.SetPortList(comPorts);
+            //    _view.SetPort(180, "Select COM port");
+            //    _view.SetSelectedPort(serial.InterfaceType, serial.ComPort);
+            //}
+            //else if (config?.SatoPrinter is UsbPrinterConnection usb)
+            //{
+            //    var usbPorts = _printerService.GetUSBList();
+            //    _view.SetPort(600, "Select USB port");
+            //    _view.SetPortList(usbPorts);
+
+            //    bool exists = usbPorts.Contains(usb.UsbId);
+            //    if (exists)
+            //    {
+            //        _view.SetSelectedPort(usb.InterfaceType, usb.UsbId);
+            //        // found
+            //    }
+            //    else
+            //    {
+            //        // not found
+            //    }
+            //}
 
         }
 
