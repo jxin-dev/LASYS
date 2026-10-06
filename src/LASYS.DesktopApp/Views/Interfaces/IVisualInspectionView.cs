@@ -6,12 +6,8 @@ namespace LASYS.DesktopApp.Views.Interfaces
     {
         event EventHandler<VisualInspectionApprovalEventArgs> ApprovalRequested;
         void HideInspection();
-
         void ShowInspection();
-
-        void CompleteApproved();
-
-        void CompleteRejected();
+        void CloseInspection();
         void InvokeOnUI(Action action);
 
     }

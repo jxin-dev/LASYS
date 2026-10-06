@@ -226,20 +226,12 @@ namespace LASYS.Application.Features.BatchPrinting.Services
                     }
 
                     var stopRequested = false;
-                    //var pairCount = job.IsPairedType && job.BoxType == Common.Enums.BoxType.CartonBox ? 2 : 1;
 
                     bool isFirstSample =
                             hasFirstSample && printIteration == 1;
 
                     bool isLastSample =
                         hasLastSample && printIteration == totalPrintIterations;
-
-                    //var isSampleLabel =
-                    //    isFirstSample || isLastSample;
-
-                    //var pairCount =
-                    //    isSampleLabel
-                    //        ? 1 : job.IsPairedType && job.BoxType == Common.Enums.BoxType.CartonBox ? 2 : 1;
 
                     var isSampleLabel =
                         isQualityControlSample || isFirstSample || isLastSample;
@@ -252,6 +244,8 @@ namespace LASYS.Application.Features.BatchPrinting.Services
                                 : job.IsPairedType && job.BoxType == Common.Enums.BoxType.CartonBox
                                     ? 2
                                     : 1;
+
+                    bool requiresVisualInspection = printIteration == 1 || printIteration == totalPrintIterations || isQualityControlSample;
 
                     var completedPairs = 0;
                     foreach (var pairIndex in Enumerable.Range(1, pairCount))
@@ -389,6 +383,7 @@ namespace LASYS.Application.Features.BatchPrinting.Services
                                 isFirstSample,
                                 isLastSample,
                                 job.EndOfBatch,
+                                requiresVisualInspection,
                                 cancellationToken);
                         }
 
@@ -681,34 +676,41 @@ namespace LASYS.Application.Features.BatchPrinting.Services
             bool isFirstSample,
             bool isLastSample,
             bool isEndOfBatch,
+            bool requiresVisualInspection,
             CancellationToken cancellationToken)
         {
             job.ResetPrintType();
 
-            if (job.BoxType == Common.Enums.BoxType.QualityControlSample)
+            if (requiresVisualInspection)
             {
-                var inspectionResult = await RequestVisualInspectionAsync(
-                VisualInspectionSampleType.QCSample,
-                job.CurrentSequenceFormat,
-                cancellationToken);
-
-                if (inspectionResult.Result == VisualInspectionResult.Approved)
+                VisualInspectionSampleType sample = VisualInspectionSampleType.NotApplicable;
+                if (job.BoxType == Common.Enums.BoxType.QualityControlSample)
                 {
+                    sample = VisualInspectionSampleType.QCSample;
                     job.MarkQC();
                 }
-                else if (inspectionResult.Result == VisualInspectionResult.Rejected)
+                else if (isFirstSample)
+                {
+                    sample = VisualInspectionSampleType.FirstSample;
+                    job.MarkFirst();
+                }
+                else if (isLastSample && isEndOfBatch)
+                {
+                    sample = VisualInspectionSampleType.LastSample;
+                    job.MarkLast();
+                }
+                else
+                {
+                    job.ResetPrintType();
+                }
+                var inspectionResult = await RequestVisualInspectionAsync(sample, job.CurrentSequenceFormat, cancellationToken);
+                if (inspectionResult.Result == VisualInspectionResult.Rejected)
                 {
                     job.MarkFailedDuringPrinting();
                     LogGenerated?.Invoke(this,
                       new LogEventArgs(MessageType.Error,
                           $"Visual inspection rejected label {job.CurrentSequenceFormat}"));
                 }
-                else
-                {
-                    _jobController.Stop(jobId, true);
-                    EnsureCanContinue(job);
-                    return;
-                }
 
                 var ipAddress = _ipAddressProvider.GetLocalIpAddress();
 
@@ -717,83 +719,117 @@ namespace LASYS.Application.Features.BatchPrinting.Services
                     inspectionResult.SectionId!,
                     ipAddress);
 
-                return;
             }
 
-            // ==========================================
-            // FIRST SAMPLE
-            // ==========================================
-            if (isFirstSample && !hasOpenBatch)
-            {
-                var inspectionResult =
-                    await RequestVisualInspectionAsync(
-                        VisualInspectionSampleType.FirstSample,
-                        job.CurrentSequenceFormat,
-                        cancellationToken);
-
-                if (inspectionResult.Result == VisualInspectionResult.Approved)
-                {
-                    job.MarkFirst();
-                }
-                else if (inspectionResult.Result == VisualInspectionResult.Rejected)
-                {
-                    job.MarkFailedDuringPrinting();
-                    LogGenerated?.Invoke(this,
-                        new LogEventArgs(MessageType.Error,
-                            $"Visual inspection rejected label {job.CurrentSequenceFormat}"));
-                }
-                else
-                {
-                    _jobController.Stop(jobId, true);
-                    EnsureCanContinue(job);
-                    return;
-                }
 
 
-                var ipAddress = _ipAddressProvider.GetLocalIpAddress();
-                job.SetApproval(
-                    inspectionResult.UserCode!,
-                    inspectionResult.SectionId!,
-                    ipAddress);
+            //job.ResetPrintType();
 
-                //NotifyJobStateChanged(jobId);
-            }
+            //if (job.BoxType == Common.Enums.BoxType.QualityControlSample)
+            //{
+            //    var inspectionResult = await RequestVisualInspectionAsync(
+            //    VisualInspectionSampleType.QCSample,
+            //    job.CurrentSequenceFormat,
+            //    cancellationToken);
 
-            // ==========================================
-            // LAST SAMPLE
-            // ==========================================
-            else if (isLastSample && isEndOfBatch)
-            {
-                var inspectionResult = await RequestVisualInspectionAsync(
-                        VisualInspectionSampleType.LastSample,
-                        job.CurrentSequenceFormat,
-                        cancellationToken);
+            //    if (inspectionResult.Result == VisualInspectionResult.Approved)
+            //    {
+            //        job.MarkQC();
+            //    }
+            //    else if (inspectionResult.Result == VisualInspectionResult.Rejected)
+            //    {
+            //        job.MarkFailedDuringPrinting();
+            //        LogGenerated?.Invoke(this,
+            //          new LogEventArgs(MessageType.Error,
+            //              $"Visual inspection rejected label {job.CurrentSequenceFormat}"));
+            //    }
+            //    else
+            //    {
+            //        _jobController.Stop(jobId, true);
+            //        EnsureCanContinue(job);
+            //        return;
+            //    }
 
-                if (inspectionResult.Result == VisualInspectionResult.Approved)
-                {
-                    job.MarkLast();
-                }
-                else if (inspectionResult.Result == VisualInspectionResult.Rejected)
-                {
-                    job.MarkFailedDuringPrinting();
-                }
-                else
-                {
-                    _jobController.Stop(jobId, true);
-                    EnsureCanContinue(job);
-                    return;
-                }
+            //    var ipAddress = _ipAddressProvider.GetLocalIpAddress();
 
-                var ipAddress = _ipAddressProvider.GetLocalIpAddress();
-                job.SetApproval(
-                    inspectionResult.UserCode!,
-                    inspectionResult.SectionId!,
-                    ipAddress);
+            //    job.SetApproval(
+            //        inspectionResult.UserCode!,
+            //        inspectionResult.SectionId!,
+            //        ipAddress);
 
-                //NotifyJobStateChanged(jobId);
-                //job.MarkLast();
-                //NotifyJobStateChanged(jobId);
-            }
+            //    return;
+            //}
+
+            //// ==========================================
+            //// FIRST SAMPLE
+            //// ==========================================
+            //if (isFirstSample && !hasOpenBatch)
+            //{
+            //    var inspectionResult =
+            //        await RequestVisualInspectionAsync(
+            //            VisualInspectionSampleType.FirstSample,
+            //            job.CurrentSequenceFormat,
+            //            cancellationToken);
+
+            //    if (inspectionResult.Result == VisualInspectionResult.Approved)
+            //    {
+            //        job.MarkFirst();
+            //    }
+            //    else if (inspectionResult.Result == VisualInspectionResult.Rejected)
+            //    {
+            //        job.MarkFailedDuringPrinting();
+            //        LogGenerated?.Invoke(this,
+            //            new LogEventArgs(MessageType.Error,
+            //                $"Visual inspection rejected label {job.CurrentSequenceFormat}"));
+            //    }
+            //    else
+            //    {
+            //        _jobController.Stop(jobId, true);
+            //        EnsureCanContinue(job);
+            //        return;
+            //    }
+
+
+            //    var ipAddress = _ipAddressProvider.GetLocalIpAddress();
+            //    job.SetApproval(
+            //        inspectionResult.UserCode!,
+            //        inspectionResult.SectionId!,
+            //        ipAddress);
+
+            //}
+
+            //// ==========================================
+            //// LAST SAMPLE
+            //// ==========================================
+            //else if (isLastSample && isEndOfBatch)
+            //{
+            //    var inspectionResult = await RequestVisualInspectionAsync(
+            //            VisualInspectionSampleType.LastSample,
+            //            job.CurrentSequenceFormat,
+            //            cancellationToken);
+
+            //    if (inspectionResult.Result == VisualInspectionResult.Approved)
+            //    {
+            //        job.MarkLast();
+            //    }
+            //    else if (inspectionResult.Result == VisualInspectionResult.Rejected)
+            //    {
+            //        job.MarkFailedDuringPrinting();
+            //    }
+            //    else
+            //    {
+            //        _jobController.Stop(jobId, true);
+            //        EnsureCanContinue(job);
+            //        return;
+            //    }
+
+            //    var ipAddress = _ipAddressProvider.GetLocalIpAddress();
+            //    job.SetApproval(
+            //        inspectionResult.UserCode!,
+            //        inspectionResult.SectionId!,
+            //        ipAddress);
+
+            //}
         }
         private async Task<StepResult> SavePrintedLabelAsync(PrintJobState job, CancellationToken cancellationToken)
         {
@@ -1002,8 +1038,8 @@ namespace LASYS.Application.Features.BatchPrinting.Services
             bool isEumdr = job.Context.ProductDetails!.IsEumdr;
             bool isOcbNoLotExp = job.Context.ProductDetails!.OCBNoLotExpFlag && job.Context.MasterLabelDetails!.BoxType == Common.Enums.BoxType.OuterCartonBox;
 
-            LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Info,
-                $"Validating scanned barcode. EUMDR: {isEumdr}, OCB No Lot/Exp: {isOcbNoLotExp}."));
+            //LogGenerated?.Invoke(this, new LogEventArgs(MessageType.Info,
+            //    $"Validating scanned barcode. EUMDR: {isEumdr}, OCB No Lot/Exp: {isOcbNoLotExp}."));
 
             var validationResult = await _mediator.Send(new ValidateLabelBarcodeQuery(barcodeScanned, isEumdr, isOcbNoLotExp), cancellationToken);
 
@@ -1045,7 +1081,7 @@ namespace LASYS.Application.Features.BatchPrinting.Services
 
             var barcodeNumber = $"{boxType}{job.Context.ProductDetails!.BarcodeNumber}";
             //var barcodeNumber = $"{barcodeType}{job.Context.ProductDetails!.BarcodeNumber}";
-
+            
             if (job.Context.ProductDetails.OCBNoLotExpFlag == true && boxType == "7") // Only for OCB with no lot and exp date
             {
                 if (!Matches(validationResult, "01", barcodeNumber))
@@ -1068,7 +1104,7 @@ namespace LASYS.Application.Features.BatchPrinting.Services
                         ValidationFailure.BarcodeMismatch,
                         job.CurrentSequenceFormat,
                         pairNumber,
-                        totalPairs),
+                        totalPairs, barcodeScanned),
                     cancellationToken);
             }
             if (!Matches(validationResult, "17", job.Context.LabelInstructionDetails!.ExpirationDate?.ToString(NiceLabelDataMappings.BarcodeDateFormat)!))
@@ -1078,7 +1114,7 @@ namespace LASYS.Application.Features.BatchPrinting.Services
                         ValidationFailure.BarcodeMismatch,
                         job.CurrentSequenceFormat,
                         pairNumber,
-                        totalPairs),
+                        totalPairs, barcodeScanned),
                     cancellationToken);
             }
 
@@ -1089,7 +1125,7 @@ namespace LASYS.Application.Features.BatchPrinting.Services
                         ValidationFailure.BarcodeMismatch,
                         job.CurrentSequenceFormat,
                         pairNumber,
-                        totalPairs),
+                        totalPairs, barcodeScanned),
                     cancellationToken);
             }
 
@@ -1101,18 +1137,32 @@ namespace LASYS.Application.Features.BatchPrinting.Services
                         ValidationFailure.BarcodeMismatch,
                         job.CurrentSequenceFormat,
                         pairNumber,
-                        totalPairs),
+                        totalPairs, barcodeScanned),
                     cancellationToken);
             }
             return StepResult.Success;
         }
-        private static bool Matches(BarcodeValidationResult result, string ai, string expected)
+        private bool Matches(BarcodeValidationResult result, string ai, string expected)
         {
-            return result.ApplicationIdentifiers.TryGetValue(ai, out var actual)
-                && !string.IsNullOrEmpty(actual)
-                && actual.Contains(expected, StringComparison.OrdinalIgnoreCase);
+            var found = result.ApplicationIdentifiers.TryGetValue(ai, out var actual);
+            var isMatch = found && !string.IsNullOrEmpty(actual) && actual.Contains(expected, StringComparison.OrdinalIgnoreCase);
+
+            //return result.ApplicationIdentifiers.TryGetValue(ai, out var actual)
+            //    && !string.IsNullOrEmpty(actual)
+            //    && actual.Contains(expected, StringComparison.OrdinalIgnoreCase);
             //return result.ApplicationIdentifiers.TryGetValue(
             //    ai, out var actual) && string.Equals(actual, expected, StringComparison.OrdinalIgnoreCase);
+
+            LogGenerated?.Invoke(this,
+                new LogEventArgs(
+                    isMatch ? MessageType.Info : MessageType.Error,
+                       $"Barcode comparison - " +
+                       $"AI: {ai} | " +
+                       $"Expected: '{expected}' | " +
+                       $"Actual: '{actual ?? "<not found>"}' | " +
+                       $"Contains Match: {isMatch}"));
+
+            return isMatch;
         }
         private async Task<StepResult> ValidateOcrAsync(PrintJobState job, int pairNumber, int totalPairs, CancellationToken cancellationToken)
         {

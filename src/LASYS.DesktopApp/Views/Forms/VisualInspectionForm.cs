@@ -15,6 +15,7 @@ namespace LASYS.DesktopApp.Views.Forms
         private bool? labelVerificationResult = null;
 
         private readonly VisualInspectionSampleType _sampleType;
+        private bool _requiresApproval;
 
         public event EventHandler<VisualInspectionApprovalEventArgs>? ApprovalRequested;
 
@@ -44,6 +45,11 @@ namespace LASYS.DesktopApp.Views.Forms
 
         public void Configure(VisualInspectionSampleType sampleType, string sequenceNo)
         {
+            _requiresApproval =
+                sampleType == VisualInspectionSampleType.FirstSample ||
+                sampleType == VisualInspectionSampleType.LastSample ||
+                sampleType == VisualInspectionSampleType.QCSample;
+
             lblSequenceNo.Text = sequenceNo;
             StartInspection();
         }
@@ -432,12 +438,12 @@ namespace LASYS.DesktopApp.Views.Forms
             // Last sample + passed = no approval required
             if (!isRejection && _sampleType == VisualInspectionSampleType.LastSample)
             {
-                CompleteApproved();
+                CloseInspection();
                 return;
             }
 
             // Ask Presenter to handle approval
-            ApprovalRequested?.Invoke(this, new VisualInspectionApprovalEventArgs(isRejection));
+            ApprovalRequested?.Invoke(this, new VisualInspectionApprovalEventArgs(isRejection, _requiresApproval));
         }
 
         // ==========================================
@@ -463,13 +469,7 @@ namespace LASYS.DesktopApp.Views.Forms
             Activate();
         }
 
-        public void CompleteApproved()
-        {
-            allowClose = true;
-            Close();
-        }
-
-        public void CompleteRejected()
+        public void CloseInspection()
         {
             allowClose = true;
             Close();

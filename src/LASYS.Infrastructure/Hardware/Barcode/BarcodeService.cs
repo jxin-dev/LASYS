@@ -248,7 +248,7 @@ namespace LASYS.Infrastructure.Hardware.Barcode
                 Console.Error.WriteLine(
                     $"Failed to trigger scan: {ex.Message}");
 
-                SetStatus(DeviceStatusCode.Error);
+                SetStatus(DeviceStatusCode.Error, ex.Message);
 
                 _scanTcs?.TrySetException(ex);
             }

@@ -24,12 +24,30 @@ namespace LASYS.DesktopApp.Presenters
                 return;
             }
 
-            using var bitmap = new Bitmap(e);
+            //using var bitmap = new Bitmap(e);
+            //_view.InvokeOnUI(() =>
+            //{
+            //    _view.DisplayTemplate(bitmap);
+            //});
+            Bitmap bitmap;
+
+            using (var temp = new Bitmap(e))
+            {
+                bitmap = new Bitmap(temp);
+            }
 
             _view.InvokeOnUI(() =>
             {
-                _view.DisplayTemplate(bitmap);
+                try
+                {
+                    _view.DisplayTemplate(bitmap);
+                }
+                finally
+                {
+                    bitmap.Dispose();
+                }
             });
+
         }
 
         public void Dispose()

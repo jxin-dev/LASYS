@@ -4,6 +4,7 @@
     {
         FirstSample,
         LastSample,
-        QCSample
+        QCSample,
+        NotApplicable
     }
 }
