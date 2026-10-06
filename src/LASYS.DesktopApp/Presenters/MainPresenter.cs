@@ -73,13 +73,17 @@ namespace LASYS.DesktopApp.Presenters
             _niceLabelTemplateService.CloseTemplate();
             return true;
         }
-        private void OnLogoutRequested(object? sender, EventArgs e)
+        private async void OnLogoutRequested(object? sender, EventArgs e)
         {
             if (!CanNavigate()) return;
 
             _logService.Log("User logged out", MessageType.Info);
             _currentUser.Clear();
+
+            await _deviceManager.ShutdownAllAsync();
+
             _view.CloseView();
+
             System.Windows.Forms.Application.Exit();
         }
 

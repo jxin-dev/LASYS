@@ -455,5 +455,54 @@ namespace LASYS.Infrastructure.Hardware.Barcode
                 // Ignore scanner shutdown errors
             }
         }
+
+        public void Dispose()
+        {
+            lock (_syncRoot)
+            {
+                try
+                {
+                    // Stop scanner trigger
+                    if (_port?.IsOpen == true)
+                    {
+                        try
+                        {
+                            _port.BaseStream.Write(
+                                TRIGGER_OFF,
+                                0,
+                                TRIGGER_OFF.Length);
+                        }
+                        catch
+                        {
+                            // Ignore scanner shutdown errors
+                        }
+                    }
+
+                    // Stop receiving events
+                    if (_port != null)
+                    {
+                        _port.DataReceived -= OnDataReceived;
+
+                        if (_port.IsOpen)
+                        {
+                            _port.Close();
+                        }
+
+                        _port.Dispose();
+                        _port = null;
+                    }
+
+                    // Release any waiting barcode operation
+                    _scanTcs?.TrySetCanceled();
+                    _scanTcs = null;
+
+                    SetStatus(DeviceStatusCode.NotDetected, "Barcode scanner stopped.");
+                }
+                catch
+                {
+                    // Ignore shutdown errors
+                }
+            }
+        }
     }
 }

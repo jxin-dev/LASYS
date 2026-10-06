@@ -51,9 +51,16 @@ namespace LASYS.Infrastructure.Hardware.DeviceManagement
 
         public async Task ShutdownAllAsync()
         {
+            Printer.DeviceStatusChanged -= OnDeviceStatusChanged;
+            Camera.DeviceStatusChanged -= OnDeviceStatusChanged;
+            Barcode.DeviceStatusChanged -= OnDeviceStatusChanged;
+
             await Camera.StopAsync();
+            Barcode.Dispose();
             // printer usually has no async stop in your design
             Printer.Dispose();
+
+          
         }
 
         public bool IsDeviceConnected(DeviceType type)

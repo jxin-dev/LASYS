@@ -4,7 +4,7 @@ using LASYS.Application.Features.Devices.Events;
 using LASYS.Application.Features.Devices.Models;
 namespace LASYS.Application.Interfaces.Services
 {
-    public interface IBarcodeService
+    public interface IBarcodeService : IDisposable
     {
         Task<BarcodeConfig?> LoadAsync();
         Task SaveAsync(BarcodeConfig config);
