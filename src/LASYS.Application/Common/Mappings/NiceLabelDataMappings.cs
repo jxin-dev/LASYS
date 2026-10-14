@@ -48,9 +48,10 @@ namespace LASYS.Application.Common.Mappings
                 BoxType.OuterCartonBox => "7",
                 BoxType.AdditionalCartonBox => "9",
                 BoxType.UnitBox => "3",
+                BoxType.QualityControlSample => "3",
                 BoxType.AdditionalUnitBox => "8",
                 BoxType.OuterUnitBox => "4",
-                _ => "1"
+                _ => throw new ArgumentOutOfRangeException($"Unsupported box type: {masterLabelDetails.BoxType}")
             };
 
 

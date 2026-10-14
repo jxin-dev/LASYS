@@ -126,6 +126,7 @@ namespace LASYS.Infrastructure.OCR
         {
             [BoxType.CaseLabel] = "CASE",
             [BoxType.UnitBox] = "UB",
+            [BoxType.QualityControlSample] = "UB",
             [BoxType.AdditionalUnitBox] = "AUB",
             [BoxType.OuterUnitBox] = "OUB",
             [BoxType.CartonBox] = "CB",

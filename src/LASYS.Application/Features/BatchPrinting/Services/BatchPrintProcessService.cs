@@ -1044,7 +1044,7 @@ namespace LASYS.Application.Features.BatchPrinting.Services
                 Common.Enums.BoxType.QualityControlSample => "3",
                 Common.Enums.BoxType.AdditionalUnitBox => "8",
                 Common.Enums.BoxType.OuterUnitBox => "4",
-                _ => "1"
+                _ => throw new ArgumentOutOfRangeException($"Unsupported box type: {job.Context.MasterLabelDetails!.BoxType}")
             };
 
             var barcodeNumber = $"{boxType}{job.Context.ProductDetails!.BarcodeNumber}";
