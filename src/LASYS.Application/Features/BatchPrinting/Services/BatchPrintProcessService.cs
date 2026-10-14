@@ -141,7 +141,7 @@ namespace LASYS.Application.Features.BatchPrinting.Services
             var job = _jobController.GetJob(jobId);
             if (job is null) return;
 
-            job.InProgress();
+            job.Starting();
 
             try
             {
@@ -196,6 +196,8 @@ namespace LASYS.Application.Features.BatchPrinting.Services
                 //while (job.Context.PrintDetails!.NextSequence <= (job.TotalQuantity + startSequence) - 1) // 1 - 50
                 while (printIteration < totalPrintIterations)
                 {
+                    job.InProgress();
+
                     printIteration++;
 
                     var prnFileLocation = string.Empty;

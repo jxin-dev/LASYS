@@ -9,6 +9,7 @@
         InProgress,
         Paused,
         Stopped,
-        Printed
+        Printed,
+        Starting
     }
 }

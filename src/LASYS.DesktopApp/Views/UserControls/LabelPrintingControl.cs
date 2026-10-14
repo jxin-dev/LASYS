@@ -640,6 +640,10 @@ namespace LASYS.DesktopApp.Views.UserControls
                     txtQuantity.Enabled = false;
                     chkEndOfBatch.Enabled = false;
                     break;
+
+                case PrintJobStatus.Starting:
+                    btnPrint.Enabled = false;
+                    break;
                 case PrintJobStatus.Ready:
                 case PrintJobStatus.Completed:
                     lblPrintingProgress.Visible = false;

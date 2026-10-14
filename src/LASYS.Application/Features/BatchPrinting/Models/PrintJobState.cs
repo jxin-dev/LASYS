@@ -283,6 +283,12 @@ namespace LASYS.Application.Features.BatchPrinting.Models
             Status = PrintJobStatus.InProgress;
             ResumeSignal.Set();
         }
+
+        public void Starting()
+        {
+            Status = PrintJobStatus.Starting;
+            ResumeSignal.Set();
+        }
         public void Paused()
         {
             Status = PrintJobStatus.Paused;
