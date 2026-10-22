@@ -34,7 +34,7 @@ namespace LASYS.DesktopApp.Views.Interfaces
         void SetPrintingState(PrintJobStatus status);
         void UpdateProgress(int printedCount, int totalQuantity);
         void UpdateQuantityControl(PrintJobState printJob);
-        void UpdatePrintingResults(uint targetQuantity, long setNumber, long batchNumber, long startSequence, long remaining, long totalPrinted, long totalPassed, long totalFailed, long labelSample);
+        void UpdatePrintingResults(int targetQuantity, long setNumber, long batchNumber, long startSequence, long remaining, long totalPrinted, long totalPassed, long totalFailed, long labelSample);
         void ToggleActivityLogs();
         void ShowError(ErrorForm errorForm);
 

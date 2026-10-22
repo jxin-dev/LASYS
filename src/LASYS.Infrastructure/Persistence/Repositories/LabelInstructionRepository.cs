@@ -1,4 +1,5 @@
 ﻿using Dapper;
+using DirectShowLib;
 using DirectShowLib.BDA;
 using LASYS.Application.Common.Enums;
 using LASYS.Application.Common.Models;
@@ -22,7 +23,7 @@ namespace LASYS.Infrastructure.Persistence.Repositories
 
         public async Task<LabelInstructionDetails> GetDetailsAsync(string itemCode, string lotNo, uint masterRevision, BoxType boxType)
         {
-            var (instrunctionCode, printType, approvedByUserCode, approvedBySectionId, approvedByIpAddress, approvedByDateTime) = _labelInstructionColumnResolver.GetInstructionColumnNames(boxType);
+            var (instrunctionCode, quantity, printType, approvedByUserCode, approvedBySectionId, approvedByIpAddress, approvedByDateTime) = _labelInstructionColumnResolver.GetInstructionColumnNames(boxType);
 
             var sql = $@"
             SELECT 
@@ -37,6 +38,7 @@ namespace LASYS.Infrastructure.Persistence.Repositories
                 PRODUCTION_DATE AS ProductionDate,
                 STERILIZATION_DATE AS SterilizationDate,
                 TARGET_PRODUCTION_QUANTITY AS TargetProductionQuantity,
+                COALESCE({quantity}, 0) AS Quantity,
                 {printType} AS PrintType,
                 {approvedByUserCode} AS ApprovedByUserCode,
                 {approvedBySectionId} AS ApprovedBySectionId,
@@ -64,7 +66,7 @@ namespace LASYS.Infrastructure.Persistence.Repositories
 
         public async Task<LabelInstructionDetails> GetDetailsAsync(string itemCode, uint masterRevision, BoxType boxType)
         {
-            var (instrunctionCode, printType, approvedByUserCode, approvedBySectionId, approvedByIpAddress, approvedByDateTime) = _labelInstructionColumnResolver.GetInstructionColumnNames(boxType);
+            var (instrunctionCode, quantity, printType, approvedByUserCode, approvedBySectionId, approvedByIpAddress, approvedByDateTime) = _labelInstructionColumnResolver.GetInstructionColumnNames(boxType);
 
             var sql = $@"
             SELECT 
@@ -79,6 +81,7 @@ namespace LASYS.Infrastructure.Persistence.Repositories
                 PRODUCTION_DATE AS ProductionDate,
                 STERILIZATION_DATE AS SterilizationDate,
                 TARGET_PRODUCTION_QUANTITY AS TargetProductionQuantity,
+                COALESCE({quantity}, 0) AS Quantity,
                 {printType} AS PrintType,
                 {approvedByUserCode} AS ApprovedByUserCode,
                 {approvedBySectionId} AS ApprovedBySectionId,

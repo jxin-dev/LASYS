@@ -30,9 +30,13 @@ namespace LASYS.Application.Features.BatchPrinting.Models
         public NiceLabelVariableCollection LabelData => Context is not null ? NiceLabelDataMappings.ToLabelData(Context) : throw new InvalidOperationException("LabelData is not available.");
         public int TotalQuantity { get; private set; }
         public int PrintedCount { get; private set; } = 0;
-        public uint TargetQuantity => Context.ProductDetails?.Quantity ?? throw new InvalidOperationException("TargetProductionQuantity is not available");
-        public long RemainingQuantity => Context.PrintDetails != null ? Context.PrintDetails.GetRemainingPrintQuantity(Context.ProductDetails?.Quantity) : throw new InvalidOperationException("RemainingQuantity is not available.");
+        //public uint TargetQuantity => Context.ProductDetails?.Quantity ?? throw new InvalidOperationException("TargetProductionQuantity is not available");
+        public int TargetQuantity => Context.LabelInstructionDetails?.Quantity ?? throw new InvalidOperationException("TargetProductionQuantity is not available");
+        //public long RemainingQuantity => Context.PrintDetails != null ? Context.PrintDetails.GetRemainingPrintQuantity(Context.ProductDetails?.Quantity) : throw new InvalidOperationException("RemainingQuantity is not available.");
+        public long RemainingQuantity => Context.PrintDetails != null ? Context.PrintDetails.GetRemainingPrintQuantity(Context.LabelInstructionDetails?.Quantity) : throw new InvalidOperationException("RemainingQuantity is not available.");
+
         //public long DisplaySequence => RemainingQuantity == 0 ? Context.PrintDetails!.NextSequence - 1 : Context.PrintDetails!.NextSequence;
+
         public long DisplaySequence { get; private set; }
         public string CurrentSequenceFormat => SequenceFormatter.Format(Context.PrintDetails!.NextSequence, SequenceLength);
         public string LastSequenceFormat => SequenceFormatter.Format((Context.PrintDetails!.NextSequence + TotalQuantity) - 1, SequenceLength);
@@ -52,7 +56,7 @@ namespace LASYS.Application.Features.BatchPrinting.Models
         public static PrintJobState Create(string printerName, LabelPrintingContext context)
         {
 
-            var remaining = context.PrintDetails != null ? context.PrintDetails.GetRemainingPrintQuantity(context.ProductDetails?.Quantity) : throw new InvalidOperationException("RemainingQuantity is not available.");
+            var remaining = context.PrintDetails != null ? context.PrintDetails.GetRemainingPrintQuantity(context.LabelInstructionDetails?.Quantity) : throw new InvalidOperationException("RemainingQuantity is not available.");
             var startSequence = context.PrintDetails?.NextSequence != null ? (int)context.PrintDetails.NextSequence : throw new InvalidOperationException("NextSequence is not available.");
             var setNumber = context.PrintDetails?.SetNumber != null ? (int)context.PrintDetails.SetNumber : throw new InvalidOperationException("SetNumber is not available.");
 
@@ -181,7 +185,7 @@ namespace LASYS.Application.Features.BatchPrinting.Models
             if (PrintedCount == 0)
                 return;
 
-            var remaining = Context.PrintDetails != null ? Context.PrintDetails.GetRemainingPrintQuantity(Context.ProductDetails?.Quantity) : throw new InvalidOperationException("RemainingQuantity is not available.");
+            var remaining = Context.PrintDetails != null ? Context.PrintDetails.GetRemainingPrintQuantity(Context.LabelInstructionDetails?.Quantity) : throw new InvalidOperationException("RemainingQuantity is not available.");
             var setNumber = Context.PrintDetails?.SetNumber != null ? (int)Context.PrintDetails.SetNumber : throw new InvalidOperationException("SetNumber is not available.");
             Context.PrintDetails.SetNumber = remaining == 0 ? setNumber : ++setNumber;
         }
@@ -226,7 +230,7 @@ namespace LASYS.Application.Features.BatchPrinting.Models
             var batchNumber = Context.PrintDetails?.BatchNumber != null ? (int)Context.PrintDetails.BatchNumber : throw new InvalidOperationException("BatchNumber is not available.");
             if (CurrentLabelStatus is "Last" or "QC")
             {
-                var remaining = Context.PrintDetails != null ? Context.PrintDetails.GetRemainingPrintQuantity(Context.ProductDetails?.Quantity) : throw new InvalidOperationException("RemainingQuantity is not available.");
+                var remaining = Context.PrintDetails != null ? Context.PrintDetails.GetRemainingPrintQuantity(Context.LabelInstructionDetails?.Quantity) : throw new InvalidOperationException("RemainingQuantity is not available.");
                 Context.PrintDetails.BatchNumber = remaining == 0 ? batchNumber : ++batchNumber;
             }
 
@@ -264,7 +268,7 @@ namespace LASYS.Application.Features.BatchPrinting.Models
 
         public void Reset()
         {
-            var remaining = Context.PrintDetails != null ? Context.PrintDetails.GetRemainingPrintQuantity(Context.ProductDetails?.Quantity) : throw new InvalidOperationException("RemainingQuantity is not available.");
+            var remaining = Context.PrintDetails != null ? Context.PrintDetails.GetRemainingPrintQuantity(Context.LabelInstructionDetails?.Quantity) : throw new InvalidOperationException("RemainingQuantity is not available.");
             if (remaining == 0 && BoxType != BoxType.QualityControlSample)
             {
                 Status = PrintJobStatus.Printed;

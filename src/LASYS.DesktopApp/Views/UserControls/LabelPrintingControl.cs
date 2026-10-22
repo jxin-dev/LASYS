@@ -713,7 +713,7 @@ namespace LASYS.DesktopApp.Views.UserControls
         }
 
 
-        public void UpdatePrintingResults(uint targetQuantity, long setNumber, long batchNumber, long startSequence, long remaining, long totalPrinted, long totalPassed, long totalFailed, long labelSample)
+        public void UpdatePrintingResults(int targetQuantity, long setNumber, long batchNumber, long startSequence, long remaining, long totalPrinted, long totalPassed, long totalFailed, long labelSample)
         {
             //if(remaining == 0)
             //{

@@ -14,6 +14,7 @@
         public DateTime? ProductionDate { get; init; }
         public DateTime? SterilizationDate { get; init; }
         public int TargetProductionQuantity { get; init; }
+        public int Quantity { get; init; }
         public string PrintType { get; init; } = string.Empty;
         public string ApprovedByUserCode { get; init; } = string.Empty;
         public string ApprovedBySectionId { get; init; } = string.Empty;
