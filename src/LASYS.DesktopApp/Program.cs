@@ -33,7 +33,7 @@ namespace LASYS.DesktopApp
 
             ApplicationConfiguration.Initialize();
 
-            var host = Host.CreateDefaultBuilder()
+            using var host = Host.CreateDefaultBuilder()
                 .ConfigureAppConfiguration((context, config) =>
                 {
                     config.SetBasePath(AppContext.BaseDirectory);
@@ -116,9 +116,17 @@ namespace LASYS.DesktopApp
             }
 
             var mainPresenter = host.Services.GetRequiredService<MainPresenter>();
-            System.Windows.Forms.Application.Run(mainPresenter.View);
+            try
+            {
+                System.Windows.Forms.Application.Run(mainPresenter.View);
+            }
+            finally
+            {
+                Task.Run(() => host.Services.GetRequiredService<IDeviceManager>().ShutdownAllAsync())
+                    .GetAwaiter()
+                    .GetResult();
+            }
             //System.Windows.Forms.Application.Run(new VisualInspectionForm(VisualInspectionForm.VisualInspectionSampleType.FirstSample));
-
         }
     }
 }
