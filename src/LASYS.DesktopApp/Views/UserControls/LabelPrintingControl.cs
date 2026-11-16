@@ -878,7 +878,7 @@ namespace LASYS.DesktopApp.Views.UserControls
 
             _minimumQuantity = 0;
             _maximumQuantity = 0;
-            chkEndOfBatch.Checked = true;
+            chkEndOfBatch.Checked = false;
             txtQuantity.Enabled = false;
             txtQuantity.Text = "0";
             ClearLogs();
